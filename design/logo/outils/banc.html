@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Banc d'essai du logo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 14px/1.3 system-ui, sans-serif; background: #e9e9e9; padding: 24px; color: #222; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 10px; opacity: .6; }
+  .bande { display: flex; align-items: flex-end; gap: 36px; padding: 22px 28px; border-radius: 10px; margin-bottom: 16px; }
+  .clair { background: #ffffff; } .sombre { background: #121212; color: #ddd; }
+  .bande figure { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .bande figcaption { font-size: 11px; opacity: .55; }
+  .silhouette img { filter: brightness(0); } .sombre.silhouette img { filter: brightness(0) invert(1); }
+  .lignes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .onglet { display: inline-flex; align-items: center; gap: 8px; background: #fff; padding: 8px 16px; border-radius: 8px 8px 0 0; }
+  .barre { background: #dee1e6; padding: 8px 10px 0; border-radius: 10px; }
+  .absent { display: none; }
+</style></head>
+<body>
+  <h2>Symbole — fond clair</h2>
+  <div class="bande clair">
+    <figure><img src="../livrables/logo-mark.svg" width="320" height="320"><figcaption>320 px</figcaption></figure>
+    <figure><img src="../livrables/logo-mark.svg" width="128" height="128"><figcaption>128 px</figcaption></figure>
+    <figure><img src="../livrables/logo-mark.svg" width="64" height="64"><figcaption>64 px</figcaption></figure>
+    <figure><img src="../livrables/logo-mark.svg" width="32" height="32"><figcaption>32 px</figcaption></figure>
+    <figure><img src="../livrables/logo-mark.svg" width="16" height="16"><figcaption>16 px</figcaption></figure>
+    <figure><div class="barre"><div class="onglet"><img src="../livrables/logo-mark.svg" width="16" height="16"> CyberLingo — Mission du jour</div></div><figcaption>favicon dans un onglet</figcaption></figure>
+  </div>
+  <div class="lignes">
+    <div>
+      <h2>Symbole — fond sombre</h2>
+      <div class="bande sombre">
+        <figure><img src="../livrables/logo-mark.svg" width="160" height="160"><figcaption>160 px</figcaption></figure>
+        <figure><img src="../livrables/logo-mark.svg" width="64" height="64"><figcaption>64 px</figcaption></figure>
+        <figure><img src="../livrables/logo-mark.svg" width="32" height="32"><figcaption>32 px</figcaption></figure>
+      </div>
+    </div>
+    <div>
+      <h2>Silhouette (une seule couleur)</h2>
+      <div class="bande clair silhouette">
+        <figure><img src="../livrables/logo-mark.svg" width="160" height="160"><figcaption>160 px</figcaption></figure>
+        <figure><img src="../livrables/logo-mark.svg" width="64" height="64"><figcaption>64 px</figcaption></figure>
+        <figure><img src="../livrables/logo-mark.svg" width="32" height="32"><figcaption>32 px</figcaption></figure>
+      </div>
+    </div>
+  </div>
+  <div id="bloc-logo">
+    <h2>Logo complet (livrables/logo.svg, facultatif) — clair puis sombre</h2>
+    <div class="lignes">
+      <div class="bande clair"><img src="../livrables/logo.svg" style="height:120px;max-width:640px;object-fit:contain" onerror="document.getElementById('bloc-logo').classList.add('absent')"></div>
+      <div class="bande sombre"><img src="../livrables/logo.svg" style="height:120px;max-width:640px;object-fit:contain"></div>
+    </div>
+  </div>
+</body></html>

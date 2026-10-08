@@ -1,0 +1,7 @@
+# Duo est la propriété de Duolingo : l'image sert de référence locale, elle ne va pas dans le dépôt public.
+references/duo.png
+
+# Fichiers de travail de l'agent
+rendus/
+outils/.debut
+journal.jsonl
