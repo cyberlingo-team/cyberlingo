@@ -1,0 +1,9 @@
+{
+  "name": "cyberlingo-outils-capture",
+  "private": true,
+  "type": "module",
+  "description": "Captures d'écran du site avec le Chrome installé sur la machine (Playwright, sans téléchargement de navigateur).",
+  "dependencies": {
+    "playwright-core": "1.63.0"
+  }
+}
