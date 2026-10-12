@@ -101,8 +101,8 @@ Ce qui sépare une maquette d'une application :
   `NOTE.md`), nulle part ailleurs.
 - **Git** : branche `premiere-version`. Commite à chaque étape qui fonctionne. Ne pousse pas, ne
   change pas de branche, ne crée pas d'issue.
-- **Temps** : 60 minutes, puis coupure nette. Ton dernier commit doit toujours être une
-  application qui se construit (`npm run build`). Sous les dix minutes restantes, n'ajoute plus
+- **Temps** : 40 minutes, puis coupure nette. Ton dernier commit doit toujours être une
+  application qui se construit (`npm run build`). Sous les sept minutes restantes, n'ajoute plus
   rien : finis, vérifie, commite.
 </contraintes>
 
