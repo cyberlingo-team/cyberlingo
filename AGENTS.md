@@ -24,9 +24,16 @@ J.-C. Buisson). Support du cours : https://wiki.jcbuisson.dev/cours/applications
 ## Le produit
 
 CyberLingo, « le Duolingo de la cybersécurité ». Chaque jour, une **mission commune à tout le
-monde** (mots de passe, phishing, réseaux, chiffrement, ingénierie sociale…). Pas de comptes
-utilisateurs obligatoires : la progression de chaque joueur (série de jours, points) vit dans
-son navigateur.
+monde** (mots de passe, phishing, réseaux, chiffrement, ingénierie sociale…).
+
+Chaque joueur a un **compte, avec pseudo et mot de passe**. Sa série de jours, ses points et sa
+place au classement sont stockés côté serveur. L'authentification suit la page
+`/minimal/authentification` du cours : mot de passe haché et salé avec **bcryptjs**, session
+portée par un **JWT dans un cookie `httpOnly`**. Pour un site qui enseigne la sécurité, c'est
+aussi un argument de la vidéo.
+
+Le logo est `design/logo/tux-prof.svg` (Tux en professeur) ; `design/logo/tux-prof-tete.svg`
+en est le recadrage sur la tête, pour le favicon et les petites tailles.
 
 ## La pile technique imposée
 
@@ -52,7 +59,7 @@ Prisma sur la même version majeure (`prisma@7`, `@prisma/client@7`, `@prisma/ad
 Ces outils s'ajoutent à la pile ; aucun ne la remplace.
 
 - **Vus en cours** : Tailwind CSS, SVG, Socket.IO et ExpressX (temps réel), VueUse,
-  localStorage et sessionStorage, bcryptjs et JWT (si un jour des comptes sont ajoutés).
+  localStorage et sessionStorage, bcryptjs et jsonwebtoken pour l'authentification.
 - **Pour le visuel et le mouvement** : animations CSS, `<Transition>` de Vue, GSAP, motion-v,
   Lenis, three.js ou TresJS, Lottie, polices Google Fonts ou auto-hébergées, images et vidéos
   générées.

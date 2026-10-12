@@ -50,7 +50,7 @@ cercle, pictogramme plat sans personnalité.
   et il s'écrit exactement « CyberLingo ».
 - Tu écris uniquement dans `livrables/` et `rendus/`. Ne modifie ni `outils/`, ni
   `references/`, ni rien d'autre dans le dépôt. Ne fais aucun commit.
-- Tu disposes de 25 minutes à partir de ton lancement. Ensuite ta session est coupée net,
+- Tu disposes de 20 minutes à partir de ton lancement. Ensuite ta session est coupée net,
   sans avertissement. `outils/temps.sh` te dit où tu en es. Dès qu'une première version tient
   debout, `livrables/logo-mark.svg` doit en permanence contenir une version complète et
   valide : ce qui est sur le disque au moment de la coupure est ce qui sera livré.
