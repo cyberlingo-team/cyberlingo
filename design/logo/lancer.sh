@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Lance un agent Claude Code headless sur PROMPT.md : effort max, 25 minutes, puis coupure nette.
+# Lance un agent Claude Code headless sur PROMPT.md : effort max, 20 minutes, puis coupure nette.
 # Le journal complet de la session est écrit dans journal.jsonl.
 set -uo pipefail
 cd "$(dirname "$0")"
@@ -11,14 +11,14 @@ if [ -n "$(ls -A livrables)" ]; then
 fi
 
 date +%s > outils/.debut
-echo "Lancement à $(date +%H:%M:%S), coupure à $(date -d '+25 min' +%H:%M:%S)."
+echo "Lancement à $(date +%H:%M:%S), coupure à $(date -d '+20 min' +%H:%M:%S)."
 
-timeout --kill-after=30s 25m \
+timeout --kill-after=30s 20m \
   claude -p "Lis PROMPT.md et exécute-le entièrement." \
     --model opus --effort max --dangerously-skip-permissions \
     --output-format stream-json --verbose < /dev/null > journal.jsonl 2>&1
 code=$?
 
-[ $code -eq 124 ] && echo "Coupé au bout de 25 minutes." || echo "Terminé de lui-même (code $code)."
+[ $code -eq 124 ] && echo "Coupé au bout de 20 minutes." || echo "Terminé de lui-même (code $code)."
 ls -la livrables
 [ -f livrables/logo-mark.svg ] && outils/banc.sh
