@@ -49,9 +49,9 @@ const perfect = computed(() => result.value && result.value.correct === result.v
 const scoreLine = computed(() => {
   const r = result.value
   if (!r) return ''
-  if (r.correct === r.total) return `Sans-faute : ${r.total} cases sur ${r.total}.`
+  if (r.correct === r.total) return `Sans-faute : ${r.total}\u00a0cases sur ${r.total}.`
   if (r.correct === 0) return `Aucune bonne réponse sur ${r.total}. Les explications sont là pour ça.`
-  return `${r.correct} bonne${r.correct > 1 ? 's' : ''} réponse${r.correct > 1 ? 's' : ''} sur ${r.total}.`
+  return `${r.correct}\u00a0bonne${r.correct > 1 ? 's' : ''} réponse${r.correct > 1 ? 's' : ''} sur ${r.total}.`
 })
 
 const pointLines = computed(() => {

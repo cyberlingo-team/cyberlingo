@@ -47,7 +47,7 @@ const truth = computed(() => {
   const c = clues.value
   if (c) {
     if (!c.wrong) {
-      const all = c.found > 1 ? `Tes ${c.found} choix sont de vrais indices.` : 'Ton choix est un vrai indice.'
+      const all = c.found > 1 ? `Tes ${c.found}\u00a0choix sont de vrais indices.` : 'Ton choix est un vrai indice.'
       return c.extra ? `${all} Il y en avait même un de plus.` : all
     }
     if (!c.found) return 'Aucun de tes choix n’était un indice.'

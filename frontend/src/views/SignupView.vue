@@ -1,7 +1,7 @@
 <script setup>
 // Créer son compte : un pseudo et un mot de passe, rien d'autre. Les règles (longueurs, seuil de
 // robustesse) viennent du serveur, qui les vérifie de son côté.
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AuthScene from '../components/account/AuthScene.vue'
 import PasswordInput from '../components/account/PasswordInput.vue'
@@ -24,6 +24,16 @@ const form = reactive({ username: '', password: '' })
 const fields = ref({})
 const problem = ref('')
 const sending = ref(false)
+
+// Une erreur ne vaut que pour la valeur envoyée : dès qu'on retouche le champ, elle s'efface.
+for (const name of ['username', 'password']) {
+  watch(
+    () => form[name],
+    () => {
+      delete fields.value[name]
+    },
+  )
+}
 
 const loginLink = computed(() => (route.query.redirect ? { path: '/connexion', query: { redirect: route.query.redirect } } : '/connexion'))
 

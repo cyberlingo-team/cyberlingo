@@ -1,7 +1,7 @@
 <script setup>
 // Se connecter avec son pseudo et son mot de passe. La réponse du serveur dépose le cookie de
 // session ; l'interface, elle, ne voit jamais de jeton.
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AuthScene from '../components/account/AuthScene.vue'
 import PasswordInput from '../components/account/PasswordInput.vue'
@@ -18,6 +18,16 @@ const form = reactive({ username: '', password: '' })
 const fields = ref({})
 const problem = ref('')
 const sending = ref(false)
+
+// Une erreur ne vaut que pour la valeur envoyée : dès qu'on retouche le champ, elle s'efface.
+for (const name of ['username', 'password']) {
+  watch(
+    () => form[name],
+    () => {
+      delete fields.value[name]
+    },
+  )
+}
 
 const redirect = computed(() => safeRedirect(route.query.redirect))
 const signupLink = computed(() => (route.query.redirect ? { path: '/inscription', query: { redirect: route.query.redirect } } : '/inscription'))

@@ -1,7 +1,7 @@
 <script setup>
 // Mon compte : changer de pseudo, de mot de passe, se déconnecter, supprimer son compte.
 // La page n'est atteignable que connecté (voir le routeur).
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PasswordInput from '../components/account/PasswordInput.vue'
 import PasswordMeter from '../components/account/PasswordMeter.vue'
@@ -16,9 +16,19 @@ const user = computed(() => session.user)
 
 const UNREACHABLE = 'Le serveur ne répond pas. Vérifie ta connexion à Internet, puis réessaie.'
 
-// Chaque formulaire a ses champs, ses erreurs et son message de réussite.
+// Chaque formulaire a ses champs, ses erreurs et son message de réussite. Une erreur ne vaut que
+// pour la valeur envoyée : dès qu'on retouche le champ, elle s'efface.
 function useForm(initial) {
-  return reactive({ values: { ...initial }, fields: {}, problem: '', done: '', sending: false })
+  const form = reactive({ values: { ...initial }, fields: {}, problem: '', done: '', sending: false })
+  for (const name of Object.keys(initial)) {
+    watch(
+      () => form.values[name],
+      () => {
+        delete form.fields[name]
+      },
+    )
+  }
+  return form
 }
 
 async function run(form, action) {
