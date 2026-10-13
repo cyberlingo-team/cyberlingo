@@ -15,13 +15,16 @@ de tes données de démonstration : ton interface est aussi le cahier des charge
 Construis l'application web CyberLingo, « le Duolingo de la cybersécurité » : chaque jour, une
 mission commune à tout le monde.
 
-La matière imposée :
+Tux en est le personnage central. La matière imposée :
 
 - `design/logo/tux-prof.svg` : le logo, et `design/logo/tux-prof-tete.svg`, son recadrage sur
   la tête.
-- `design/site/matiere/manchots-salisbury.jpg` et `design/site/matiere/manchots-parade.jpg`.
+- `design/site/matiere/progression/` : la progression du joueur, en huit Tux, du poussin
+  (`0-bebe.png`) au colosse (`7.png`). Plus on progresse, plus son Tux est musclé.
+- `design/site/matiere/famille/` : douze Tux dessinés par d'autres, de la même famille visuelle
+  que le logo.
 
-Ce qu'on doit ressentir : espiègle, attachant, vigilant, et l'envie de revenir demain.
+Ce qu'on doit ressentir : drôle, attachant, vigilant, et l'envie de revenir demain.
 </challenge>
 
 <liberte-creative>
@@ -31,11 +34,11 @@ d'apprentissage et des sites de cybersécurité.
 
 Tu as une liberté créative complète sur le concept, les fonctionnalités, les écrans et leur
 enchaînement, les textes, la mise en page, la typographie, les couleurs, les illustrations, les
-transitions, les interactions et le son. Utilise le logo et les photographies de la manière qui
-crée l'expérience la plus forte : recadre-les, détoure-les, superpose-les, fragmente-les,
-mets-les en mouvement, fais-en un élément de l'interaction. Une photo plein écran avec un titre
-centré par-dessus, suivie de cartes blanches arrondies, n'est pas une interprétation de ces
-images : ne livre pas ça en prétendant que c'est fini. Traite-les comme de la matière brute pour
+transitions, les interactions et le son. Utilise les Tux de la manière qui crée l'expérience
+la plus forte : recadre-les, détoure-les, mets-les en scène, anime-les, fais-en un élément de
+l'interaction, et crée ceux qui manquent. Le Tux du niveau posé dans un coin à côté d'une barre
+de progression, au milieu de cartes blanches arrondies, n'est pas une interprétation de cette
+matière : ne livre pas ça en prétendant que c'est fini. Traite-la comme de la matière brute pour
 un univers visuel cohérent, tenu du premier écran au dernier.
 
 Ce que tout le monde a déjà vu : les cadenas, les boucliers, les capuches de pirate, la pluie de
@@ -94,16 +97,14 @@ Ce qui sépare une maquette d'une application :
   Cybermalveillance.gouv.fr. Aucun chiffre, aucune citation, aucun incident inventé présenté
   comme réel ; aucune personne réelle.
 - **Aucune image ni aucun son récupérés en ligne** hors de la matière fournie ; ce que tu crées
-  toi-même est permis. Une page de crédits, atteignable partout, reprend
-  `design/site/matiere/CREDITS.md`.
+  toi-même est permis, y compris avec l'outil de génération du harnais. Une page de crédits,
+  atteignable partout, reprend `design/site/matiere/CREDITS.md`.
 - **Ne laisse rien d'inachevé exprès** : les chantiers de l'équipe, ce sera le serveur.
 - **Périmètre** : tu écris dans `frontend/` et `design/site/` (`rendus/`, `parcours/`,
   `NOTE.md`), nulle part ailleurs.
-- **Git** : branche `premiere-version`. Commite à chaque étape qui fonctionne. Ne pousse pas, ne
-  change pas de branche, ne crée pas d'issue.
-- **Temps** : 40 minutes, puis coupure nette. Ton dernier commit doit toujours être une
-  application qui se construit (`npm run build`). Sous les sept minutes restantes, n'ajoute plus
-  rien : finis, vérifie, commite.
+- **Git** : branche `version-tux`. Commite à chaque étape qui fonctionne ; chaque commit se
+  construit (`npm run build`). Ne pousse pas, ne change pas de branche, ne crée pas d'issue.
+- **Temps** : aucune limite. Arrête-toi quand c'est réellement fini, pas avant.
 </contraintes>
 
 <harnais>
@@ -117,7 +118,10 @@ Déjà installé et testé, à ne pas modifier :
   puis affiche les erreurs de la console.
 - Pour les états qui demandent d'agir, écris tes scripts dans `design/site/parcours/` sur le
   modèle de `design/site/outils/exemple-parcours.mjs`.
-- `design/site/outils/temps.sh` : le temps restant.
+- `design/site/outils/generer-image.sh <sortie.png> "<description>" [référence…]` : génère une
+  image avec Codex dans le style de la progression, ou de tes références si tu en joins. Une à
+  trois minutes par image, plusieurs appels possibles en parallèle, quarante images au plus.
+  Ouvre chaque image avant de t'en servir.
 </harnais>
 
 <livraison>
@@ -133,5 +137,5 @@ N'explique pas le concept avant de le construire. Prends les décisions créativ
 livre le résultat le plus original et le plus abouti dont tu es capable.
 
 À la fin seulement, écris `design/site/NOTE.md` : le concept en trois lignes, la liste des
-écrans avec leur adresse, et ce que tu aurais fait avec plus de temps.
+écrans avec leur adresse, et ce qui reste imparfait.
 </livraison>
