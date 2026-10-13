@@ -213,7 +213,7 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
             <RouterLink to="/inscription" class="button">Créer mon compte</RouterLink>
             <RouterLink to="/connexion" class="guest-login">J’ai déjà un compte</RouterLink>
           </div>
-          <p class="muted guest-small">Un pseudo et un mot de passe suffisent. Ni adresse mail, ni numéro de téléphone.</p>
+          <p class="muted guest-small">Un pseudo et un mot de passe suffisent. Ni adresse e-mail, ni numéro de téléphone.</p>
         </div>
       </section>
 

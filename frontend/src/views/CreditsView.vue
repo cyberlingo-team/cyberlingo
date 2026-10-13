@@ -4,6 +4,11 @@ import Picture from '../components/comic/Picture.vue'
 import { CREATED_IMAGES, FONTS, GANG_CREDITS, LICENSES, SOURCES, TEAM } from '../content/credits.js'
 import { gangImage, stageImage } from '../lib/images.js'
 import logo from '../assets/brand/tux-prof.svg'
+
+// Une adresse longue se coupe après une barre oblique plutôt qu'au milieu d'un mot.
+function slashParts(text) {
+  return text.split(/(?<=\/)/)
+}
 </script>
 
 <template>
@@ -50,7 +55,9 @@ import logo from '../assets/brand/tux-prof.svg'
           <Picture class="gang-image" :image="gangImage(item.id)" />
           <div class="gang-text">
             <p class="gang-title">« {{ item.title }} »</p>
-            <p>par {{ item.authors }}</p>
+            <p>
+              <template v-for="(part, index) in slashParts(item.byline)" :key="index">{{ part }}<wbr /></template>
+            </p>
             <p>
               Licence :
               <a v-if="LICENSES[item.license]" :href="LICENSES[item.license]" rel="license noopener" target="_blank">{{ item.license }}</a>
@@ -82,7 +89,7 @@ import logo from '../assets/brand/tux-prof.svg'
       <h2 id="credits-fonts" class="credit-heading">Polices</h2>
       <ul class="plain-list">
         <li v-for="font in FONTS" :key="font.name">
-          <strong>{{ font.name }}</strong>, pour les {{ font.use }}. {{ font.copyright }},
+          <strong>{{ font.name }}</strong>, pour {{ font.use }}. {{ font.copyright }},
           <a :href="font.source" rel="noopener" target="_blank">{{ font.source.replace('https://', '') }}</a>, sous
           <a :href="LICENSES['SIL Open Font License 1.1']" rel="license noopener" target="_blank">SIL Open Font License 1.1</a>.
         </li>
@@ -96,9 +103,9 @@ import logo from '../assets/brand/tux-prof.svg'
     <section class="panel panel--pad credit-section" aria-labelledby="credits-content">
       <h2 id="credits-content" class="credit-heading">Le contenu des épisodes</h2>
       <p>
-        Les conseils suivent les recommandations de
+        Les conseils suivent les recommandations
         <template v-for="(source, index) in SOURCES" :key="source.name">
-          <a :href="source.url" rel="noopener" target="_blank">{{ source.name }}</a>{{ index < SOURCES.length - 2 ? ', ' : index === SOURCES.length - 2 ? ' et de ' : '' }}
+          {{ index === 0 ? '' : index === SOURCES.length - 1 ? ' et ' : ', ' }}{{ source.of }}<a :href="source.url" rel="noopener" target="_blank">{{ source.name }}</a>
         </template>.
         Chaque épisode cite ses sources à la fin. Les banques, boutiques, numéros, adresses et messages des épisodes sont
         inventés : toute ressemblance avec une vraie arnaque est voulue, avec une vraie marque, non.

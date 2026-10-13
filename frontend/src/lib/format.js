@@ -72,14 +72,19 @@ const shortDay = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'shor
 const weekdayOnly = new Intl.DateTimeFormat('fr-FR', { weekday: 'long' })
 const fullDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 
+// Le premier du mois s'écrit « 1er » : « jeudi 1er octobre », « 1er oct. ».
+function firstOfMonth(text) {
+  return text.replace(/(^|\s)1(?=\s)/u, '$11er')
+}
+
 // « mardi 13 octobre »
 export function formatDay(isoDate) {
-  return longDay.format(parseDate(isoDate))
+  return firstOfMonth(longDay.format(parseDate(isoDate)))
 }
 
 // « 13 oct. »
 export function formatShortDay(isoDate) {
-  return shortDay.format(parseDate(isoDate))
+  return firstOfMonth(shortDay.format(parseDate(isoDate)))
 }
 
 // « mardi »
@@ -89,7 +94,7 @@ export function formatWeekday(isoDate) {
 
 // « 13 octobre 2026 »
 export function formatFullDate(isoDate) {
-  return fullDate.format(parseDate(isoDate))
+  return firstOfMonth(fullDate.format(parseDate(isoDate)))
 }
 
 // « aujourd'hui », « hier », « avant-hier », sinon « mardi 6 octobre ».

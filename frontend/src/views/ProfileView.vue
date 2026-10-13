@@ -154,7 +154,7 @@ function dayLink(day) {
             <dd>
               <strong v-if="me.rank.week"><Ordinal :rank="me.rank.week.position" /> sur {{ formatNumber(me.rank.week.players) }}</strong>
               <strong v-else>Pas classé</strong>
-              sur les 7 derniers jours<template v-if="me.rank.all">, <Ordinal :rank="me.rank.all.position" /> sur {{ formatNumber(me.rank.all.players) }} depuis le début.</template>
+              ces 7 derniers jours<template v-if="me.rank.all">, <Ordinal :rank="me.rank.all.position" /> sur {{ formatNumber(me.rank.all.players) }} depuis le début.</template>
               <template v-else>, ni depuis le début.</template>
               <RouterLink to="/classement" class="fact-link">Voir le classement</RouterLink>
             </dd>

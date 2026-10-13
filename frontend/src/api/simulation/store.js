@@ -10,7 +10,7 @@
 //   session    ce que porterait le cookie httpOnly : { username, guest }
 //              guest     réponses d'un visiteur sans compte : { [date]: Attempt }
 //   failures   échecs de connexion récents, par pseudo en minuscules : [horodatages]
-//   seeded     vrai une fois les comptes de démonstration créés
+//   seeded     jour où les comptes de démonstration ont été remis dans leur état de départ
 //
 // Attempt = { answers: { [questionId]: { answer, correct } }, points?, completedAt? }
 
@@ -21,7 +21,7 @@ const KEY = 'cyberlingo.simulation.v1'
 let memory = null
 
 function empty() {
-  return { accounts: {}, session: { username: null, guest: {} }, failures: {}, seeded: false }
+  return { accounts: {}, session: { username: null, guest: {} }, failures: {}, seeded: null }
 }
 
 export function load() {

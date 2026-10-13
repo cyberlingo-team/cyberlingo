@@ -47,12 +47,13 @@ const story = computed(() => {
       en {{ questionCount }} cases et {{ episodeMinutes(questionCount) }} minutes. Tux le prof corrige.
     </template>
     <template v-else-if="story.kind === 'done'">
-      Épisode du jour bouclé. <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" /> tient sa série :
-      {{ plural(story.streak, 'jour') }}. Prochain épisode à minuit.
+      Épisode du jour bouclé. <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" />
+      {{ story.streak > 1 ? `tient sa série : ${plural(story.streak, 'jour')}.` : 'lance sa série : premier jour.' }}
+      Prochain épisode à minuit.
     </template>
     <template v-else-if="story.kind === 'running'">
       <span class="previously-label">Précédemment&nbsp;:</span> <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" />
-      a tenu {{ plural(story.streak, 'jour') }} de suite.
+      {{ story.streak > 1 ? `a tenu ${plural(story.streak, 'jour')} de suite.` : 'a joué hier, premier jour de sa série.' }}
       Son Tux, {{ story.stage.name }},
       <template v-if="story.stage.next">n’est plus qu’à {{ plural(story.remaining, 'point') }} du stade {{ story.stage.next.name }}.</template>
       <template v-else>a atteint le dernier stade.</template>
