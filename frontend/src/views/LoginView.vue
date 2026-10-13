@@ -45,7 +45,7 @@ async function submit() {
 <template>
   <div class="page page--wide auth">
     <AuthScene :image="sceneImage('prof-magnifier')" class="auth-scene">
-      Avant d’entrer, je vérifie : ton pseudo et ton mot de passe, s’il te plaît.
+      Avant d’entrer, je vérifie : ton pseudo et ton mot de passe, s’il te plaît.
     </AuthScene>
 
     <form class="auth-form panel panel--pad" novalidate @submit.prevent="submit">
@@ -88,14 +88,14 @@ async function submit() {
       </button>
 
       <p class="auth-switch">
-        Pas encore de compte ?
+        Pas encore de compte ?
         <RouterLink :to="signupLink">Créer mon compte</RouterLink>
       </p>
 
       <details class="auth-forgot">
-        <summary>Mot de passe oublié ?</summary>
+        <summary>Mot de passe oublié ?</summary>
         <p>
-          CyberLingo ne te demande pas d’adresse e-mail : on ne peut donc pas t’envoyer de lien pour le changer.
+          CyberLingo ne te demande pas d’adresse e-mail : on ne peut donc pas t’envoyer de lien pour le changer.
           Il te faudra créer un nouveau compte, avec un autre pseudo. Pour la prochaine fois, un gestionnaire de mots
           de passe s’en souvient à ta place.
         </p>

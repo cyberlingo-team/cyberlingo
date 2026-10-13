@@ -118,7 +118,7 @@ function onFull() {
       <div class="case-stage" :class="{ 'case-stage--solo': !question.artifact }">
         <div class="case-guest">
           <Balloon v-if="question.line" tail="down-left" class="case-line">
-            <span class="visually-hidden">{{ guest.name }} :</span>
+            <span class="visually-hidden">{{ guest.name }} :</span>
             {{ typo(question.line) }}
           </Balloon>
           <Picture class="case-guest-image" :image="gangImage(guest.id)" :alt="guest.look || guest.name" eager />
@@ -148,7 +148,7 @@ function onFull() {
 
     <section class="ask panel" :aria-labelledby="`ask-${question.id}`">
       <p :id="`ask-${question.id}`" class="ask-prompt">
-        <img :src="logoHead" class="ask-prof" width="40" height="40" alt="Tux le prof demande :" />
+        <img :src="logoHead" class="ask-prof" width="40" height="40" alt="Tux le prof demande :" />
         <span>{{ typo(question.prompt) }}</span>
       </p>
       <AnswerControls

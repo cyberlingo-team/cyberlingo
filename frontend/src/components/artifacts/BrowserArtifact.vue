@@ -19,7 +19,7 @@ const insecure = computed(() => stripZones(props.artifact.url).startsWith('http:
           <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
         </svg>
         <span v-else class="browser-insecure">Non sécurisé</span>
-        <span class="visually-hidden">Adresse :</span>
+        <span class="visually-hidden">Adresse :</span>
         <span class="browser-url"><Z :t="artifact.url" /></span>
       </span>
     </div>

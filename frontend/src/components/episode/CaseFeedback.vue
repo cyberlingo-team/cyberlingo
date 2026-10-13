@@ -21,7 +21,7 @@ const emit = defineEmits(['next'])
 
 const root = ref(null)
 
-const verdict = computed(() => (props.revealed.correct ? 'Bien vu !' : 'Raté !'))
+const verdict = computed(() => (props.revealed.correct ? 'Bien vu !' : 'Raté !'))
 
 // Pour une question à indices : les choix du joueur comparés aux vrais indices.
 const clues = computed(() => {
@@ -62,7 +62,7 @@ const others = computed(() => {
   if (rate === null || rate === undefined) return null
   const share = `${rate < 40 ? 'Seulement ' : ''}${rate} % des joueurs ont trouvé`
   if (rate < 50 && props.revealed.correct) return `${share}. Tu en fais partie.`
-  if (rate >= 40 && rate < 60) return `${share} : celle-là divise.`
+  if (rate >= 40 && rate < 60) return `${share} : celle-là divise.`
   return `${share}.`
 })
 
@@ -92,10 +92,10 @@ onMounted(() => {
     </div>
 
     <ul v-if="clues" class="feedback-key" aria-label="Comment lire la correction">
-      <li><span class="key key--picked">Surligné</span> : ce que tu as touché.</li>
-      <li><span class="key key--bad">Entouré en rouge</span> : un vrai indice.</li>
-      <li v-if="clues.wrong"><span class="key key--wrong">Barré</span> : ce n’était pas un indice.</li>
-      <li v-if="clues.good"><span class="key key--good">Entouré en bleu</span> : un détail qui ne trahit rien.</li>
+      <li><span class="key key--picked">Surligné</span> : ce que tu as touché.</li>
+      <li><span class="key key--bad">Entouré en rouge</span> : un vrai indice.</li>
+      <li v-if="clues.wrong"><span class="key key--wrong">Barré</span> : ce n’était pas un indice.</li>
+      <li v-if="clues.good"><span class="key key--good">Entouré en bleu</span> : un détail qui ne trahit rien.</li>
     </ul>
 
     <ol v-if="notes.length" class="feedback-notes" aria-label="Annotations du prof">

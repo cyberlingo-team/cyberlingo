@@ -7,6 +7,7 @@ import EpisodeStrip from './EpisodeStrip.vue'
 import QuestionCase from './QuestionCase.vue'
 import EpisodeEnding from './EpisodeEnding.vue'
 import { reducedMotion } from '../../lib/preferences.js'
+import { typo } from '../../lib/format.js'
 
 const props = defineProps({
   mission: { type: Object, required: true },
@@ -114,7 +115,7 @@ const nextLabel = computed(() => {
       <div ref="top" class="player-top" tabindex="-1">
         <p class="player-title">
           <span class="player-number">Épisode {{ mission.number }}</span>
-          <span class="player-name">{{ mission.title }}</span>
+          <span class="player-name">{{ typo(mission.title) }}</span>
         </p>
         <EpisodeStrip
           :questions="questions"

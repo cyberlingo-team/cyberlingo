@@ -34,7 +34,7 @@ async function submit() {
   sending.value = true
   try {
     const { user, claimed } = await signup(form.username.trim(), form.password)
-    showFlash([`Bienvenue, ${user.username} : ton Tux vient d’éclore.`, claimedMessage(claimed)].filter(Boolean).join(' '))
+    showFlash([`Bienvenue, ${user.username} : ton Tux vient d’éclore.`, claimedMessage(claimed)].filter(Boolean).join(' '))
     router.push(safeRedirect(route.query.redirect))
   } catch (error) {
     if (error.status === 400 || error.status === 409) fields.value = error.fields
@@ -74,7 +74,7 @@ async function submit() {
         />
         <p v-if="fields.username" class="field-error" role="alert">{{ fields.username }}</p>
         <p id="signup-username-hint" class="field-hint">
-          {{ usernameRules.minLength }} à {{ usernameRules.maxLength }} caractères : lettres, chiffres, point, tiret et
+          {{ usernameRules.minLength }} à {{ usernameRules.maxLength }} caractères : lettres, chiffres, point, tiret et
           tiret bas. Il s’affiche au classement, alors évite ton nom complet.
         </p>
       </div>
@@ -92,7 +92,7 @@ async function submit() {
         <p v-if="fields.password" class="field-error" role="alert">{{ fields.password }}</p>
         <PasswordMeter id="signup-password-meter" :password="form.password" :rules="rules?.password" />
         <p id="signup-password-hint" class="field-hint">
-          Le plus simple : une phrase de passe d’au moins 7 mots, que toi seul comprends. Sinon, 12 caractères qui
+          Le plus simple : une phrase de passe d’au moins 7 mots, que toi seul comprends. Sinon, 12 caractères qui
           mêlent majuscules, minuscules, chiffres et signes. Et un mot de passe différent pour chaque site.
         </p>
       </div>
@@ -102,12 +102,12 @@ async function submit() {
       </button>
 
       <p class="auth-switch">
-        Déjà un compte ?
+        Déjà un compte ?
         <RouterLink :to="loginLink">Se connecter</RouterLink>
       </p>
 
       <p class="auth-privacy">
-        Ton mot de passe est haché et salé avant d’être enregistré : même nous, on ne peut pas le lire. Le site ne
+        Ton mot de passe est haché et salé avant d’être enregistré : même nous, on ne peut pas le lire. Le site ne
         dépose qu’un cookie, celui de ta session.
       </p>
     </form>

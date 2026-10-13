@@ -59,7 +59,7 @@ const finders = [
     </div>
     <p v-if="artifact.url" class="qr-scan">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V4h4M17 4h4v4M21 16v4h-4M7 20H3v-4" /></svg>
-      <span>Le téléphone propose d’ouvrir : <strong class="qr-url"><Z :t="artifact.url" /></strong></span>
+      <span>Le téléphone propose d’ouvrir : <strong class="qr-url"><Z :t="artifact.url" /></strong></span>
     </p>
   </div>
 </template>

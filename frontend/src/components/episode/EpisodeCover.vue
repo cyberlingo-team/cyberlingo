@@ -45,13 +45,13 @@ const startLabel = computed(() => (props.answered > 0 ? `Reprendre à la case ${
     </div>
 
     <div class="cover-foot">
-      <p class="cover-cast"><strong>{{ capitalize(mission.guest.name) }}</strong>{{ typo(` : ${lowerFirst(mission.guest.tagline)}`) }}</p>
+      <p class="cover-cast"><strong>{{ capitalize(mission.guest.name) }}</strong>{{ typo(` : ${lowerFirst(mission.guest.tagline)}`) }}</p>
       <div class="cover-action">
         <button type="button" class="button cover-start" @click="emit('start')">{{ startLabel }}</button>
         <p class="cover-length">{{ mission.questions.length }} cases, environ {{ minutes }} minutes.</p>
       </div>
-      <p v-if="mode === 'practice'" class="cover-note">Épisode passé : tu peux le rattraper pour t’entraîner, mais il ne rapporte plus de points.</p>
-      <p v-else-if="mode === 'guest' && isToday" class="cover-note">Pas besoin de compte pour jouer. Si tu en crées un à la fin, tes réponses comptent.</p>
+      <!-- En rattrapage, la page d'archive explique déjà que l'épisode ne rapporte plus de points. -->
+      <p v-if="mode === 'guest' && isToday" class="cover-note">Pas besoin de compte pour jouer. Si tu en crées un à la fin, tes réponses comptent.</p>
       <p v-if="readers" class="cover-readers">{{ readers }}</p>
     </div>
   </section>

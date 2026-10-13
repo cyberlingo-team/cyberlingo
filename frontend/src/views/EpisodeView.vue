@@ -20,8 +20,8 @@ const missing = computed(() => error.value?.status === 404)
 const context = computed(() => {
   const { mission, progress } = data.value
   const day = formatDay(mission.date)
-  if (progress.mode === 'counted') return `Paru le ${day}. Tu l’as joué ce jour-là : relis les cases et la correction.`
-  if (progress.completed) return `Paru le ${day}. Tu l’as rattrapé : la correction reste là, les points se gagnent le jour même.`
+  if (progress.mode === 'counted') return `Paru le ${day}. Tu l’as joué ce jour-là : relis les cases et la correction.`
+  if (progress.completed) return `Paru le ${day}. Tu l’as rattrapé : la correction reste là, les points se gagnent le jour même.`
   return `Paru le ${day}. En rattrapage, la correction est la même, mais les points et la série ne se gagnent que le jour même.`
 })
 
@@ -37,7 +37,7 @@ const following = computed(() => {
   <NotFoundView
     v-if="missing"
     title="Aucun épisode à cette date"
-    text="Les épisodes paraissent un par jour depuis le lancement du site. Celui-ci n’existe pas, ou pas encore : pas de fuite des épisodes de demain."
+    text="Les épisodes paraissent un par jour depuis le lancement du site. Celui-ci n’existe pas, ou pas encore : pas de fuite des épisodes de demain."
   />
   <div v-else class="page">
     <ErrorPanel v-if="error && !data" :error="error" :retry="reload" />

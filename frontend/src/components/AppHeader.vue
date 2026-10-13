@@ -12,7 +12,7 @@ import logoHead from '../assets/brand/tux-prof-tete.svg'
 
 const route = useRoute()
 const user = computed(() => session.user)
-const meLabel = computed(() => (user.value ? `Mon Tux : ${user.value.username}, ${user.value.stage.name}, ${plural(user.value.points, 'point')}` : ''))
+const meLabel = computed(() => (user.value ? `Mon Tux : ${user.value.username}, ${user.value.stage.name}, ${plural(user.value.points, 'point')}` : ''))
 </script>
 
 <template>
@@ -40,7 +40,7 @@ const meLabel = computed(() => (user.value ? `Mon Tux : ${user.value.username}, 
         <RouterLink v-if="user" to="/mon-tux" class="me" :aria-label="meLabel">
           <Picture class="me-tux" :image="stageImage(user.stage.level, { mini: true })" alt="" eager />
           <span class="me-text" aria-hidden="true">
-            <MuscleName class="me-name" :name="user.username" :level="user.stage.level" />
+            <MuscleName class="me-name" :name="user.username" :level="user.stage.level" :wrap="false" />
             <span class="me-points">{{ formatNumber(user.points) }} pts</span>
           </span>
         </RouterLink>
@@ -155,7 +155,7 @@ const meLabel = computed(() => (user.value ? `Mon Tux : ${user.value.username}, 
 }
 
 .me-name {
-  max-width: 15ch;
+  max-width: 10em;
   font-size: 1rem;
   white-space: nowrap;
   overflow: hidden;
@@ -180,7 +180,7 @@ const meLabel = computed(() => (user.value ? `Mon Tux : ${user.value.username}, 
   }
 
   .me-name {
-    max-width: 9ch;
+    max-width: 6.5em;
   }
 }
 

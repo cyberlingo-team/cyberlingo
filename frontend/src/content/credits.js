@@ -12,8 +12,8 @@ export const LICENSES = {
   MIT: 'https://opensource.org/license/mit',
 }
 
-const CROPPED = 'Modifiée pour le site : marges recadrées, convertie en WebP.'
-const VECTOR = 'Modifiée pour le site : dessin vectoriel converti en image, marges recadrées, converti en WebP.'
+const CROPPED = 'Modifiée pour le site : marges recadrées, convertie en WebP.'
+const VECTOR = 'Modifiée pour le site : dessin vectoriel converti en image, marges recadrées, converti en WebP.'
 
 // La bande à Tux : un fichier de design/site/matiere/famille/ par personnage.
 export const GANG_CREDITS = [
@@ -23,7 +23,7 @@ export const GANG_CREDITS = [
     authors: 'dessin de Vinicius Stein, mise au propre de David Vignoni',
     license: 'Licence Art Libre',
     source: 'https://commons.wikimedia.org/wiki/File:Tuxgaucho.png',
-    changes: 'Modifiée pour le site : convertie en WebP.',
+    changes: 'Modifiée pour le site : convertie en WebP.',
   },
   {
     id: 'panic',
@@ -56,7 +56,7 @@ export const GANG_CREDITS = [
     license: 'licence BSD',
     source: 'https://commons.wikimedia.org/wiki/File:Tinfoillinux.jpg',
     changes:
-      'Recadrée et texte d’origine retiré dans la matière fournie, puis modifiée pour le site : fond blanc rendu transparent, marges recadrées, convertie en WebP.',
+      'Recadrée et texte d’origine retiré dans la matière fournie, puis modifiée pour le site : fond blanc rendu transparent, marges recadrées, convertie en WebP.',
   },
   {
     id: 'hard-hat',
@@ -72,7 +72,7 @@ export const GANG_CREDITS = [
     authors: 'nlebihan',
     license: 'domaine public',
     source: 'https://commons.wikimedia.org/wiki/File:Cirpack_LINUX_tux_2.png',
-    changes: 'Modifiée pour le site : parties transparentes du ventre remplies de blanc, convertie en WebP.',
+    changes: 'Modifiée pour le site : parties transparentes du ventre remplies de blanc, convertie en WebP.',
   },
   {
     id: 'floppy',
@@ -104,7 +104,7 @@ export const GANG_CREDITS = [
     authors: 'Larry Ewing, Simon Budig, Garrett LeSage',
     license: 'CC0 (domaine public)',
     source: 'https://commons.wikimedia.org/wiki/File:Tux3color.webp',
-    changes: 'Modifiée pour le site : marges recadrées, réduite.',
+    changes: 'Modifiée pour le site : marges recadrées, réduite.',
   },
   {
     id: 'flat',
@@ -120,7 +120,7 @@ export const GANG_CREDITS = [
 export const CREATED_IMAGES = [
   'Tux le prof à la loupe, la main sur le front, en pleine lecture, perdu, et débranché',
   'l’œuf du joueur qui n’a pas encore de compte',
-  'Léopold sans déguisement, Léopold démasqué, et ses onze déguisements : pêcheur, livreur, conseiller bancaire, technicien, séducteur, grand patron, vendeur, faux agent officiel, faux proche, serveur de café, colleur d’autocollants',
+  'Léopold sans déguisement, Léopold démasqué, et ses onze déguisements : pêcheur, livreur, conseiller bancaire, technicien, séducteur, grand patron, vendeur, faux agent officiel, faux proche, serveur de café, colleur d’autocollants',
 ]
 
 export const FONTS = [

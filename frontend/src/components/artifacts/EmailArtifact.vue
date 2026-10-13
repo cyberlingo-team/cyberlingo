@@ -27,7 +27,7 @@ const initial = computed(() => stripZones(props.artifact.fromName).trim().charAt
       <p v-if="artifact.button" class="mail-button"><Z :t="artifact.button" /></p>
       <p v-if="artifact.attachment" class="mail-attachment">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 6.5 8.4 14.6a2 2 0 0 0 2.8 2.8l8.1-8.1a4 4 0 0 0-5.6-5.6L5.4 12a6 6 0 0 0 8.5 8.5l6.6-6.6" /></svg>
-        <span class="visually-hidden">Pièce jointe :</span>
+        <span class="visually-hidden">Pièce jointe :</span>
         <Z :t="artifact.attachment" />
       </p>
       <p v-if="artifact.footer" class="mail-footer"><Z :t="artifact.footer" /></p>

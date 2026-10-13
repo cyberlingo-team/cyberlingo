@@ -38,11 +38,6 @@ export function plural(count, singular, pluralForm = `${singular}s`) {
   return `${formatNumber(count)}${NBSP}${Math.abs(count) >= 2 ? pluralForm : singular}`
 }
 
-// « 1er », « 2e », « 14e ».
-export function ordinal(rank) {
-  return rank === 1 ? '1er' : `${rank}e`
-}
-
 // Durée de lecture d'un épisode : un peu plus d'une demi-minute par case.
 export function episodeMinutes(questionCount) {
   return Math.max(2, Math.round(questionCount * 0.6))

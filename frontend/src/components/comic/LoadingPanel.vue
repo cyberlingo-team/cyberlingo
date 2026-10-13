@@ -107,7 +107,9 @@ onBeforeUnmount(() => clearTimeout(timer))
   }
 }
 
-:global(html[data-motion='reduced']) .stroke {
+/* Animations coupées : le croquis s'affiche d'emblée, entier. (Pas de :global() ici : Vue
+   avalerait « .stroke » et la règle viserait <html>.) */
+html[data-motion='reduced'] .stroke {
   stroke-dashoffset: 0;
   animation: none;
 }

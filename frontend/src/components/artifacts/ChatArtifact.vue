@@ -22,7 +22,7 @@ const initial = computed(() => {
     </div>
     <ol class="chat-thread">
       <li v-for="(message, index) in artifact.messages" :key="index" class="chat-message" :class="`chat-message--${message.from}`">
-        <span class="visually-hidden">{{ message.from === 'me' ? 'Réponse :' : 'Message reçu :' }}</span>
+        <span class="visually-hidden">{{ message.from === 'me' ? 'Réponse :' : 'Message reçu :' }}</span>
         <span class="chat-bubble"><Z :t="message.text" /></span>
         <span v-if="message.time" class="chat-time">{{ message.time }}</span>
       </li>

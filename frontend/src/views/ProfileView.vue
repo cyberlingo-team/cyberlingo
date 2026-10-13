@@ -7,13 +7,14 @@ import ErrorPanel from '../components/comic/ErrorPanel.vue'
 import LoadingPanel from '../components/comic/LoadingPanel.vue'
 import Picture from '../components/comic/Picture.vue'
 import MuscleName from '../components/tux/MuscleName.vue'
+import Ordinal from '../components/Ordinal.vue'
 import StageLadder from '../components/tux/StageLadder.vue'
 import TapeGauge from '../components/tux/TapeGauge.vue'
 import { getGame, getMe } from '../api/index.js'
 import { loadSession, session } from '../lib/session.js'
 import { useResource } from '../lib/resource.js'
 import { sceneImage, stageImage } from '../lib/images.js'
-import { formatDay, formatFullDate, formatNumber, ordinal, parseDate, plural, typo } from '../lib/format.js'
+import { formatDay, formatFullDate, formatNumber, parseDate, plural, typo } from '../lib/format.js'
 
 const { data, error, reload } = useResource(async () => {
   const user = await loadSession()
@@ -39,20 +40,10 @@ const remaining = computed(() => (me.value?.stage.next ? me.value.stage.next.min
 const streakLine = computed(() => {
   const streak = me.value.streak
   if (streak.current === 0) {
-    return streak.lastPlayed ? 'Pas de série en cours. Un épisode aujourd’hui en relance une.' : 'Pas encore de série : elle commence avec ton premier épisode.'
+    return streak.lastPlayed ? 'Pas de série en cours. Un épisode aujourd’hui en relance une.' : 'Pas encore de série : elle commence avec ton premier épisode.'
   }
-  if (streak.playedToday) return 'Épisode du jour joué : ta série est à l’abri jusqu’à demain.'
-  return 'Pas encore joué aujourd’hui : ta série tient jusqu’à minuit.'
-})
-
-const rankLine = computed(() => {
-  const { week, all } = me.value.rank
-  return {
-    week: week ? `${ordinal(week.position)} sur ${formatNumber(week.players)}` : 'Pas classé',
-    all:
-      ' sur les 7 derniers jours' +
-      (all ? `, ${ordinal(all.position)} sur ${formatNumber(all.players)} depuis le début.` : ', ni depuis le début.'),
-  }
+  if (streak.playedToday) return 'Épisode du jour joué : ta série est à l’abri jusqu’à demain.'
+  return 'Pas encore joué aujourd’hui : ta série tient jusqu’à minuit.'
 })
 
 const successRate = computed(() => {
@@ -80,10 +71,10 @@ const calendar = computed(() => {
 
 function dayLabel(day) {
   const when = formatDay(day.date)
-  if (day.status === 'played') return `${when} : joué, ${day.correct} sur ${day.total}, ${plural(day.points, 'point')}`
-  if (day.status === 'missed') return `${when} : manqué, à rattraper`
-  if (day.status === 'today') return `${when} : épisode du jour, à jouer`
-  return `${when} : avant ton arrivée`
+  if (day.status === 'played') return `${when} : joué, ${day.correct} sur ${day.total}, ${plural(day.points, 'point')}`
+  if (day.status === 'missed') return `${when} : manqué, à rattraper`
+  if (day.status === 'today') return `${when} : épisode du jour, à jouer`
+  return `${when} : avant ton arrivée`
 }
 
 function dayLink(day) {
@@ -103,7 +94,7 @@ function dayLink(day) {
         <div class="egg-text">
           <h1 class="page-title">Ton Tux n’a pas encore éclos</h1>
           <p class="lead">
-            Crée ton compte : il éclot à ton premier épisode, puis chaque bonne réponse lui donne du muscle. Ta série, tes
+            Crée ton compte : il éclot à ton premier épisode, puis chaque bonne réponse lui donne du muscle. Ta série, tes
             points et ta place au classement sont gardés.
           </p>
           <div class="egg-actions">
@@ -130,7 +121,7 @@ function dayLink(day) {
             <MuscleName :name="me.user.username" :level="me.stage.level" />
           </h1>
           <p class="hero-stage">
-            Stade {{ me.stage.level }} sur {{ lastLevel }} : <strong>{{ me.stage.name }}</strong>
+            Stade {{ me.stage.level }} sur {{ lastLevel }} : <strong>{{ me.stage.name }}</strong>
           </p>
           <Balloon class="hero-motto" tail="left">{{ typo(me.stage.motto) }}</Balloon>
           <TapeGauge
@@ -159,7 +150,10 @@ function dayLink(day) {
           <div class="fact">
             <dt>Classement</dt>
             <dd>
-              <strong>{{ rankLine.week }}</strong>{{ rankLine.all }}
+              <strong v-if="me.rank.week"><Ordinal :rank="me.rank.week.position" /> sur {{ formatNumber(me.rank.week.players) }}</strong>
+              <strong v-else>Pas classé</strong>
+              sur les 7 derniers jours<template v-if="me.rank.all">, <Ordinal :rank="me.rank.all.position" /> sur {{ formatNumber(me.rank.all.players) }} depuis le début.</template>
+              <template v-else>, ni depuis le début.</template>
               <RouterLink to="/classement" class="fact-link">Voir le classement</RouterLink>
             </dd>
           </div>
@@ -205,7 +199,7 @@ function dayLink(day) {
       </section>
 
       <p class="account-link">
-        <RouterLink to="/mon-compte">Gérer mon compte</RouterLink> : changer de pseudo ou de mot de passe, se déconnecter.
+        <RouterLink to="/mon-compte">Gérer mon compte</RouterLink> : changer de pseudo ou de mot de passe, se déconnecter.
       </p>
     </template>
   </div>
@@ -402,11 +396,14 @@ function dayLink(day) {
   line-height: 1;
 }
 
+/* « manqué » et « à jouer » tiennent sur une ligne, même dans les cases d'un petit téléphone. */
 .diary-mark {
   font-size: 0.72rem;
   font-weight: 700;
+  font-stretch: 82%;
   line-height: 1.05;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .is-played .diary-day {
@@ -440,6 +437,21 @@ a.diary-day:hover {
 .diary-legend {
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+/* Sur grand écran, des cases plus larges que hautes : le mois tient sans faire défiler. */
+@media (min-width: 700px) {
+  .diary-cell {
+    aspect-ratio: 1.6;
+  }
+
+  .diary-number {
+    font-size: 1.1rem;
+  }
+
+  .diary-mark {
+    font-size: 0.86rem;
+  }
 }
 
 .account-link {
@@ -485,6 +497,7 @@ a.diary-day:hover {
 
   .diary-mark {
     font-size: 0.62rem;
+    font-stretch: 68%;
   }
 }
 </style>

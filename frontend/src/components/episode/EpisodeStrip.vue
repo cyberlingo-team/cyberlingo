@@ -39,7 +39,7 @@ const position = computed(() =>
           :class="[`strip-cell--${cell.state}`, { 'is-current': cell.isCurrent }]"
           :disabled="!cell.available"
           :aria-current="cell.isCurrent ? 'step' : undefined"
-          :aria-label="`Case ${cell.index + 1} : ${cell.status}`"
+          :aria-label="`Case ${cell.index + 1} : ${cell.status}`"
           @click="emit('select', cell.index)"
         >
           <svg v-if="cell.state === 'right'" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
