@@ -19,7 +19,7 @@ try {
 
   // Agir comme un utilisateur, par le texte visible plutôt que par les classes CSS :
   //   await page.getByRole('button', { name: 'Commencer' }).click()
-  //   await page.getByLabel('Pseudo').fill('manchot_curieux')
+  //   await page.getByLabel('Pseudo').fill('tux_curieux')
   //   await page.getByText('Mot de passe trop court').waitFor()
   await page.mouse.wheel(0, 600)
   await attendre(page, 400)
