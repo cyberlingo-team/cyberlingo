@@ -1,0 +1,115 @@
+export default {
+  id: 'box-du-salon',
+  title: 'La box sortie du carton',
+  theme: 'Wi-Fi de la maison',
+  guest: 'remote',
+  villain: null,
+  hook: 'Zappeur a reçu sa nouvelle box Internet. Il compte bien y brancher toute la maison.',
+  questions: [
+    {
+      id: 'etiquette',
+      kind: 'truefalse',
+      scene: '19 h 05. Zappeur déballe sa nouvelle box. Sous l’appareil, une étiquette.',
+      line: 'Tout est déjà écrit dessus ! Je garde ces codes-là, comme ça je ne les perds jamais.',
+      artifact: {
+        kind: 'note',
+        style: 'label',
+        title: 'Krill Box 4',
+        lines: [
+          '{{reseau|Réseau Wi-Fi : KrillBox-7C21}}',
+          '{{cle|Clé Wi-Fi : 7Hq4-Xm2p-9Rtw}}',
+          '{{admin|Administration : identifiant admin, mot de passe admin}}',
+          '{{serie|N° de série : KB4-0091-2276}}',
+        ],
+      },
+      prompt: 'Garder les mots de passe d’usine de la box ne pose aucun problème.',
+      answer: false,
+      explanation:
+        'Les mots de passe d’usine sont souvent trop faibles ou connus de tous : « admin », par exemple, se devine du premier coup. Et cette étiquette, n’importe quel visiteur peut la lire. Change les mots de passe par défaut dès la première utilisation, avec des mots de passe solides.',
+      notes: [
+        { zone: 'admin', text: 'Un mot de passe d’usine connu de tous : à changer tout de suite.' },
+        { zone: 'cle', text: 'Imprimée sous la box : lisible par tous ceux qui passent dans le salon.' },
+        { zone: 'reseau', text: 'Un nom par défaut : l’ANSSI conseille aussi de le changer.' },
+      ],
+      success: 0.77,
+    },
+    {
+      id: 'chiffrement',
+      kind: 'choice',
+      scene: '19 h 20. Dans les réglages de la box, Zappeur tombe sur le menu « Sécurité du Wi-Fi ».',
+      line: 'WEP, WPA2, WPA3… On dirait des noms de robots. Je prends lequel ?',
+      prompt: 'Quel mode de sécurité choisir ?',
+      options: [
+        { id: 'wep', text: 'WEP : c’est le plus ancien, donc le plus éprouvé.' },
+        { id: 'aucun', text: 'Aucun : sans mot de passe, c’est plus simple pour les invités.' },
+        { id: 'wpa3', text: 'WPA3, ou au moins WPA2 si un vieil appareil ne suit pas.' },
+      ],
+      answer: 'wpa3',
+      explanation:
+        'Le WEP est dépassé depuis longtemps : sa protection se contourne, et l’ANSSI demande de ne plus l’utiliser. Sans mot de passe, n’importe qui à portée profite de ta connexion. Le bon choix : WPA3, le plus récent, ou au moins WPA2 si un ancien appareil ne connaît pas le WPA3.',
+      success: 0.69,
+    },
+    {
+      id: 'reglages',
+      kind: 'clues',
+      scene: '19 h 45. Zappeur a tout réglé à sa façon. Il montre fièrement la page de sa box.',
+      line: 'Trois minutes, et c’est plié ! Pas mal, hein ?',
+      artifact: {
+        kind: 'app',
+        app: 'Krill Box',
+        title: 'Réglages du Wi-Fi',
+        body: [
+          '{{nom|Nom du réseau : Zappeur-3e-etage-porte-gauche}}',
+          '{{cle|Clé Wi-Fi : zappeur123}}',
+          '{{securite|Sécurité : WPA3}}',
+          '{{bande|Bande : 2,4 GHz et 5 GHz}}',
+          '{{admin|Mot de passe d’administration : admin (par défaut)}}',
+          '{{canal|Canal : automatique}}',
+        ],
+        buttons: ['Annuler', 'Enregistrer'],
+      },
+      prompt: 'Touche les 3 réglages à corriger.',
+      pick: 3,
+      answer: ['nom', 'cle', 'admin'],
+      explanation:
+        'Le nom du réseau indique à tout l’immeuble où habite Zappeur : l’ANSSI conseille un nom qui ne révèle rien de personnel. Son pseudo suivi de 123 se devine trop facilement, et le mot de passe d’administration est resté celui d’usine. Le WPA3, lui, est le bon choix.',
+      notes: [
+        { zone: 'nom', text: 'L’étage et la porte de Zappeur, affichés pour tout le voisinage.' },
+        { zone: 'cle', text: 'Un pseudo suivi de 123 : facile à deviner.' },
+        { zone: 'admin', text: 'Toujours « admin » : le mot de passe d’usine.' },
+        { zone: 'securite', text: 'WPA3 : rien à redire.' },
+        { zone: 'canal', text: 'Le canal est un réglage de confort, sans risque.' },
+      ],
+      success: 0.58,
+    },
+    {
+      id: 'cacher',
+      kind: 'truefalse',
+      scene: '20 h 10. Alu, le voisin du dessus, passe une tête : « Cache le nom de ton Wi-Fi, comme ça personne ne le trouvera ! »',
+      line: 'Un réseau invisible ? C’est la cape d’invisibilité, ça !',
+      prompt: 'Pour la sécurité, masquer le nom de son Wi-Fi est inutile.',
+      answer: true,
+      explanation:
+        'Un nom masqué ne protège rien : les appareils qui se sont déjà connectés au réseau continuent de diffuser son nom pour le retrouver. L’ANSSI le dit clairement : il est inutile de masquer le nom de son réseau. Ce qui protège, c’est le WPA3 (ou au moins le WPA2) et un mot de passe solide.',
+      success: 0.44,
+    },
+    {
+      id: 'redemarrer',
+      kind: 'truefalse',
+      scene: 'Un an plus tard. La box n’a jamais été redémarrée. Elle relie à Internet la télé, l’aquarium et même le grille-pain de Zappeur.',
+      line: 'Pas une panne en un an ! Elle n’a besoin de rien, cette box.',
+      prompt: 'Une box qui marche bien n’a pas besoin de mises à jour.',
+      answer: false,
+      explanation:
+        'Même une box qui marche bien a besoin de ses mises à jour : elles corrigent des failles de sécurité. Cybermalveillance.gouv.fr conseille de la mettre à jour en la redémarrant régulièrement, car c’est généralement par elle que les objets connectés de la maison vont sur Internet.',
+      success: 0.74,
+    },
+  ],
+  moral:
+    'Nouvelle box : change tout de suite les mots de passe d’usine, choisis le WPA3 (ou au moins le WPA2) et un nom de réseau qui ne dit rien de toi. Inutile de le cacher. Et redémarre-la de temps en temps pour ses mises à jour.',
+  sources: [
+    { label: 'Cybermalveillance.gouv.fr : la sécurité des objets connectés', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/securite-objets-connectes-iot' },
+    { label: 'ANSSI : sécuriser les accès Wi-Fi', url: 'https://messervices.cyber.gouv.fr/guides/securiser-les-acces-wi-fi' },
+    { label: 'ANSSI : les Essentiels, sécurisation des réseaux Wi-Fi', url: 'https://messervices.cyber.gouv.fr/guides/essentiels-wifi' },
+  ],
+}

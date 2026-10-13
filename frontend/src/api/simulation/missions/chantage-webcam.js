@@ -1,0 +1,123 @@
+export default {
+  id: 'chantage-webcam',
+  title: 'Souriez, vous êtes filmé',
+  theme: 'Chantage à la webcam',
+  guest: 'panic',
+  villain: 'techie',
+  hook: 'Un « pirate » écrit à Panique : il l’aurait filmé avec sa webcam. Panique est déjà sous la couette.',
+  questions: [
+    {
+      id: 'bluff',
+      kind: 'truefalse',
+      scene: '7 h 30. Panique ouvre ses mails, encore en pyjama. Le premier le fait plonger sous la couette.',
+      line: 'Il m’a filmé avec ma webcam ! Je change de banquise, de nom et de bec !',
+      artifact: {
+        kind: 'email',
+        fromName: 'Panique',
+        fromAddress: '{{adresse|panique@banquise-mail.fr}}',
+        subject: '{{objet|Ton ordinateur est sous mon contrôle}}',
+        time: '07:28',
+        body: [
+          '{{piratage|J’ai piraté ton ordinateur et ta webcam.}} {{video|J’ai des vidéos de toi très gênantes.}}',
+          'La preuve : {{mdp|ton mot de passe, c’est banquise1987.}}',
+          '{{rancon|Envoie-moi 900 € en cryptomonnaie sous 48 h}}, {{menace|sinon j’envoie tout à tes contacts.}}',
+        ],
+      },
+      prompt: 'Ce pirate a vraiment filmé Panique avec sa webcam.',
+      answer: false,
+      explanation:
+        'Premier conseil officiel : ne panique pas. Ce mail part en masse, à des milliers de personnes : c’est un bluff, pour te faire peur et te faire payer. Les escrocs n’auraient matériellement pas le temps de pirater autant de webcams. Et jusqu’à présent, aucune mise à exécution de ces menaces n’a été démontrée.',
+      notes: [
+        { zone: 'piratage', text: 'Une affirmation, sans la moindre preuve.' },
+        { zone: 'video', text: 'Le même texte part à des milliers de gens.' },
+        { zone: 'rancon', text: 'La rançon : le seul vrai but du message.' },
+        { zone: 'menace', text: 'La menace sert à te faire payer vite, sans réfléchir.' },
+      ],
+      success: 0.74,
+    },
+    {
+      id: 'preuves',
+      kind: 'clues',
+      scene: 'Panique relit le mail en tremblant. Deux détails le persuadent que le pirate dit vrai.',
+      line: 'Comment il peut savoir tout ça ? Il est forcément dans mon ordinateur !',
+      artifact: {
+        kind: 'email',
+        fromName: 'Panique',
+        fromAddress: '{{adresse|panique@banquise-mail.fr}}',
+        subject: '{{objet|Ton ordinateur est sous mon contrôle}}',
+        time: '07:28',
+        body: [
+          '{{piratage|J’ai piraté ton ordinateur et ta webcam.}} {{video|J’ai des vidéos de toi très gênantes.}}',
+          'La preuve : {{mdp|ton mot de passe, c’est banquise1987.}}',
+          '{{rancon|Envoie-moi 900 € en cryptomonnaie sous 48 h}}, {{menace|sinon j’envoie tout à tes contacts.}}',
+        ],
+      },
+      prompt: 'Touche les 2 éléments qui ont l’air de preuves… et n’en sont pas.',
+      pick: 2,
+      answer: ['adresse', 'mdp'],
+      explanation:
+        'Mettre ta propre adresse en expéditeur, c’est facile : ce n’est qu’un affichage, qui s’usurpe sans grandes compétences. Le mot de passe vient sans doute d’une ancienne fuite de données, sur un site où Panique l’avait utilisé. Aucun des deux ne prouve que son ordinateur a été piraté.',
+      notes: [
+        { zone: 'adresse', text: 'Son adresse en expéditeur : un simple affichage, facile à usurper.' },
+        { zone: 'objet', text: 'Un objet qui fait peur, mais ne prouve rien.' },
+        { zone: 'piratage', text: 'Une affirmation, sans la moindre preuve.' },
+        { zone: 'video', text: 'Il ne montre aucune vidéo… et pour cause.' },
+        { zone: 'mdp', text: 'Un mot de passe sans doute récupéré dans une ancienne fuite de données.' },
+        { zone: 'rancon', text: 'La rançon : le seul vrai but du message.' },
+        { zone: 'menace', text: 'La menace sert à te faire payer vite.' },
+      ],
+      success: 0.55,
+    },
+    {
+      id: 'motdepasse',
+      kind: 'choice',
+      scene: 'Panique sort enfin la tête de sous la couette. Un détail le tracasse encore.',
+      line: '« banquise1987 », c’est le mot de passe de tous mes comptes ! Je fais quoi ?',
+      prompt: 'Que doit faire Panique ?',
+      options: [
+        { id: 'payer', text: 'Payer la rançon, pour que le pirate efface tout.' },
+        { id: 'changer', text: 'Changer ce mot de passe partout où il l’utilise.' },
+        { id: 'rien', text: 'Rien : le mail est faux, donc ce mot de passe ne risque rien.' },
+        { id: 'repondre', text: 'Répondre au pirate, pour lui réclamer une preuve.' },
+      ],
+      answer: 'changer',
+      explanation:
+        'Le chantage est un bluff, mais le mot de passe, lui, a bel et bien fuité : d’autres escrocs peuvent s’en servir pour entrer dans tes comptes. Change-le partout où tu l’utilises, avec un mot de passe solide et différent pour chaque compte. Et ne réponds pas au pirate : tu lui confirmerais que ton adresse est active.',
+      success: 0.72,
+    },
+    {
+      id: 'mail',
+      kind: 'choice',
+      scene: 'Mots de passe changés. Reste le mail, qui trône dans la boîte de réception.',
+      line: 'Je le supprime vite fait, comme ça je n’y pense plus ?',
+      prompt: 'Que doit-il faire de ce mail ?',
+      options: [
+        { id: 'signaler', text: 'Le garder, en faire une capture et le signaler sur Signal Spam.' },
+        { id: 'supprimer', text: 'Le supprimer tout de suite, pour ne plus jamais le voir.' },
+        { id: 'repondre', text: 'Répondre qu’il n’a pas de webcam, pour couper court.' },
+        { id: 'payer', text: 'Payer une petite partie de la rançon, pour gagner du temps.' },
+      ],
+      answer: 'signaler',
+      explanation:
+        'Garde des preuves, captures d’écran et mail : elles serviront à signaler cette tentative d’extorsion, voire à porter plainte. Signale le mail sur Signal Spam. Ne réponds pas, et ne paie rien, pas même une partie : tu alimenterais les escrocs.',
+      success: 0.8,
+    },
+    {
+      id: 'ruban',
+      kind: 'truefalse',
+      scene: 'Le soir, Alu passe voir Panique, un rouleau de ruban adhésif à la main.',
+      line: 'Alu veut scotcher ma webcam. Il a déjà scotché son grille-pain, lui…',
+      prompt: 'Masquer sa webcam quand on ne s’en sert pas est une bonne précaution.',
+      answer: true,
+      explanation:
+        'Oui : un simple morceau de ruban adhésif opaque sur l’objectif peut suffire. Ça n’empêche pas les mails de chantage, mais l’objectif ne filme plus rien. Ajoute des mises à jour régulières et un antivirus à jour, et ton ordinateur sera bien mieux protégé.',
+      success: 0.85,
+    },
+  ],
+  moral:
+    'Un mail de chantage à la webcam ? Ne réponds pas et ne paie rien : c’est un bluff envoyé à des milliers de gens. Change le mot de passe cité, garde une capture, et signale le mail sur Signal Spam.',
+  sources: [
+    { label: 'Cybermalveillance.gouv.fr : le chantage à la webcam prétendue piratée', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/chantage-a-lordinateur-ou-a-la-webcam-pretendus-pirates' },
+    { label: 'Cybermalveillance.gouv.fr : les campagnes de chantage à la webcam', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/actualites/campagnes-darnaques-au-chantage-a-la-webcam-pretendue-piratee' },
+  ],
+}

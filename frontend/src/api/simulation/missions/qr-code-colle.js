@@ -1,0 +1,122 @@
+export default {
+  id: 'qr-code-colle',
+  title: 'Le QR code de l’horodateur',
+  theme: 'QR code piégé',
+  guest: 'flat',
+  villain: 'sticker',
+  hook: 'Flapi doit payer son stationnement, vite. Sur l’horodateur, un QR code promet de gagner du temps.',
+  questions: [
+    {
+      id: 'qr',
+      kind: 'trap',
+      scene: '9 h 12. Flapi se gare rue des Pingouins, téléphone à 3 % de batterie. Sur l’horodateur, un QR code promet d’aller vite.',
+      line: 'Parfait, je scanne et je file. Ma batterie ne tiendra pas longtemps.',
+      artifact: {
+        kind: 'qr',
+        place: 'Horodateur, rue des Pingouins',
+        label: '{{appel|Payez plus vite : scannez-moi !}}',
+        caption: '{{colle|Autocollant posé de travers, par-dessus le QR code imprimé}}',
+        url: '{{adresse|https://horodateur-paiement-rapide.info/pingouins}}',
+      },
+      prompt: 'Ce QR code, piège ou pas ?',
+      answer: 'trap',
+      explanation:
+        'Un autocollant posé par-dessus le QR code d’origine, sur un horodateur : c’est exactement le genre de faux QR code que décrit Cybermalveillance.gouv.fr. Comme pour un lien, on vérifie l’adresse avant d’ouvrir : ici, un site inconnu. Au moindre doute, on s’abstient.',
+      notes: [
+        { zone: 'appel', text: 'Une invitation à aller vite : exactement ce que veut l’escroc.' },
+        { zone: 'colle', text: 'Un autocollant posé par-dessus l’original : signal d’alerte.' },
+        { zone: 'adresse', text: 'Avant d’ouvrir, on lit l’adresse : ici, un site inconnu.' },
+      ],
+      success: 0.74,
+    },
+    {
+      id: 'page',
+      kind: 'clues',
+      scene: '9 h 13. Flapi a scanné quand même. Une page de paiement s’ouvre.',
+      line: 'Vite, vite, avant que mon téléphone ne s’éteigne !',
+      artifact: {
+        kind: 'browser',
+        url: '{{adresse|horodateur-paiement-rapide.info/pingouins}}',
+        title: 'Paiement du stationnement',
+        body: [
+          '{{rue|Rue des Pingouins}} · {{tarif|1 h : 2,40 €}}',
+          '{{menace|Payez dans les 5 minutes, sinon une amende vous sera adressée.}}',
+        ],
+        fields: [
+          '{{plaque|Plaque d’immatriculation}}',
+          'Numéro de carte',
+          'Date d’expiration',
+          'Cryptogramme',
+          '{{motdepasse|Mot de passe de votre messagerie}}',
+        ],
+        cta: 'Payer 2,40 €',
+      },
+      prompt: 'Trouve les 3 détails qui trahissent la fausse page.',
+      answer: ['adresse', 'menace', 'motdepasse'],
+      pick: 3,
+      explanation:
+        'Payer son stationnement ne demande jamais le mot de passe de sa messagerie. La menace d’amende sous 5 minutes sert à presser, et l’adresse n’est pas celle d’un service connu. La rue, le tarif et la plaque, eux, figurent sur une vraie page de paiement… et sont faciles à recopier.',
+      notes: [
+        { zone: 'adresse', text: 'Un site inconnu, ouvert depuis un autocollant.' },
+        { zone: 'menace', text: 'Une menace et un chrono : de la pression.' },
+        { zone: 'motdepasse', text: 'Un mot de passe de messagerie pour se garer ? Jamais.' },
+        { zone: 'rue', text: 'La bonne rue : facile à recopier pour l’escroc.' },
+        { zone: 'tarif', text: 'Un tarif crédible, rien d’anormal en soi.' },
+        { zone: 'plaque', text: 'Les vrais services de stationnement la demandent aussi.' },
+      ],
+      success: 0.56,
+    },
+    {
+      id: 'jamais',
+      kind: 'truefalse',
+      scene: '9 h 20. Flapi a fermé la page sans rien saisir. Tonton, au téléphone, est catégorique : « Les QR codes, c’est fini. Plus jamais ! »',
+      line: 'Tonton exagère un peu, non ?',
+      prompt: 'Pour être en sécurité, il faut ne plus jamais scanner de QR code.',
+      answer: false,
+      explanation:
+        'Les faux QR codes existent, mais Cybermalveillance.gouv.fr juge leur développement encore marginal. Pas besoin de tout bannir : comme pour un lien, on vérifie la vraisemblance du QR code et l’adresse qui s’affiche, et on s’abstient au moindre doute.',
+      success: 0.58,
+    },
+    {
+      id: 'payer',
+      kind: 'choice',
+      scene: '9 h 22. Il faut quand même payer le stationnement. La batterie de Flapi descend à 2 %.',
+      line: 'Je veux juste payer mon heure de stationnement, moi !',
+      prompt: 'Comment payer sans risque ?',
+      options: [
+        { id: 'machine', text: 'Directement à l’horodateur, ou avec le moyen officiel indiqué sur la machine.' },
+        { id: 'suivant', text: 'Scanner le QR code de l’horodateur suivant, au bout de la rue.' },
+        { id: 'tonton', text: 'Envoyer le lien à Tonton pour qu’il paie… et le transfère à toute la famille.' },
+        { id: 'mot', text: 'Laisser un mot sur le pare-brise : « Je paierai plus tard. »' },
+      ],
+      answer: 'machine',
+      explanation:
+        'Au moindre doute, on revient au moyen sûr : payer à la machine elle-même, ou passer par le service indiqué par la commune, en tapant soi-même son adresse. Le QR code de l’horodateur suivant peut être piégé de la même façon.',
+      success: 0.82,
+    },
+    {
+      id: 'signaler',
+      kind: 'choice',
+      scene: '9 h 30. Flapi a payé à la machine. Reste le faux site : d’autres vont tomber dessus. Où le signaler ?',
+      line: 'Je ne veux pas que Tonton tombe dans le panneau.',
+      prompt: 'Où signaler l’adresse de ce faux site ?',
+      options: [
+        { id: 'sms', text: 'Au 33700, en y transférant l’adresse du site par SMS.' },
+        { id: 'formulaire', text: 'Dans le formulaire de contact du faux site lui-même.' },
+        { id: 'phishing', text: 'Sur Phishing Initiative, en y copiant l’adresse du site.' },
+        { id: 'personne', text: 'Nulle part : un faux site finit toujours par disparaître.' },
+      ],
+      answer: 'phishing',
+      explanation:
+        'Phishing Initiative, recommandé par Cybermalveillance.gouv.fr, permet de faire bloquer l’adresse d’un site d’hameçonnage. Le 33700, lui, sert à signaler les SMS et les appels frauduleux, pas les sites. Et si Flapi avait saisi sa carte, il faudrait faire opposition tout de suite.',
+      success: 0.5,
+    },
+  ],
+  moral:
+    'Un QR code collé sur un horodateur ou une borne ? Méfiance. Après le scan, lis l’adresse avant de saisir quoi que ce soit. Au moindre doute, paie à la machine. Et jamais de mot de passe de messagerie pour payer.',
+  sources: [
+    { label: 'Cybermalveillance.gouv.fr : le quishing, l’hameçonnage par QR code', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/actualites/quishing-hameconnage-qr-code' },
+    { label: 'Ma Sécurité : déjouer phishing, QR codes et SMS frauduleux', url: 'https://www.masecurite.interieur.gouv.fr/fr/fiches-pratiques/numerique/cyberattaques-comment-dejouer-phishing-qr-codes-sms-frauduleux-spoofing' },
+    { label: 'Cybermalveillance.gouv.fr : que faire en cas d’hameçonnage ?', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/hameconnage-phishing' },
+  ],
+}
