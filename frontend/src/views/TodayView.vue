@@ -3,7 +3,6 @@
 import { ref } from 'vue'
 import EpisodePlayer from '../components/episode/EpisodePlayer.vue'
 import Previously from '../components/episode/Previously.vue'
-import NextEpisode from '../components/episode/NextEpisode.vue'
 import LoadingPanel from '../components/comic/LoadingPanel.vue'
 import ErrorPanel from '../components/comic/ErrorPanel.vue'
 import { getMe, getTodayMission } from '../api/index.js'
@@ -46,13 +45,6 @@ function onFinished() {
         @finished="onFinished"
         @conflict="reload"
       />
-      <NextEpisode v-if="!data.progress.completed && data.next" :next="data.next" class="today-next" />
     </template>
   </div>
 </template>
-
-<style scoped>
-.today-next {
-  margin-top: 12px;
-}
-</style>

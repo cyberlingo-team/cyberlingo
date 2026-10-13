@@ -1,6 +1,7 @@
 <script setup>
 // Une bulle de BD. La queue pointe vers celui qui parle : à gauche, à droite, en bas, ou
-// « down-left » : en bas sur grand écran, à gauche sur téléphone (quand l'image passe à côté).
+// « down-left » : en bas sur grand écran, à gauche sur téléphone (quand l'image passe à côté),
+// « left-down » : à gauche sur grand écran, en bas sur téléphone (quand l'image passe dessous).
 defineProps({
   tail: { type: String, default: 'left' },
   as: { type: String, default: 'div' },
@@ -13,7 +14,7 @@ defineProps({
     <svg v-if="tail !== 'down'" class="balloon-tail balloon-tail--side" viewBox="0 0 30 24" aria-hidden="true">
       <path d="M30 3 C 21 8, 12 14, 1 22 C 13 19, 22 17, 30 15" />
     </svg>
-    <svg v-if="tail === 'down' || tail === 'down-left'" class="balloon-tail balloon-tail--down" viewBox="0 0 24 30" aria-hidden="true">
+    <svg v-if="tail === 'down' || tail === 'down-left' || tail === 'left-down'" class="balloon-tail balloon-tail--down" viewBox="0 0 24 30" aria-hidden="true">
       <path d="M3 0 C 7 11, 7 20, 1 29 C 11 22, 16 13, 18 0" />
     </svg>
   </component>
@@ -59,16 +60,19 @@ defineProps({
   bottom: -25px;
 }
 
-.balloon--down-left .balloon-tail--side {
+.balloon--down-left .balloon-tail--side,
+.balloon--left-down .balloon-tail--down {
   display: none;
 }
 
 @media (max-width: 640px) {
-  .balloon--down-left .balloon-tail--side {
+  .balloon--down-left .balloon-tail--side,
+  .balloon--left-down .balloon-tail--down {
     display: block;
   }
 
-  .balloon--down-left .balloon-tail--down {
+  .balloon--down-left .balloon-tail--down,
+  .balloon--left-down .balloon-tail--side {
     display: none;
   }
 }

@@ -1,7 +1,7 @@
 <script setup>
 // Une case de l'épisode : le récitatif, l'invité qui parle, l'objet à examiner, la question du
 // prof et, une fois la réponse donnée, sa correction.
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import ArtifactView from '../artifacts/ArtifactView.vue'
 import Balloon from '../comic/Balloon.vue'
 import Picture from '../comic/Picture.vue'
@@ -40,17 +40,39 @@ const artifactMode = computed(() => {
   return props.question.kind === 'clues' ? 'pick' : 'read'
 })
 
-// Les annotations du prof, numérotées dans l'ordre où elles apparaissent sur l'objet.
+// L'ordre de lecture des zones, tel qu'il s'affiche (dans un mail, l'objet passe avant
+// l'expéditeur, quel que soit l'ordre des champs). Lu sur la page une fois la correction posée.
+const artifactView = ref(null)
+const readingOrder = ref([])
+
+watch(
+  () => props.revealed,
+  async (revealed) => {
+    if (!revealed) return
+    await nextTick()
+    const root = artifactView.value?.$el
+    if (!root) return
+    readingOrder.value = [...new Set([...root.querySelectorAll('[data-zone]')].map((el) => el.dataset.zone))]
+  },
+  { immediate: true },
+)
+
+// Les annotations du prof, numérotées dans l'ordre où elles apparaissent sur l'objet. Au stylo
+// bleu (« good ») : ce qui rassure, c'est-à-dire un détail qui n'était pas un indice, ou tout ce
+// que le prof relève sur un message fiable.
 const notes = computed(() => {
   if (!props.revealed) return []
-  const order = zonesOf(props.question.artifact)
+  const { kind } = props.question
+  const order = readingOrder.value.length ? readingOrder.value : zonesOf(props.question.artifact)
+  const rank = (zone) => (order.includes(zone) ? order.indexOf(zone) : order.length)
   const solution = Array.isArray(props.revealed.solution) ? props.revealed.solution : []
+  const isGood = (zone) => (kind === 'clues' && !solution.includes(zone)) || (kind === 'trap' && props.revealed.solution === 'safe')
   return [...props.revealed.notes]
-    .sort((a, b) => order.indexOf(a.zone) - order.indexOf(b.zone))
-    .map((note, i) => ({ ...note, number: i + 1, good: props.question.kind === 'clues' && !solution.includes(note.zone) }))
+    .sort((a, b) => rank(a.zone) - rank(b.zone))
+    .map((note, i) => ({ ...note, number: i + 1, good: isGood(note.zone) }))
 })
 
-const noteNumbers = computed(() => Object.fromEntries(notes.value.map((note) => [note.zone, note.number])))
+const marks = computed(() => Object.fromEntries(notes.value.map((note) => [note.zone, { number: note.number, good: note.good }])))
 
 const stamp = computed(() => {
   if (!props.revealed || props.question.kind !== 'trap') return null
@@ -104,11 +126,12 @@ function onFull() {
 
         <div v-if="question.artifact" class="case-object">
           <ArtifactView
+            ref="artifactView"
             v-model:selected="selectedZones"
             :artifact="question.artifact"
             :mode="artifactMode"
             :pick="question.pick || 0"
-            :note-numbers="noteNumbers"
+            :marks="marks"
             :solution="question.kind === 'clues' && revealed ? revealed.solution : null"
             :picked="question.kind === 'clues' && revealed ? revealed.answer : null"
             :guest-name="guest.name"
@@ -220,12 +243,14 @@ function onFull() {
   transform: rotate(-0.5deg);
 }
 
+/* Le tampon tombe dans le coin du document, comme sur un courrier traité : l'encre laisse
+   voir ce qu'il y a dessous. */
 .case-stamp {
   position: absolute;
-  top: 34%;
-  left: 50%;
-  translate: -50% 0;
-  font-size: clamp(2rem, 9vw, 3rem);
+  right: -6px;
+  bottom: -14px;
+  font-size: clamp(1.7rem, 7vw, 2.6rem);
+  mix-blend-mode: multiply;
   pointer-events: none;
   z-index: 2;
 }

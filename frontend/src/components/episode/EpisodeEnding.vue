@@ -198,7 +198,7 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
 
       <!-- L'invité sans compte -->
       <section v-if="result.mode === 'guest'" class="guest panel" aria-labelledby="guest-title">
-        <Picture class="guest-egg" :image="sceneImage('egg')" alt="Un œuf coiffé d’une toque, qui commence à se fendre." />
+        <Picture class="guest-egg" :image="sceneImage('egg')" alt="Un œuf coiffé d’une toque, qui commence à se fendre." eager />
         <div class="guest-text">
           <h3 id="guest-title" class="guest-title">Ton Tux attend dans son œuf.</h3>
           <p>
@@ -553,24 +553,45 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
 
 @media (max-width: 560px) {
   .unmask,
-  .unmask--none,
-  .guest {
+  .unmask--none {
     grid-template-columns: 1fr;
     justify-items: center;
+  }
+
+  /* L'œuf se pose à côté du titre ; le reste passe dessous, sur toute la largeur. */
+  .guest {
+    grid-template-columns: 84px 1fr;
+    justify-items: start;
+    row-gap: 12px;
+  }
+
+  .guest-text {
+    display: contents;
+  }
+
+  .guest-egg {
+    grid-row: 1;
+  }
+
+  .guest-title {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .guest-text > :not(.guest-title) {
+    grid-column: 1 / -1;
   }
 
   .unmask-image {
     max-height: 240px;
   }
 
-  .unmask-text,
-  .guest-text {
+  .unmask-text {
     justify-items: start;
     width: 100%;
   }
 
-  .unmask-prof,
-  .guest-egg {
+  .unmask-prof {
     max-width: 150px;
   }
 

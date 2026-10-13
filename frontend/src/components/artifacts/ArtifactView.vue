@@ -47,7 +47,8 @@ const props = defineProps({
   mode: { type: String, default: 'read' },
   selected: { type: Array, default: () => [] },
   pick: { type: Number, default: 0 },
-  noteNumbers: { type: Object, default: () => ({}) },
+  // Les annotations du prof, par zone : { numéro, good }. « good » : un détail rassurant, au stylo bleu.
+  marks: { type: Object, default: () => ({}) },
   // Pour la correction d'une question à indices : les bonnes zones et celles touchées.
   solution: { type: Array, default: null },
   picked: { type: Array, default: null },
@@ -64,18 +65,32 @@ provide('zones', {
     else if (props.selected.length < props.pick) emit('update:selected', [...props.selected, zone])
     else emit('full')
   },
-  noteNumber: (zone) => props.noteNumbers[zone] || null,
+  noteNumber: (zone) => props.marks[zone]?.number || null,
+  // La correction, comme sur une copie : le choix du joueur reste surligné, le prof entoure les
+  // vrais indices en rouge, les détails rassurants en bleu, et barre les choix qui n'en étaient pas.
   classFor(zone) {
     const classes = []
-    if (props.noteNumbers[zone]) classes.push('zone--noted')
+    const mark = props.marks[zone]
+    if (mark) classes.push('zone--noted', mark.good ? 'zone--good' : 'zone--bad')
     if (props.solution && props.picked) {
-      const right = props.solution.includes(zone)
-      const touched = props.picked.includes(zone)
-      if (touched && right) classes.push('zone--found')
-      else if (touched) classes.push('zone--wrong')
-      else if (right) classes.push('zone--missed')
+      const clue = props.solution.includes(zone)
+      if (clue) classes.push('zone--bad')
+      if (props.picked.includes(zone)) classes.push(clue ? 'zone--picked' : 'zone--picked zone--wrong')
     }
     return classes
+  },
+  // Ce que la correction montre d'une zone, dit en toutes lettres pour les lecteurs d'écran.
+  describe(zone) {
+    const parts = []
+    const mark = props.marks[zone]
+    if (mark) parts.push(`annotation ${mark.number}`)
+    if (props.solution && props.picked) {
+      const clue = props.solution.includes(zone)
+      const touched = props.picked.includes(zone)
+      if (clue) parts.push(touched ? 'vrai indice, trouvé' : 'vrai indice')
+      else if (touched) parts.push('pas un indice')
+    }
+    return parts.join(', ')
   },
 })
 
@@ -129,60 +144,49 @@ const label = computed(() => LABELS[props.artifact.kind] || 'Document')
   box-shadow: 0 0 0 2px var(--ink);
 }
 
-/* La correction au stylo rouge. */
-.artifact .zone--noted {
-  position: relative;
+/* La correction au stylo : rouge pour ce qui trahit l'arnaque, bleu pour ce qui rassure. */
+.artifact .zone--bad,
+.artifact .zone--good {
   padding: 0.05em 0.25em;
   border-radius: 0.9em 0.7em 1em 0.6em;
-  box-shadow: 0 0 0 2px var(--alert);
+  box-shadow: 0 0 0 2px var(--pen, var(--alert));
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
 
-.artifact .zone--noted::after {
+.artifact .zone--good {
+  --pen: var(--toque);
+}
+
+/* Le numéro de l'annotation, écrit devant le passage, comme dans la marge d'une copie. */
+.artifact .zone--noted::before {
   content: attr(data-note);
-  position: absolute;
-  top: -0.95em;
-  right: -0.8em;
-  z-index: 1;
-  display: grid;
+  display: inline-grid;
   place-items: center;
-  width: 1.45em;
-  height: 1.45em;
+  width: 1.35em;
+  height: 1.35em;
+  margin-right: 0.3em;
+  vertical-align: 0.08em;
   font-family: var(--font-title);
-  font-size: 0.78rem;
+  font-size: 0.74em;
   font-weight: 800;
+  font-style: normal;
   line-height: 1;
+  text-decoration: none;
   color: var(--paper);
-  background: var(--alert);
+  background: var(--pen, var(--alert));
   border-radius: 50%;
 }
 
-.artifact .zone--found {
+/* Le choix du joueur garde son surligneur jaune. */
+.artifact .zone--picked {
   color: var(--ink);
-  background: var(--toque-pale);
-  box-shadow: 0 0 0 2px var(--toque);
-}
-
-.artifact .zone--found.zone--noted {
-  box-shadow: 0 0 0 2px var(--toque);
-}
-
-.artifact .zone--found.zone--noted::after {
-  background: var(--toque);
+  background: var(--caption);
 }
 
 .artifact .zone--wrong {
-  color: var(--ink);
   text-decoration: line-through;
   text-decoration-color: var(--alert);
   text-decoration-thickness: 2px;
-  background: var(--alert-pale);
-}
-
-.artifact .zone--missed {
-  color: var(--ink);
-  box-shadow: 0 0 0 2px var(--alert);
-  background: var(--caption-pale);
 }
 </style>
