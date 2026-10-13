@@ -92,7 +92,7 @@ export async function handle(method, url, body) {
   const params = Object.fromEntries(found.keys.map((key, i) => [key, decodeURIComponent(match[i + 1])]))
   const db = load()
   const context = { db, today: currentDate(), params, query: searchParams, body: body ?? {} }
-  seedDemoAccounts(db)
+  seedDemoAccounts(db, context.today)
   try {
     const result = found.handler(context)
     save(db)
@@ -114,9 +114,15 @@ function error(status, code, message, fields) {
 // ---------------------------------------------------------------------------------------
 // Comptes
 
-function seedDemoAccounts(db) {
-  if (db.seeded) return
+// Les comptes de démonstration repartent chaque jour de leur état de départ. Leur passé est
+// recalculé à partir de la date du jour (players.js) : ce qu'on y a joué les jours précédents ne
+// s'accorderait plus avec lui (la série perdue d'hier redeviendrait une série de dix jours).
+function seedDemoAccounts(db, today) {
+  if (db.seeded === today) return
+  for (const [key, account] of Object.entries(db.accounts)) if (account.seed) delete db.accounts[key]
   for (const demo of DEMO_ACCOUNTS) {
+    // Un joueur a pu prendre ce pseudo après avoir supprimé le compte de démonstration : il le garde.
+    if (db.accounts[demo.username.toLowerCase()]) continue
     const salt = `demo-${demo.username}`
     db.accounts[demo.username.toLowerCase()] = {
       username: demo.username,
@@ -128,7 +134,9 @@ function seedDemoAccounts(db) {
       practice: {},
     }
   }
-  db.seeded = true
+  // Un compte de démonstration renommé hier n'existe plus : sa session non plus.
+  if (db.session.username && !db.accounts[db.session.username.toLowerCase()]) db.session.username = null
+  db.seeded = today
 }
 
 function randomSalt() {

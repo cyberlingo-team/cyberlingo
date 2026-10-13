@@ -515,6 +515,9 @@ quel que soit le jour où l'on tourne la vidéo. Le contenu des épisodes
 | `malo.dlt` | la série perdue : il n'a pas joué hier |
 | `Capitaine_des_mots_de_passe_42` | le pseudo de 30 caractères, au dernier stade, épisode du jour déjà joué |
 
+Ils repartent chaque jour de cet état : leur passé se recale sur la date, et ce qu'on a joué avec
+eux les jours précédents est effacé. Les comptes créés dans le navigateur, eux, gardent tout.
+
 **Modes**, à ajouter à n'importe quelle adresse (ils valent pour tout l'onglet) :
 
 - `?simulation=lent` : chaque requête prend deux à trois secondes (écrans de chargement) ;

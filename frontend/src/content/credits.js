@@ -13,14 +13,14 @@ export const LICENSES = {
 }
 
 const CROPPED = 'Modifiée pour le site : marges recadrées, convertie en WebP.'
-const VECTOR = 'Modifiée pour le site : dessin vectoriel converti en image, marges recadrées, converti en WebP.'
+const VECTOR = 'Modifiée pour le site : dessin vectoriel converti en image, marges recadrées, convertie en WebP.'
 
 // La bande à Tux : un fichier de design/site/matiere/famille/ par personnage.
 export const GANG_CREDITS = [
   {
     id: 'gaucho',
     title: 'Tuxgaucho',
-    authors: 'dessin de Vinicius Stein, mise au propre de David Vignoni',
+    byline: 'Dessin de Vinicius Stein, mise au propre de David Vignoni.',
     license: 'Licence Art Libre',
     source: 'https://commons.wikimedia.org/wiki/File:Tuxgaucho.png',
     changes: 'Modifiée pour le site : convertie en WebP.',
@@ -28,7 +28,7 @@ export const GANG_CREDITS = [
   {
     id: 'panic',
     title: 'LinuxPanic Logo',
-    authors: 'LinuxPanic',
+    byline: 'Par LinuxPanic.',
     license: 'CC BY-SA 4.0',
     source: 'https://commons.wikimedia.org/wiki/File:LinuxPanic_Logo.png',
     changes: CROPPED,
@@ -36,7 +36,7 @@ export const GANG_CREDITS = [
   {
     id: 'ball-and-chain',
     title: 'Projet mascotte JREL',
-    authors: 'Lilyu',
+    byline: 'Par Lilyu.',
     license: 'WTFPL',
     source: 'https://commons.wikimedia.org/wiki/File:Projet_mascotte_JREL.png',
     changes: CROPPED,
@@ -44,7 +44,7 @@ export const GANG_CREDITS = [
   {
     id: 'pipe',
     title: 'Slackware mascot',
-    authors: 'source http://www.slackware.com/~msimons/slackware/grfx/',
+    byline: 'Auteur non indiqué. Source : http://www.slackware.com/~msimons/slackware/grfx/',
     license: 'usage libre (copyrighted free use)',
     source: 'https://commons.wikimedia.org/wiki/File:Slackware-mascot.svg',
     changes: VECTOR,
@@ -52,7 +52,7 @@ export const GANG_CREDITS = [
   {
     id: 'tinfoil-hat',
     title: 'Tinfoil Hat Linux',
-    authors: 'Ryan Reich (Wikipédia en anglais)',
+    byline: 'Par Ryan Reich (Wikipédia en anglais).',
     license: 'licence BSD',
     source: 'https://commons.wikimedia.org/wiki/File:Tinfoillinux.jpg',
     changes:
@@ -61,7 +61,7 @@ export const GANG_CREDITS = [
   {
     id: 'hard-hat',
     title: 'Gulcrtux',
-    authors: 'd’après Tux de Larry Ewing (lewing@isc.tamu.edu) et The GIMP',
+    byline: 'D’après Tux de Larry Ewing (lewing@isc.tamu.edu) et The GIMP.',
     license: 'libre, mention des auteurs',
     source: 'https://commons.wikimedia.org/wiki/File:Gulcrtux.png',
     changes: CROPPED,
@@ -69,7 +69,7 @@ export const GANG_CREDITS = [
   {
     id: 'server-rack',
     title: 'Cirpack LINUX tux 2',
-    authors: 'nlebihan',
+    byline: 'Par nlebihan.',
     license: 'domaine public',
     source: 'https://commons.wikimedia.org/wiki/File:Cirpack_LINUX_tux_2.png',
     changes: 'Modifiée pour le site : parties transparentes du ventre remplies de blanc, convertie en WebP.',
@@ -77,7 +77,7 @@ export const GANG_CREDITS = [
   {
     id: 'floppy',
     title: 'Logiciels Libres Copy Left',
-    authors: 'Ponsfrilus (Wikipédia en français)',
+    byline: 'Par Ponsfrilus (Wikipédia en français).',
     license: 'domaine public',
     source: 'https://commons.wikimedia.org/wiki/File:Logiciels_Libres_Copy_Left.png',
     changes: CROPPED,
@@ -85,7 +85,7 @@ export const GANG_CREDITS = [
   {
     id: 'remote',
     title: 'Tux holding remote',
-    authors: 'Cyphermox',
+    byline: 'Par Cyphermox.',
     license: 'CC BY-SA 3.0',
     source: 'https://commons.wikimedia.org/wiki/File:Tux-holding-remote.png',
     changes: CROPPED,
@@ -93,7 +93,7 @@ export const GANG_CREDITS = [
   {
     id: 'styrian-hat',
     title: 'Logo der Grazer Linuxtage (Steirertux)',
-    authors: 'Florian Klien',
+    byline: 'Par Florian Klien.',
     license: 'CC BY-SA 4.0',
     source: 'https://commons.wikimedia.org/wiki/File:Logo_der_Grazer_Linuxtage_(Steirertux).svg',
     changes: VECTOR,
@@ -101,7 +101,7 @@ export const GANG_CREDITS = [
   {
     id: 'classic',
     title: 'Tux3color',
-    authors: 'Larry Ewing, Simon Budig, Garrett LeSage',
+    byline: 'Par Larry Ewing, Simon Budig et Garrett LeSage.',
     license: 'CC0 (domaine public)',
     source: 'https://commons.wikimedia.org/wiki/File:Tux3color.webp',
     changes: 'Modifiée pour le site : marges recadrées, réduite.',
@@ -109,7 +109,7 @@ export const GANG_CREDITS = [
   {
     id: 'flat',
     title: 'Tux Classic flat look 3D',
-    authors: 'Larry Ewing, Sergey Smith (FoxyRiot)',
+    byline: 'Par Larry Ewing et Sergey Smith (FoxyRiot).',
     license: 'libre, mention des auteurs',
     source: 'https://commons.wikimedia.org/wiki/File:Tux_Classic_flat_look_3D.svg',
     changes: VECTOR,
@@ -119,29 +119,29 @@ export const GANG_CREDITS = [
 // Les images créées pour CyberLingo pendant la construction du site.
 export const CREATED_IMAGES = [
   'Tux le prof à la loupe, la main sur le front, en pleine lecture, perdu, et débranché',
-  'l’œuf du joueur qui n’a pas encore de compte',
+  'L’œuf du joueur qui n’a pas encore de compte',
   'Léopold sans déguisement, Léopold démasqué, et ses onze déguisements : pêcheur, livreur, conseiller bancaire, technicien, séducteur, grand patron, vendeur, faux agent officiel, faux proche, serveur de café, colleur d’autocollants',
 ]
 
 export const FONTS = [
   {
     name: 'Anybody',
-    use: 'titres, logo et pseudos musclés',
+    use: 'les titres, le logo et les pseudos musclés',
     copyright: 'Copyright 2020 The Anybody Project Authors',
     source: 'https://github.com/Etcetera-Type-Co/Anybody',
   },
   {
     name: 'Playpen Sans',
-    use: 'bulles, récitatifs et texte courant',
+    use: 'les bulles, les récitatifs et le texte courant',
     copyright: 'Copyright 2023 The Playpen Sans Project Authors',
     source: 'https://github.com/TypeTogether/Playpen-Sans',
   },
 ]
 
 export const SOURCES = [
-  { name: 'ANSSI', url: 'https://cyber.gouv.fr/' },
-  { name: 'CNIL', url: 'https://www.cnil.fr/' },
-  { name: 'Cybermalveillance.gouv.fr', url: 'https://www.cybermalveillance.gouv.fr/' },
+  { name: 'ANSSI', of: 'de l’', url: 'https://cyber.gouv.fr/' },
+  { name: 'CNIL', of: 'de la ', url: 'https://www.cnil.fr/' },
+  { name: 'Cybermalveillance.gouv.fr', of: 'de ', url: 'https://www.cybermalveillance.gouv.fr/' },
 ]
 
 export const TEAM = ['Alexis Briend', 'Théophane Chollet', 'Mathéo Depuydt', 'Benjamin Sarrat']
