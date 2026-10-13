@@ -19,13 +19,17 @@ sortie=$(realpath -m "$1"); desc=$2; shift 2
 refs=("$@")
 [ ${#refs[@]} -eq 0 ] && refs=("$MATIERE/progression/1.png" "$MATIERE/progression/4.png")
 
+# Le verrou évite que deux appels parallèles lisent le même compte.
 compteur="$OUTILS/.images"
+exec 9>"$compteur.verrou"
+flock 9
 n=$(( $(cat "$compteur" 2>/dev/null || echo 0) + 1 ))
 if [ "$n" -gt "$MAX" ]; then
   echo "Plafond atteint : $MAX images générées pendant cette session."
   exit 1
 fi
 echo "$n" > "$compteur"
+flock -u 9
 
 # Codex tourne en lecture seule dans un dossier jetable ; l'image qu'il produit est rangée dans
 # ~/.codex/generated_images, d'où on la recopie.
