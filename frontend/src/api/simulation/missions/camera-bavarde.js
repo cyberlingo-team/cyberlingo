@@ -1,0 +1,135 @@
+export default {
+  id: 'camera-bavarde',
+  title: 'Qui surveille qui ?',
+  theme: 'Objets connectés',
+  guest: 'tinfoil-hat',
+  villain: null,
+  hook: 'Alu se méfie de son grille-pain. Alors il installe une caméra connectée pour le surveiller.',
+  questions: [
+    {
+      id: 'code-usine',
+      kind: 'choice',
+      scene: '10 h 00. Alu déballe sa caméra Vigie-Glaçon. Dans la boîte, un petit guide de démarrage.',
+      line: 'Je me méfie de tout… sauf de ma caméra. Et 0000, c’est facile à retenir !',
+      artifact: {
+        kind: 'note',
+        style: 'paper',
+        title: 'Vigie-Glaçon : démarrage rapide',
+        lines: [
+          '1. Branchez la caméra et installez l’appli Vigie-Glaçon.',
+          '2. {{code|Code d’accès par défaut : 0000}}',
+          '3. {{plus-tard|Vous pourrez changer ce code plus tard dans les réglages.}}',
+        ],
+      },
+      prompt: 'Que doit faire Alu avec ce code 0000 ?',
+      options: [
+        { id: 'garder', text: 'Le garder : personne d’autre qu’Alu ne connaît ce code.' },
+        { id: 'plus-tard', text: 'Le changer plus tard, quand il aura un moment.' },
+        { id: 'alu', text: 'Envelopper la caméra dans du papier d’aluminium, par précaution.' },
+        { id: 'changer', text: 'Le remplacer tout de suite par un mot de passe long et unique.' },
+      ],
+      answer: 'changer',
+      explanation:
+        'Les codes d’usine sont généralement trop faibles, faciles à deviner ou connus de tous : 0000 en est le parfait exemple. Cybermalveillance.gouv.fr conseille de changer le mot de passe par défaut dès la première utilisation, avec un mot de passe long et complexe. « Plus tard », c’est souvent jamais.',
+      notes: [
+        { zone: 'code', text: 'Un code d’usine, facile à deviner : à changer avant tout.' },
+        { zone: 'plus-tard', text: 'Le bon moment, c’est dès la première utilisation.' },
+      ],
+      success: 0.8,
+    },
+    {
+      id: 'compte',
+      kind: 'clues',
+      scene: '10 h 15. L’appli de la caméra demande de créer un compte. Alu remplit tout, sans rien sauter.',
+      line: 'Ils veulent tout savoir… Bah, c’est pour ma sécurité, après tout !',
+      artifact: {
+        kind: 'app',
+        app: 'Vigie-Glaçon',
+        title: 'Créer mon compte',
+        body: [
+          '{{nom|Prénom et nom : Alu Papillote}}',
+          '{{naissance|Date de naissance : 14/03/1987}}',
+          '{{langue|Langue : français}}',
+          '{{partage|Publier mes vidéos sur mes réseaux sociaux : automatique}}',
+          '{{fuseau|Fuseau horaire : Paris}}',
+          '{{qualite|Qualité vidéo : HD}}',
+        ],
+        buttons: ['Créer mon compte'],
+      },
+      prompt: 'Touche les 3 champs qu’Alu aurait dû remplir autrement.',
+      pick: 3,
+      answer: ['nom', 'naissance', 'partage'],
+      explanation:
+        'Pour le compte d’un objet connecté, on donne le minimum : un pseudonyme plutôt que son vrai nom, et une date de naissance approximative si un âge est demandé. Le partage automatique vers les réseaux sociaux se désactive quand on n’en a pas besoin : ce sont les images de son salon !',
+      notes: [
+        { zone: 'nom', text: 'Un pseudonyme suffit : la caméra n’a pas besoin de son vrai nom.' },
+        { zone: 'naissance', text: 'Si un âge est demandé, une date approximative suffit, comme un 1er janvier.' },
+        { zone: 'partage', text: 'Les images de son salon, publiées toutes seules : à désactiver.' },
+        { zone: 'langue', text: 'La langue de l’appli : aucun risque.' },
+      ],
+      success: 0.61,
+    },
+    {
+      id: 'mise-a-jour',
+      kind: 'choice',
+      scene: 'Trois semaines plus tard. L’appli Vigie-Glaçon affiche une notification.',
+      line: 'Une mise à jour ? Encore un coup pour m’espionner, ça…',
+      artifact: {
+        kind: 'app',
+        app: 'Vigie-Glaçon',
+        title: 'Mise à jour disponible',
+        body: [
+          '{{version|Logiciel de la caméra : version 2.4.1}}',
+          '{{correctif|Corrige une faille de sécurité.}}',
+          'La caméra redémarrera pendant l’installation.',
+        ],
+        buttons: ['Plus tard', 'Installer'],
+      },
+      prompt: 'Que doit faire Alu ?',
+      options: [
+        { id: 'refuser', text: 'Refuser : une mise à jour, c’est peut-être un mouchard.' },
+        { id: 'installer', text: 'L’installer : elle corrige une faille de la caméra.' },
+        { id: 'ailleurs', text: 'Chercher cette mise à jour sur un site de téléchargement, pour comparer.' },
+      ],
+      answer: 'installer',
+      explanation:
+        'Cette mise à jour arrive par l’appli officielle de la caméra, pas par un site inconnu, et elle corrige une faille : à installer sans tarder. Sinon, des pirates pourraient se servir de cette faille pour prendre le contrôle de la caméra. Et si l’appareil le permet, mieux vaut activer l’installation automatique des mises à jour.',
+      notes: [{ zone: 'correctif', text: 'Une faille corrigée : raison suffisante pour installer.' }],
+      success: 0.76,
+    },
+    {
+      id: 'pyjama',
+      kind: 'truefalse',
+      scene: '20 h 00. Alu est rentré. La caméra filme toujours le salon… et Alu, en pyjama, qui surveille son grille-pain.',
+      line: 'Elle me filme, moi ? Mais c’est moi qui surveille, normalement !',
+      prompt: 'Quand Alu est chez lui, sa caméra peut rester allumée sans aucun risque.',
+      answer: false,
+      explanation:
+        'Allumée, la caméra continue de capter des images, même quand personne n’en a besoin. Cybermalveillance.gouv.fr et la CNIL conseillent d’éteindre ou de déconnecter un objet connecté quand il ne sert pas : moins de risques de piratage et de fuite de données. Alu la rallumera en partant.',
+      success: 0.7,
+    },
+    {
+      id: 'revente',
+      kind: 'choice',
+      scene: 'Six mois plus tard. Alu a changé d’avis : il revend la caméra sur un site de petites annonces.',
+      line: 'Je la remets dans sa boîte, et hop, au suivant !',
+      prompt: 'Que doit-il faire avant de l’envoyer ?',
+      options: [
+        { id: 'appli', text: 'Supprimer l’appli de son téléphone : la caméra ne sera plus liée à lui.' },
+        { id: 'boite', text: 'Rien de spécial, du moment qu’elle est dans sa boîte d’origine.' },
+        { id: 'reinitialiser', text: 'Effacer ses données, supprimer son compte et la réinitialiser.' },
+        { id: 'nuit', text: 'La débrancher une nuit entière pour qu’elle oublie tout.' },
+      ],
+      answer: 'reinitialiser',
+      explanation:
+        'La caméra peut garder des vidéos, le lien vers le compte d’Alu et même le mot de passe de son Wi-Fi. Avant de s’en séparer : effacer les données, supprimer le compte en ligne et les liens avec les réseaux sociaux, puis la remettre en configuration d’usine. Supprimer l’appli du téléphone ne suffit pas : le compte, lui, existe toujours.',
+      success: 0.68,
+    },
+  ],
+  moral:
+    'Objet connecté : change son mot de passe dès le déballage, installe ses mises à jour, donne le minimum d’informations, éteins-le quand il ne sert pas, et réinitialise-le avant de t’en séparer.',
+  sources: [
+    { label: 'Cybermalveillance.gouv.fr : la sécurité des objets connectés', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/securite-objets-connectes-iot' },
+    { label: 'CNIL : objets connectés, n’oubliez pas de les sécuriser', url: 'https://www.cnil.fr/fr/objets-connectes-noubliez-pas-de-les-securiser' },
+  ],
+}

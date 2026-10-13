@@ -14,8 +14,9 @@ export const DEMO_PASSWORD = 'banquise-sardine-parapluie'
 // Comptes de démonstration dans lesquels on peut se connecter. Chacun montre un état de
 // l'interface.
 export const DEMO_ACCOUNTS = [
-  // L'habitué : une série en cours, la mission du jour pas encore faite.
-  { username: 'sacha_31', joinedDaysAgo: 24, skill: 0.74, missedDaysAgo: [21, 17, 12], playsToday: false },
+  // L'habitué : une série en cours, la mission du jour pas encore faite. Il arrive juste sous
+  // le stade Balèze (1 050 points) : l'épisode du jour, même raté, fait grandir son Tux.
+  { username: 'sacha_31', joinedDaysAgo: 24, skill: 0.74, missedDaysAgo: [21, 17, 12], playsToday: false, targetPoints: 1039 },
   // La série perdue : neuf jours d'affilée, puis plus rien hier.
   { username: 'malo.dlt', joinedDaysAgo: 19, skill: 0.68, missedDaysAgo: [18, 16, 15, 13, 12, 11, 1], playsToday: false },
   // Le colosse au pseudo de trente caractères, qui a déjà fait la mission du jour.
@@ -51,6 +52,38 @@ function scoreHistory(days) {
   return results
 }
 
+const totalPoints = (days) => Object.values(scoreHistory(days)).reduce((total, result) => total + result.points, 0)
+
+// Les missions changent avec la date, donc les points d'un compte aussi. Pour qu'il arrive au
+// jour J avec à peine moins de `target` points, on bascule quelques réponses anciennes, une
+// par jour et par passage, sans jamais créer de sans-faute (qui rapporterait 20 points d'un coup).
+function calibrate(days, target) {
+  // La question basculée change d'un jour à l'autre, pour ne pas toujours viser la première.
+  const pickFlag = (day, value, turn) => {
+    const indexes = day.flags.flatMap((flag, i) => (flag === value ? [i] : []))
+    return indexes.length ? indexes[turn % indexes.length] : -1
+  }
+  let total = totalPoints(days)
+  for (let pass = 0; pass < 5 && total - target > 0; pass++) {
+    days.forEach((day, d) => {
+      const i = pickFlag(day, true, pass + d)
+      if (total - target <= 0 || i < 0) return
+      day.flags[i] = false
+      day.correct--
+      total = totalPoints(days)
+    })
+  }
+  for (let pass = 0; pass < 5 && target - total >= 10; pass++) {
+    days.forEach((day, d) => {
+      const i = pickFlag(day, false, pass + d)
+      if (target - total < 10 || i < 0 || day.correct >= day.total - 1) return
+      day.flags[i] = true
+      day.correct++
+      total = totalPoints(days)
+    })
+  }
+}
+
 function demoPlayer(account, today) {
   const random = createRandom(`demo:${account.username}`)
   const days = []
@@ -60,6 +93,7 @@ function demoPlayer(account, today) {
     const date = addDays(today, -ago)
     days.push({ date, ...playMission(random, date, account.skill) })
   }
+  if (account.targetPoints) calibrate(days, account.targetPoints)
   return {
     username: account.username,
     createdAt: addDays(today, -account.joinedDaysAgo),

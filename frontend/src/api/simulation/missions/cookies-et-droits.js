@@ -1,0 +1,130 @@
+export default {
+  id: 'cookies-et-droits',
+  title: 'Tout accepter, vraiment ?',
+  theme: 'Cookies et données perso',
+  guest: 'gaucho',
+  villain: null,
+  hook: 'Gaucho clique sur « Tout accepter » plus vite que son ombre. Aujourd’hui, il se pose des questions.',
+  questions: [
+    {
+      id: 'bandeau',
+      kind: 'choice',
+      scene: '7 h 45. Gaucho ouvre Le Petit Manchot, son journal en ligne. Un bandeau lui barre la route.',
+      line: 'Je ne veux pas de pub ciblée… mais je veux lire mon journal !',
+      artifact: {
+        kind: 'popup',
+        title: 'Le Petit Manchot et ses partenaires utilisent des cookies',
+        body: [
+          '{{finalites|Mesure d’audience, publicité personnalisée, partage sur les réseaux sociaux.}}',
+          '{{retrait|Vous pouvez changer d’avis à tout moment via « Gérer mes cookies ».}}',
+        ],
+        buttons: ['{{refuser|Tout refuser}}', '{{accepter|Tout accepter}}', 'Personnaliser'],
+      },
+      prompt: 'Que doit faire Gaucho ?',
+      options: [
+        { id: 'accepter', text: 'Cliquer sur « Tout accepter » : sinon, le site risque de ne pas marcher.' },
+        { id: 'refuser', text: 'Cliquer sur « Tout refuser » : ce bouton est là exactement pour ça.' },
+        { id: 'fermer', text: 'Fermer le journal pour toujours : on ne peut pas dire non.' },
+        { id: 'experts', text: 'Rien : refuser les cookies, c’est réservé aux informaticiens.' },
+      ],
+      answer: 'refuser',
+      explanation:
+        'Le bouton « Tout refuser » est fait pour ça. La CNIL demande que refuser soit aussi simple qu’accepter : un bouton « Tout refuser » au même niveau et sous la même forme que « Tout accepter » en est un moyen clair et simple. Tout accepter sans lire, c’est dire oui aussi à la publicité ciblée.',
+      notes: [
+        { zone: 'refuser', text: 'Au même niveau que « Tout accepter » : refuser doit être aussi simple.' },
+        { zone: 'finalites', text: 'À quoi servent les cookies : ici, entre autres, à la publicité ciblée.' },
+      ],
+      success: 0.82,
+    },
+    {
+      id: 'silence',
+      kind: 'truefalse',
+      scene: '12 h 30. Sur un site de recettes, Gaucho fait défiler la page sans toucher au bandeau des cookies.',
+      line: 'Je n’ai rien cliqué… Alors j’ai tout accepté sans le vouloir ?',
+      prompt: 'Continuer à naviguer sans rien cliquer, c’est refuser les cookies.',
+      answer: true,
+      explanation:
+        'Pour la CNIL, accepter demande un geste clair, comme un clic sur « Tout accepter ». Continuer à naviguer sans rien cliquer doit être compris comme un refus : les cookies qui ont besoin de son accord ne peuvent pas être déposés. Certains cookies indispensables, comme celui du panier d’achat, n’ont pas besoin d’accord.',
+      success: 0.47,
+    },
+    {
+      id: 'regret',
+      kind: 'truefalse',
+      scene: '19 h 00. Gaucho regrette d’avoir tout accepté sur Bottes du Grand Nord, la boutique où il achète ses bottes.',
+      line: 'Trop tard, j’ai dit oui à tout. On ne peut plus revenir en arrière, hein ?',
+      artifact: {
+        kind: 'browser',
+        url: 'bottes-grand-nord.fr',
+        title: 'Bottes du Grand Nord',
+        body: [
+          'Nouvelle collection : les bottes fourrées sont arrivées !',
+          'Mentions légales · Confidentialité · {{gerer|Gérer mes cookies}}',
+        ],
+      },
+      prompt: 'Une fois les cookies acceptés, impossible de changer d’avis.',
+      answer: false,
+      explanation:
+        'On peut retirer son accord à tout moment, et la CNIL demande que ce soit aussi simple que de le donner. Elle recommande pour cela un lien toujours accessible, comme « Gérer mes cookies ». Gaucho n’a qu’à cliquer dessus et tout refuser.',
+      notes: [{ zone: 'gerer', text: 'Ce lien permet de retirer son accord, à tout moment.' }],
+      success: 0.76,
+    },
+    {
+      id: 'qui-contacter',
+      kind: 'choice',
+      scene: 'Le lendemain. Des publicités de Bottes du Grand Nord suivent Gaucho partout. Il veut savoir ce que la boutique sait de lui.',
+      line: 'Je file me plaindre à la CNIL, direct !',
+      prompt: 'Par où doit-il commencer ?',
+      options: [
+        { id: 'boutique', text: 'Écrire à la boutique, ou à son délégué à la protection des données.' },
+        { id: 'cnil', text: 'Porter plainte auprès de la CNIL, qui demandera ses données à sa place.' },
+        { id: 'rien', text: 'Rien : une boutique n’a pas à dire ce qu’elle sait de ses clients.' },
+        { id: 'colere', text: 'Publier un message rageur sous les photos de bottes de la boutique.' },
+      ],
+      answer: 'boutique',
+      explanation:
+        'Gaucho a un droit d’accès : la boutique doit lui donner, gratuitement, une copie des données qu’elle a sur lui. Il lui écrit d’abord, ou à son délégué à la protection des données, et garde une preuve de sa demande. La CNIL n’intervient qu’ensuite, en cas de refus ou sans réponse : elle ne peut pas exercer ses droits à sa place.',
+      success: 0.52,
+    },
+    {
+      id: 'reponse',
+      kind: 'clues',
+      scene: 'Trois jours plus tard, la boutique répond à Gaucho.',
+      line: 'Ils me répondent ! Bon, il y a quelques conditions…',
+      artifact: {
+        kind: 'email',
+        fromName: 'Bottes du Grand Nord',
+        fromAddress: '{{expediteur|service-client@bottes-grand-nord.fr}}',
+        subject: 'Votre demande d’accès à vos données',
+        time: '10:02',
+        greeting: '{{salut|Bonjour Gaucho,}}',
+        body: [
+          'Nous avons bien reçu votre demande {{dossier|n° 4471}}.',
+          'Pour la traiter, merci de nous envoyer {{pieces|votre passeport, votre dernier avis d’impôt et un relevé bancaire}}.',
+          '{{frais|Des frais de dossier de 25 € vous seront facturés.}}',
+          '{{delai|Nous vous répondrons sous six mois.}}',
+        ],
+        footer: '{{signature|Le service client de Bottes du Grand Nord}}',
+      },
+      prompt: 'Touche les 3 conditions que la boutique n’a pas le droit d’imposer.',
+      pick: 3,
+      answer: ['pieces', 'frais', 'delai'],
+      explanation:
+        'Le droit d’accès est gratuit, et la boutique doit répondre en un mois ; elle ne peut prolonger que de deux mois, en expliquant pourquoi. Elle ne peut demander un justificatif d’identité qu’en cas de doute raisonnable, et rien de disproportionné. Gaucho peut le lui rappeler ; si rien ne change, il peut adresser une plainte à la CNIL, preuves à l’appui.',
+      notes: [
+        { zone: 'pieces', text: 'Disproportionné : au plus un justificatif d’identité, et seulement en cas de doute.' },
+        { zone: 'frais', text: 'Le droit d’accès est gratuit.' },
+        { zone: 'delai', text: 'Un mois, prolongeable de deux mois au plus : six mois, c’est trop.' },
+        { zone: 'dossier', text: 'Un numéro de dossier : rien d’anormal.' },
+        { zone: 'expediteur', text: 'L’adresse habituelle de la boutique.' },
+      ],
+      success: 0.63,
+    },
+  ],
+  moral:
+    'Cookies : refuser doit être aussi simple qu’accepter, et tu peux changer d’avis à tout moment. Tes données : demande-les d’abord à l’organisme, gratuitement ; il répond sous un mois, trois au plus. La CNIL, seulement ensuite.',
+  sources: [
+    { label: 'CNIL : cookies et autres traceurs, questions-réponses', url: 'https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies/FAQ' },
+    { label: 'CNIL : le droit d’accès', url: 'https://www.cnil.fr/fr/comprendre-mes-droits/le-droit-dacces-connaitre-les-donnees-quun-organisme-detient-sur-vous' },
+    { label: 'CNIL : adresser une plainte', url: 'https://www.cnil.fr/fr/adresser-une-plainte' },
+  ],
+}

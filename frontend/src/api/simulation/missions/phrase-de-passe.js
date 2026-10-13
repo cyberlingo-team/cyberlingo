@@ -1,0 +1,125 @@
+export default {
+  id: 'phrase-de-passe',
+  title: 'Un mot de passe en béton',
+  theme: 'Mot de passe solide',
+  guest: 'ball-and-chain',
+  villain: null,
+  hook: 'Boulet s’inscrit au club de pétanque. Il a déjà son mot de passe fétiche, le même depuis deux ans.',
+  questions: [
+    {
+      id: 'fetiche',
+      kind: 'choice',
+      scene: '19 h 30. Boulet crée son compte sur l’appli du club de pétanque. Pour le mot de passe, il ne réfléchit pas une seconde.',
+      line: 'Boulet2024 ! Facile à retenir, c’est mon nom. Génial, non ?',
+      artifact: {
+        kind: 'app',
+        app: 'Boule de la Banquise',
+        title: 'Crée ton compte',
+        body: ['Pseudo : {{pseudo|Boulet}}', 'Mot de passe : {{mdp|Boulet2024}}'],
+        buttons: ['Créer mon compte'],
+      },
+      prompt: 'Quel est le problème avec « Boulet2024 » ?',
+      options: [
+        { id: 'nom', text: 'C’est son nom suivi d’une année : un pirate l’essaiera très vite.' },
+        { id: 'majuscule', text: 'Il commence par une majuscule, et les sites n’aiment pas ça.' },
+        { id: 'aucun', text: 'Aucun : il mélange des lettres et des chiffres, c’est solide.' },
+        { id: 'chiffres', text: 'Il contient trop de chiffres à la suite, ça se remarque tout de suite.' },
+      ],
+      answer: 'nom',
+      explanation:
+        'Un nom suivi d’une année, c’est l’un des premiers essais d’un pirate : ses logiciels testent les mots courants, les prénoms, les dates et leurs variantes. Ici, en plus, le nom s’affiche juste au-dessus, dans le pseudo ! Mélanger lettres et chiffres ne suffit pas : il faut surtout un mot de passe imprévisible.',
+      notes: [
+        { zone: 'pseudo', text: 'Le pseudo est visible de tous… et le mot de passe le répète.' },
+        { zone: 'mdp', text: 'Un nom et une année : la recette la plus facile à deviner.' },
+      ],
+      success: 0.86,
+    },
+    {
+      id: 'mur',
+      kind: 'clues',
+      scene: '19 h 34. Nouvelle idée : le nom de son poisson rouge et sa date d’anniversaire. Mais Boulet a raconté sa fête sur son mur, ouvert à tous.',
+      line: 'Ça, personne ne le sait ! Enfin… presque personne.',
+      artifact: {
+        kind: 'post',
+        author: 'Boulet',
+        handle: '@boulet',
+        text: 'Souvenir de mes {{age|50 ans}}, fêtés le {{date|14 juillet}} avec {{poisson|Bubulle}}, mon poisson rouge, et {{groupe|les Phoques Rugissants}} à fond ! {{meteo|Il pleuvait des cordes}}, mais quelle fête !',
+        reactions: '{{reactions|37 réactions · 4 partages}}',
+      },
+      prompt: 'Touche 3 infos qu’un pirate pourrait essayer dans un mot de passe.',
+      pick: 3,
+      answer: ['age', 'date', 'poisson', 'groupe'],
+      explanation:
+        'Âge, date d’anniversaire, nom d’un animal, groupe préféré : ce sont justement les infos que les pirates vont chercher sur les réseaux sociaux pour deviner un mot de passe. Un bon mot de passe ne contient rien qui parle de toi. La météo, elle, ne trahit rien.',
+      notes: [
+        { zone: 'age', text: 'Son âge donne son année de naissance.' },
+        { zone: 'date', text: 'Une date d’anniversaire : un grand classique des mots de passe.' },
+        { zone: 'poisson', text: 'Le nom d’un animal : une info personnelle, donc à éviter.' },
+        { zone: 'groupe', text: 'Son groupe préféré, affiché aux yeux de tous.' },
+        { zone: 'meteo', text: 'La pluie, en revanche, ne dit rien de lui.' },
+        { zone: 'reactions', text: 'Les réactions ne disent rien de son mot de passe.' },
+      ],
+      success: 0.72,
+    },
+    {
+      id: 'candidats',
+      kind: 'choice',
+      scene: '19 h 41. Boulet hésite entre quatre idées. Il veut la plus solide, cette fois.',
+      line: 'Le plus compliqué gagne, non ?',
+      prompt: 'Lequel de ces mots de passe résiste le mieux ?',
+      options: [
+        { id: 'symboles', text: 'B0ul3t#2024' },
+        { id: 'poisson', text: 'Bubulle14juillet' },
+        { id: 'hasard', text: 'girafe tambour nuage citron lundi pelle vapeur' },
+        { id: 'proverbe', text: 'Rien ne sert de courir ; il faut partir à point.' },
+      ],
+      answer: 'hasard',
+      explanation:
+        '« B0ul3t#2024 » et « Bubulle14juillet » partent d’infos sur Boulet, et les pirates testent aussi les lettres remplacées par des chiffres. Le proverbe est long, mais connu de tous : l’ANSSI déconseille les citations et les phrases connues. Reste la suite de mots tirés au hasard : longue, imprévisible, et plus facile à retenir qu’elle n’en a l’air.',
+      success: 0.6,
+    },
+    {
+      id: 'regle',
+      kind: 'truefalse',
+      scene: '19 h 50. Sous le champ du mot de passe, l’appli du club affiche sa règle. Boulet fronce les sourcils.',
+      line: 'Sept mots, ça ne peut pas valoir douze caractères tordus !',
+      artifact: {
+        kind: 'app',
+        app: 'Boule de la Banquise',
+        title: 'Choisis ton mot de passe',
+        body: [
+          '{{regle-a|Au moins 12 caractères, avec majuscules, minuscules, chiffres et caractères spéciaux}}',
+          '{{regle-b|ou une phrase d’au moins 7 mots}}',
+        ],
+        buttons: ['Valider'],
+      },
+      prompt: 'Une phrase de 7 mots tirés au hasard vaut un mot de passe qui suit la première règle.',
+      answer: true,
+      explanation:
+        'La CNIL donne ces deux règles comme exemples d’un même niveau de sécurité, avec une troisième : au moins 14 caractères, sans caractère spécial obligatoire. La longueur compte beaucoup : pour l’ANSSI, il est souvent plus efficace d’allonger un mot de passe que de le compliquer. Et une phrase se retient souvent mieux.',
+      notes: [
+        { zone: 'regle-a', text: 'Un exemple de la CNIL : 12 caractères de 4 types différents.' },
+        { zone: 'regle-b', text: 'Un autre exemple de la CNIL, de même niveau : 7 mots.' },
+      ],
+      success: 0.55,
+    },
+    {
+      id: 'exemple',
+      kind: 'truefalse',
+      scene: '19 h 58. Boulet a trouvé la solution : il recopie la phrase « girafe tambour… », celle que le prof a validée.',
+      line: 'Approuvée par le prof en personne. Je la mets partout !',
+      prompt: 'Une phrase de passe trouvée en exemple reste un bon choix.',
+      answer: false,
+      explanation:
+        'Une phrase publiée dans un jeu, un article ou un tuto n’est plus secrète : n’importe qui peut l’essayer. Boulet doit tirer ses propres mots au hasard, sans lien avec lui, et ne les montrer à personne. Et une phrase différente pour chaque compte, sinon un seul vol suffit à tout ouvrir !',
+      success: 0.7,
+    },
+  ],
+  moral:
+    'Un bon mot de passe ne parle pas de toi : ni nom, ni date, ni animal, ni phrase connue. Le plus simple : au moins 7 mots tirés au hasard, gardés pour toi, et une phrase différente pour chaque compte.',
+  sources: [
+    { label: 'ANSSI : recommandations sur l’authentification et les mots de passe', url: 'https://messervices.cyber.gouv.fr/guides/recommandations-relatives-lauthentification-multifacteur-et-aux-mots-de-passe' },
+    { label: 'CNIL : mots de passe, recommandations pour maîtriser sa sécurité', url: 'https://www.cnil.fr/fr/mots-de-passe-recommandations-pour-maitriser-sa-securite' },
+    { label: 'Cybermalveillance.gouv.fr : les mots de passe', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/mots-de-passe' },
+  ],
+}

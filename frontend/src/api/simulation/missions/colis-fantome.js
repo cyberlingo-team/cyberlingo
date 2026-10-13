@@ -13,7 +13,7 @@ export default {
       line: 'Ils me demandent 1,99 €. Je règle vite fait ?',
       artifact: {
         kind: 'sms',
-        sender: '{{numero|+33 6 39 98 21 47}}',
+        sender: '{{numero|06 39 98 21 47}}',
         time: '08:12',
         body: 'Colis : votre livraison est suspendue, adresse incomplète. {{somme|Réglez 1,99 € de frais de réexpédition}} {{delai|sous 24 h}} : {{lien|https://suivi-colis-relivraison.info/fr}}',
       },

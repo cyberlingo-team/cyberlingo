@@ -1,0 +1,131 @@
+export default {
+  id: 'meme-mot-de-passe',
+  title: 'Le passe-partout',
+  theme: 'Mot de passe réutilisé',
+  guest: 'server-rack',
+  villain: 'techie',
+  hook: 'La boutique de randonnée de Rack annonce un piratage. Rien de grave pour lui… vraiment ?',
+  questions: [
+    {
+      id: 'fuite',
+      kind: 'choice',
+      scene: '9 h 05. Rack, trésorier du club de randonnée, ouvre ses mails. La boutique où il achète ses crampons a été piratée.',
+      line: 'Pas grave : mon mot de passe est excellent. Je l’utilise partout, d’ailleurs !',
+      artifact: {
+        kind: 'email',
+        fromName: 'Les Crampons du Col',
+        fromAddress: 'securite@crampons-du-col.fr',
+        subject: 'Incident de sécurité sur votre compte',
+        time: '09:05',
+        greeting: 'Bonjour Rack,',
+        body: [
+          'Notre site a subi une attaque informatique. {{vol|Les adresses mail et les mots de passe de nos clients ont pu être copiés.}}',
+          'Par précaution, nous avons désactivé votre mot de passe. {{conseil|Choisissez-en un nouveau depuis votre espace client.}}',
+        ],
+        footer: 'Le service client des Crampons du Col',
+      },
+      prompt: 'Quels comptes de Rack sont en danger ?',
+      options: [
+        { id: 'boutique', text: 'Seulement son compte à la boutique : c’est elle qui a été piratée.' },
+        { id: 'aucun', text: 'Aucun : la boutique a déjà désactivé son mot de passe.' },
+        { id: 'tous', text: 'Tous ceux où il utilise ce même mot de passe.' },
+        { id: 'banque', text: 'Seulement son compte en banque, le seul où il y a de l’argent.' },
+      ],
+      answer: 'tous',
+      explanation:
+        'Les pirates essaient l’adresse mail et le mot de passe volés sur plein d’autres sites : messagerie, banque, réseaux sociaux… Si Rack se sert du même mot de passe ailleurs, tous ces comptes sont exposés. Avec un mot de passe différent pour chaque compte, seule la boutique serait touchée.',
+      notes: [
+        { zone: 'vol', text: 'Une adresse mail et un mot de passe : de quoi essayer d’ouvrir d’autres comptes.' },
+        { zone: 'conseil', text: 'Rien à cliquer : on va sur le site par ses propres moyens.' },
+      ],
+      success: 0.84,
+    },
+    {
+      id: 'attendre',
+      kind: 'truefalse',
+      scene: '9 h 10. Rack relit le mail. Les mots de passe « ont pu » être copiés. Rien n’est sûr, après tout.',
+      line: 'J’attends qu’ils confirment. Pas la peine de tout changer pour rien.',
+      prompt: 'Tant que la fuite n’est pas confirmée, Rack peut garder ce mot de passe ailleurs.',
+      answer: false,
+      explanation:
+        'Au moindre soupçon, on change de mot de passe tout de suite, sans attendre de savoir si la fuite est réelle. C’est le conseil de Cybermalveillance.gouv.fr dès qu’un site où l’on a un compte annonce un piratage. Pendant que Rack attend, des pirates peuvent déjà essayer son mot de passe ailleurs.',
+      success: 0.74,
+    },
+    {
+      id: 'verificateur',
+      kind: 'trap',
+      scene: '9 h 15. Rack cherche « mon mot de passe a-t-il fuité ». Un site promet de vérifier en une seconde.',
+      line: 'Pratique ! Je tape mon mot de passe et je saurai tout.',
+      artifact: {
+        kind: 'browser',
+        url: '{{adresse|https://verif-fuite-motdepasse.info/scan}}',
+        title: '{{titre|Votre mot de passe a-t-il fuité ?}}',
+        body: ['Vérification gratuite et immédiate.'],
+        fields: ['Adresse mail', '{{champ|Mot de passe actuel}}'],
+        cta: 'Lancer la vérification',
+      },
+      prompt: 'Ce site, piège ou pas ?',
+      answer: 'trap',
+      explanation:
+        'Taper son mot de passe sur un site inconnu, c’est le donner à un inconnu… exactement ce qu’il ne faut pas faire après une fuite. La CNIL déconseille d’ailleurs ces sites qui prétendent te dire si tes données ont fuité. Rack n’a rien à vérifier : il change son mot de passe sans attendre.',
+      notes: [
+        { zone: 'adresse', text: 'Un site inconnu, sans lien avec la boutique ni avec un organisme officiel.' },
+        { zone: 'titre', text: 'La peur de la fuite sert d’appât.' },
+        { zone: 'champ', text: 'Un vérificateur qui réclame ton mot de passe ? Il le récupère, tout simplement.' },
+      ],
+      success: 0.7,
+    },
+    {
+      id: 'changer',
+      kind: 'choice',
+      scene: '9 h 20. Rack fait la liste : la boutique, sa messagerie, sa banque… et le serveur du club. Le même mot de passe partout.',
+      line: 'Bon. Par quoi je commence ?',
+      prompt: 'Que doit faire Rack ?',
+      options: [
+        { id: 'boutique', text: 'Changer seulement celui de la boutique, la seule qui s’est fait pirater.' },
+        { id: 'partout', text: 'Le changer partout où il servait, avec un mot de passe différent pour chaque compte.' },
+        { id: 'chiffre', text: 'Ajouter un « 2 » à la fin de son mot de passe actuel, sur tous ses comptes à la fois.' },
+        { id: 'supprimer', text: 'Supprimer son compte à la boutique : plus de compte, plus de problème.' },
+      ],
+      answer: 'partout',
+      explanation:
+        'Il change le mot de passe de la boutique et de tous les comptes où il servait, en commençant par la messagerie : elle permet de réinitialiser tous les autres. Un mot de passe différent pour chacun, et la double authentification partout où elle existe. Un « 2 » ajouté à la fin, les pirates l’essaient aussi.',
+      success: 0.68,
+    },
+    {
+      id: 'appel',
+      kind: 'trap',
+      scene: '11 h 30. Le téléphone de Rack sonne. Au bout du fil, une voix très sûre d’elle parle de la fuite.',
+      line: 'Ils appellent eux-mêmes ? Quel service !',
+      artifact: {
+        kind: 'call',
+        caller: 'Appel entrant',
+        number: '{{numero|01 99 00 63 18}}',
+        lines: [
+          { who: 'caller', text: 'Bonjour monsieur Rack, {{service|service sécurité des Crampons du Col}}. Suite à l’attaque, nous protégeons nos clients.' },
+          { who: 'caller', text: '{{preuve|J’ai votre adresse mail sous les yeux}}. C’est bien vous ?' },
+          { who: 'guest', text: 'Euh… oui, c’est moi.' },
+          { who: 'caller', text: 'Parfait. {{demande|Donnez-moi votre mot de passe actuel}}, je vérifie qu’il n’a pas fuité.' },
+        ],
+      },
+      prompt: 'Cet appel, piège ou pas ?',
+      answer: 'trap',
+      explanation:
+        'Après une fuite, des escrocs se servent des données volées pour paraître crédibles : connaître ton nom et ton adresse mail ne prouve rien. Aucune entreprise sérieuse ne demande ton mot de passe, ni par téléphone ni ailleurs. Rack raccroche et contacte lui-même la boutique, par ses moyens habituels.',
+      notes: [
+        { zone: 'numero', text: 'Un numéro affiché ne prouve pas qui appelle.' },
+        { zone: 'service', text: 'N’importe qui peut se présenter ainsi.' },
+        { zone: 'preuve', text: 'Son adresse mail fait justement partie des données volées.' },
+        { zone: 'demande', text: 'La demande qui signe l’arnaque : jamais de mot de passe au téléphone.' },
+      ],
+      success: 0.84,
+    },
+  ],
+  moral:
+    'Un mot de passe différent par compte : si un site fuit, seul ce compte est touché. Fuite annoncée ? Change-le aussitôt partout où il servait, active la double authentification, et ne le donne jamais à personne.',
+  sources: [
+    { label: 'Cybermalveillance.gouv.fr : que faire en cas de fuite de données personnelles ?', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/que-faire-en-cas-de-fuite-de-donnees-personnelles' },
+    { label: 'CNIL : identifiants et mots de passe exposés, que faire ?', url: 'https://www.cnil.fr/fr/exposition-de-16-milliards-didentifiants-et-des-mots-de-passe-que-faire' },
+    { label: 'Cybermalveillance.gouv.fr : les mots de passe', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/mots-de-passe' },
+  ],
+}

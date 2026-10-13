@@ -1,0 +1,121 @@
+export default {
+  id: 'fraude-au-president',
+  title: 'Urgent et confidentiel',
+  theme: 'Fraude au président',
+  guest: 'server-rack',
+  villain: 'boss',
+  hook: 'Rack tient les comptes du club de randonnée. Ce matin, le président lui demande un service… discret.',
+  questions: [
+    {
+      id: 'mail',
+      kind: 'trap',
+      scene: '8 h 47. Rack, trésorier des Godillots Palmés, son club de randonnée, reçoit un mail d’Alu, le président du club.',
+      line: 'Le refuge, c’est sacré. Je fais le virement avant mon café ?',
+      artifact: {
+        kind: 'email',
+        fromName: 'Alu (président)',
+        fromAddress: '{{expediteur|president@godillots-palmes.com}}',
+        subject: '{{objet|URGENT et confidentiel}}',
+        time: '08:47',
+        greeting: 'Bonjour Rack,',
+        body: [
+          'Je suis en réunion toute la journée : {{injoignable|ne m’appelle pas, réponds-moi seulement par mail}}.',
+          'Il faut verser 2 480 € d’acompte au refuge {{delai|avant midi}}, sinon on perd la réservation. Le refuge a changé de banque : {{rib|utilise ce nouveau RIB}}.',
+          '{{secret|N’en parle à personne du bureau}}, je veux faire la surprise à l’assemblée.',
+        ],
+        footer: 'Alu, président des Godillots Palmés',
+      },
+      prompt: 'Ce mail du président, piège ou pas ?',
+      answer: 'trap',
+      explanation:
+        'Urgence, secret, nouveau RIB et interdiction d’appeler : c’est le scénario de la « fraude au président ». L’escroc se fait passer pour un dirigeant pour obtenir un virement imprévu. Ici, son adresse imite celle du club, qui finit en « .fr » et non en « .com ».',
+      notes: [
+        { zone: 'expediteur', text: 'Presque l’adresse du club, qui finit en « .fr », pas en « .com ».' },
+        { zone: 'objet', text: '« Urgent et confidentiel » : le ton typique de la fraude au président.' },
+        { zone: 'injoignable', text: 'Interdire l’appel, c’est interdire la vérification.' },
+        { zone: 'delai', text: 'L’urgence empêche de réfléchir.' },
+        { zone: 'rib', text: 'Un nouveau RIB reçu par mail se confirme toujours de vive voix.' },
+        { zone: 'secret', text: 'Le secret coupe Rack de ceux qui pourraient l’alerter.' },
+      ],
+      success: 0.84,
+    },
+    {
+      id: 'verifier',
+      kind: 'choice',
+      scene: '8 h 52. Rack a un doute. Avant de toucher à l’argent du club, il veut en avoir le cœur net.',
+      line: 'Je vérifie comment, sans tomber dans un second piège ?',
+      prompt: 'Quelle est la bonne façon de vérifier ?',
+      options: [
+        { id: 'repondre', text: 'Répondre au mail pour demander : « C’est bien toi, Alu ? »' },
+        { id: 'numero', text: 'Demander par mail un numéro où rappeler Alu.' },
+        { id: 'annuaire', text: 'Appeler Alu à son numéro habituel, celui de l’annuaire du club.' },
+        { id: 'apres', text: 'Faire le virement tout de suite, puis en parler à Alu à la prochaine sortie.' },
+      ],
+      answer: 'annuaire',
+      explanation:
+        'On vérifie par un autre canal, avec des coordonnées qu’on connaît déjà : le numéro habituel d’Alu, ou de vive voix. Répondre au mail, c’est écrire à l’escroc, qui confirmera tout. Et un numéro donné dans le message mènerait aussi chez lui.',
+      success: 0.74,
+    },
+    {
+      id: 'appel',
+      kind: 'trap',
+      scene: '8 h 55. Rack compose lui-même le numéro d’Alu, celui de l’annuaire du club. Alu décroche.',
+      line: 'Rien ne vaut un bon vieux coup de fil.',
+      artifact: {
+        kind: 'call',
+        caller: 'Alu',
+        number: '{{numero|06 39 98 52 08}}',
+        lines: [
+          { who: 'guest', text: 'Alu, c’est Rack. Tu m’as demandé un virement pour le refuge ?' },
+          { who: 'caller', text: '{{surprise|Un virement ? Par mail ? Jamais de la vie !}} Je me méfie même de mon grille-pain.' },
+          { who: 'caller', text: '{{conseil|Ne paie rien. On en parle ce soir au local, avec le bureau.}}' },
+        ],
+      },
+      prompt: 'Cet appel, piège ou pas ?',
+      answer: 'safe',
+      explanation:
+        'C’est Rack qui a composé le numéro, celui qu’il connaissait déjà : il parle bien au vrai Alu, qui ne demande rien. Attention, ce serait différent pour un appel reçu : un numéro affiché peut être imité. La vérification fiable, c’est quand c’est toi qui appelles.',
+      notes: [
+        { zone: 'numero', text: 'Le numéro de l’annuaire du club, composé par Rack lui-même.' },
+        { zone: 'surprise', text: 'Le vrai Alu ne sait rien de ce virement.' },
+        { zone: 'conseil', text: 'Ni argent, ni code, ni secret : rien de suspect.' },
+      ],
+      success: 0.62,
+    },
+    {
+      id: 'vraie-adresse',
+      kind: 'truefalse',
+      scene: '8 h 57. Avant de raccrocher, Alu pose une colle : « Et si un pirate écrivait depuis ma vraie adresse ? »',
+      line: 'Là, au moins, je pourrais faire confiance au mail… non ?',
+      prompt: 'Même envoyée depuis la vraie adresse d’Alu, une telle demande se vérifie par téléphone.',
+      answer: true,
+      explanation:
+        'Une messagerie peut être piratée : l’escroc écrit alors depuis la vraie adresse, et le mail paraît parfait. Une demande de virement imprévue ou un changement de RIB se confirme donc toujours par un appel au numéro habituel, quelle que soit l’adresse d’envoi.',
+      success: 0.68,
+    },
+    {
+      id: 'regle',
+      kind: 'choice',
+      scene: '20 h. Réunion du bureau au local du club. Il faut une règle pour que ça n’arrive plus.',
+      line: 'Une règle simple, que même Boulet respectera.',
+      prompt: 'Quelle règle protège le mieux la caisse du club ?',
+      options: [
+        { id: 'urgent', text: 'Un virement marqué « urgent » passe avant tout, sans perdre de temps.' },
+        { id: 'deux', text: 'Tout virement imprévu se vérifie par téléphone et se valide à deux.' },
+        { id: 'mail', text: 'Le président confirme chaque demande par un second mail.' },
+        { id: 'boite', text: 'Plus de virements : la caisse du club sera une boîte à chaussures.' },
+      ],
+      answer: 'deux',
+      explanation:
+        'Cybermalveillance.gouv.fr conseille une procédure de vérification et de validation sans exception, même pour une demande « urgente ». Un second mail ne prouve rien : il peut venir du même escroc. Le club peut aussi publier moins d’informations sur ceux qui gèrent l’argent.',
+      success: 0.8,
+    },
+  ],
+  moral:
+    'Virement urgent, secret ou vers un nouveau RIB ? Avant de payer, appelle la personne au numéro que tu connais déjà, jamais à celui du message. Et l’argent d’un groupe se valide à deux.',
+  sources: [
+    { label: 'Cybermalveillance.gouv.fr : les faux ordres de virement (FOVI)', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/escroquerie-faux-ordres-virement-fovi' },
+    { label: 'Cybermalveillance.gouv.fr : fraude au virement et faux RIB', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/que-faire-en-cas-de-fraude-au-virement-ou-au-faux-rib' },
+    { label: 'CNIL : le faux ordre de virement ou fraude au président', url: 'https://www.cnil.fr/fr/le-faux-ordre-de-virement-international-ou-fraude-au-president' },
+  ],
+}

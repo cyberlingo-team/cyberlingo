@@ -115,7 +115,7 @@ Les routes marquées **connecté** répondent `401 not_authenticated` sans sessi
   "kind": "trap",
   "scene": "Mardi, 8 h 12. Le téléphone de Gaucho vibre.",
   "line": "Mon colis ! Enfin !",
-  "artifact": { "kind": "sms", "sender": "+33 7 …", "time": "08:12", "body": "Votre colis … {{lien|https://…}}" },
+  "artifact": { "kind": "sms", "sender": "06 39 98 21 47", "time": "08:12", "body": "Votre colis … {{lien|https://…}}" },
   "prompt": "Ce SMS, piège ou fiable ?"
 }
 ```

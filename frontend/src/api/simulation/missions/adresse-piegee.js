@@ -1,0 +1,126 @@
+export default {
+  id: 'adresse-piegee',
+  title: 'L’adresse à la loupe',
+  theme: 'Lire une adresse web',
+  guest: 'pipe',
+  villain: 'fisher',
+  hook: 'Un SMS promet un remboursement d’impôts à l’Inspecteur. Il sort sa loupe.',
+  questions: [
+    {
+      id: 'sms',
+      kind: 'trap',
+      scene: '7 h 45. L’Inspecteur boit son café quand un SMS arrive. Il pose sa tasse et saisit sa loupe.',
+      line: 'Un remboursement ? Intéressant… Voyons voir.',
+      artifact: {
+        kind: 'sms',
+        sender: '{{numero|06 39 98 51 26}}',
+        time: '07:45',
+        body: 'IMPOTS : {{montant|un remboursement de 287,40 € vous attend}}. {{delai|Confirmez sous 48 h}} sur {{lien|https://impots.gouv.fr.mon-dossier-verif.com/remboursement}}',
+      },
+      prompt: 'Ce SMS, piège ou pas ?',
+      answer: 'trap',
+      explanation:
+        'Un vrai remboursement d’impôt est versé automatiquement sur le compte bancaire connu de l’administration, sans rien à confirmer ni carte à donner. Ici : un numéro de portable inconnu, un montant précis pour faire sérieux, un délai pour presser et un lien à cliquer. C’est un hameçonnage.',
+      notes: [
+        { zone: 'numero', text: 'Un numéro de portable inconnu : rien ne prouve que c’est l’administration.' },
+        { zone: 'montant', text: 'Un montant précis : une astuce pour paraître crédible.' },
+        { zone: 'delai', text: 'L’urgence empêche de vérifier.' },
+        { zone: 'lien', text: 'L’adresse commence par « impots.gouv.fr »… mais ce n’est pas là qu’elle mène.' },
+      ],
+      success: 0.82,
+    },
+    {
+      id: 'decoupage',
+      kind: 'clues',
+      scene: '7 h 47. L’Inspecteur ne clique pas. Il recopie l’adresse dans son carnet et la découpe, morceau par morceau.',
+      line: 'Le début parle d’impôts. Mais un bon enquêteur lit jusqu’au bout.',
+      artifact: {
+        kind: 'note',
+        title: 'Carnet d’enquête',
+        lines: ['{{protocole|https://}}{{prefixe|impots.gouv.fr}}.{{nom|mon-dossier-verif}}.{{extension|com}}{{chemin|/remboursement}}'],
+        style: 'paper',
+      },
+      prompt: 'Touche les 2 morceaux qui forment le vrai nom du site.',
+      pick: 2,
+      answer: ['nom', 'extension'],
+      explanation:
+        'Le nom du site commence juste après les deux barres « // » et s’arrête à la barre « / » suivante. C’est sa fin qui compte : ici, « mon-dossier-verif.com ». Tout ce qui est écrit devant, comme « impots.gouv.fr », le propriétaire du site l’écrit comme il veut. Une adresse des impôts se termine par « impots.gouv.fr », juste avant cette barre.',
+      notes: [
+        { zone: 'protocole', text: 'Le « https » du début dit seulement que la connexion est chiffrée.' },
+        { zone: 'prefixe', text: 'Un déguisement : un préfixe choisi librement par le propriétaire du site.' },
+        { zone: 'nom', text: 'Le vrai nom du site…' },
+        { zone: 'extension', text: '… qui se termine ici, juste avant la barre « / ».' },
+        { zone: 'chemin', text: 'Après la barre, une simple page de ce site.' },
+      ],
+      success: 0.52,
+    },
+    {
+      id: 'cadenas',
+      kind: 'truefalse',
+      scene: '7 h 52. Gaucho a reçu le même SMS. Lui a cliqué, évidemment, et brandit son écran : il y a un cadenas !',
+      line: 'Gaucho dit que le cadenas prouve que c’est sûr. Hmm… Vérifions.',
+      artifact: {
+        kind: 'browser',
+        url: '{{adresse|impots.gouv.fr.mon-dossi…}}',
+        title: 'Remboursement d’impôt : 287,40 €',
+        fields: ['Numéro fiscal', 'Numéro de carte', 'Date d’expiration', 'Cryptogramme'],
+        cta: '{{bouton|Recevoir mon remboursement}}',
+      },
+      prompt: 'Ce cadenas veut seulement dire que la connexion est chiffrée.',
+      answer: true,
+      explanation:
+        'Le cadenas et le « https » indiquent seulement que les échanges entre le téléphone et ce site sont chiffrés. Ils ne disent rien de l’honnêteté du site : un escroc peut très bien en avoir un. Et un remboursement d’impôt ne demande jamais de carte bancaire.',
+      notes: [
+        { zone: 'adresse', text: 'Sur un téléphone, l’adresse est souvent coupée : on n’en voit que le début rassurant.' },
+        { zone: 'bouton', text: 'Un remboursement ne demande ni carte ni cryptogramme.' },
+      ],
+      success: 0.6,
+    },
+    {
+      id: 'vraie-adresse',
+      kind: 'choice',
+      scene: '7 h 58. Gaucho ferme la page sans rien taper, ouf. L’Inspecteur en profite pour lui poser une colle.',
+      line: 'Une seule de ces adresses mène aux vrais impôts. Trouve-la, Gaucho.',
+      prompt: 'Quelle adresse mène au vrai site des impôts ?',
+      options: [
+        { id: 'tiret', text: 'www.impots-gouv.fr' },
+        { id: 'colle', text: 'www.impots.gouvfr.biz' },
+        { id: 'vrai', text: 'www.impots.gouv.fr' },
+        { id: 'rallonge', text: 'www.impots.gouv.fr-espace.info' },
+      ],
+      answer: 'vrai',
+      explanation:
+        'Seule « www.impots.gouv.fr » est la bonne. Un tiret à la place d’un point, deux mots collés avec une autre fin, ou une fin ajoutée comme « fr-espace.info » : à chaque fois, on arrive sur un tout autre site. Pour ses démarches, on tape soi-même l’adresse officielle, ou on passe par un favori qu’on a créé.',
+      success: 0.7,
+    },
+    {
+      id: 'vrai-site',
+      kind: 'trap',
+      scene: '8 h 05. Pour en avoir le cœur net, l’Inspecteur tape lui-même impots.gouv.fr, puis ouvre son espace particulier.',
+      line: 'Aucun lien cliqué, adresse tapée à la main. Alors, ce remboursement ?',
+      artifact: {
+        kind: 'browser',
+        url: '{{debut|https://cfspart.}}{{fin|impots.gouv.fr}}/',
+        title: 'Mon espace particulier',
+        body: ['Bonjour, l’Inspecteur.', '{{demarches|Aucune démarche en attente.}}'],
+      },
+      prompt: 'Cette page, piège ou pas ?',
+      answer: 'safe',
+      explanation:
+        'L’Inspecteur a tapé l’adresse lui-même. Le nom du site se termine bien par « impots.gouv.fr » juste avant la barre : le début, « cfspart », c’est le site des impôts qui l’a choisi. Si une démarche l’attendait, il la verrait ici. Rien : le SMS était un faux, qu’il peut transférer gratuitement au 33700.',
+      notes: [
+        { zone: 'debut', text: 'Ce début-là, c’est le site des impôts lui-même qui l’a choisi.' },
+        { zone: 'fin', text: 'La fin, juste avant la barre : « impots.gouv.fr ». On est bien chez les impôts.' },
+        { zone: 'demarches', text: 'C’est ici, et pas dans un SMS, qu’il vérifie ses démarches.' },
+      ],
+      success: 0.58,
+    },
+  ],
+  moral:
+    'Pour savoir où mène une adresse, lis la fin du nom du site, juste avant la barre « / » qui le suit. Le cadenas ne prouve pas l’honnêteté d’un site. Pour tes impôts, tape toi-même impots.gouv.fr : un remboursement arrive tout seul.',
+  sources: [
+    { label: 'Cybermalveillance.gouv.fr : les faux remboursements d’impôt', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/actualites/remboursement-impot-hameconnage' },
+    { label: 'Cybermalveillance.gouv.fr : l’hameçonnage par SMS', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/actualites/smishing-hameconnage-sms' },
+    { label: 'Cybermalveillance.gouv.fr : sécuriser ses achats en ligne', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/actualites/comment-securiser-ses-achats-sur-internet' },
+  ],
+}

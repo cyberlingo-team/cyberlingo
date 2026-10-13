@@ -1,0 +1,140 @@
+export default {
+  id: 'coucou-papa',
+  title: 'Coucou papa, c’est moi !',
+  theme: 'Message d’un proche',
+  guest: 'classic',
+  villain: 'relative',
+  hook: 'Un numéro inconnu écrit à Tonton : « Coucou papa, c’est moi ! » Il a déjà le doigt sur « Transférer ».',
+  questions: [
+    {
+      id: 'sms',
+      kind: 'trap',
+      scene: '7 h 55. Tonton beurre sa tartine. Un SMS arrive, d’un numéro qu’il ne connaît pas.',
+      line: 'Ma fille a cassé son téléphone ! Vite, je préviens toute la famille.',
+      artifact: {
+        kind: 'sms',
+        sender: '{{numero|06 39 98 57 30}}',
+        time: '07:55',
+        body: '{{coucou|Coucou papa, c’est moi !}} {{casse|J’ai cassé mon téléphone}}, voici mon nouveau numéro. {{appli|Enregistre-le et écris-moi vite sur l’appli de messagerie.}}',
+      },
+      prompt: 'Ce SMS, piège ou pas ?',
+      answer: 'trap',
+      explanation:
+        'C’est le début d’une arnaque bien connue. Le même message part à des milliers de personnes : il ne donne même pas de prénom. L’escroc veut t’attirer vers un nouveau numéro, pour ensuite te demander de l’argent. Le bon réflexe : ne pas répondre.',
+      notes: [
+        { zone: 'numero', text: 'Un numéro inconnu, présenté comme le nouveau numéro de ton enfant.' },
+        { zone: 'coucou', text: 'Pas de prénom : ça marche avec n’importe quel parent.' },
+        { zone: 'casse', text: 'L’excuse classique pour justifier un nouveau numéro.' },
+        { zone: 'appli', text: 'Première étape : te faire écrire à un inconnu.' },
+      ],
+      success: 0.76,
+    },
+    {
+      id: 'argent',
+      kind: 'clues',
+      scene: 'Tonton a répondu. Sur l’appli, la conversation démarre… et il est vite question d’argent.',
+      line: 'Ma pauvre chérie, elle a l’air dans le pétrin. Je fais le virement ?',
+      artifact: {
+        kind: 'chat',
+        contact: 'Nouveau numéro',
+        number: '06 39 98 57 30',
+        messages: [
+          { from: 'me', text: '{{tonton|C’est toi, ma chérie ? Tout va bien ?}}', time: '08:02' },
+          { from: 'them', text: 'Oui ! Mais {{facture|j’ai une facture à régler avant midi}} et {{banque|mon appli bancaire ne marche pas sur ce téléphone}}.', time: '08:03' },
+          { from: 'them', text: '{{virement|Tu peux me faire un virement de 980 € ? Je te rembourse demain.}}', time: '08:03' },
+          { from: 'them', text: '{{appel|Ne m’appelle pas, le micro est cassé.}} {{bisous|Merci papa, bisous !}}', time: '08:04' },
+        ],
+      },
+      prompt: 'Touche les 3 indices qui doivent l’arrêter.',
+      pick: 3,
+      answer: ['facture', 'banque', 'virement', 'appel'],
+      explanation:
+        'Une urgence, une excuse pour que ce soit toi qui paies, une demande d’argent, et surtout aucun appel possible : tout est fait pour que Tonton paie sans vérifier. N’envoie jamais d’argent avant d’avoir formellement identifié la personne. Les bisous ne prouvent rien, et en écrivant « ma chérie », Tonton a même renseigné l’escroc.',
+      notes: [
+        { zone: 'tonton', text: 'Sans le vouloir, Tonton lui apprend qu’il a une fille.' },
+        { zone: 'facture', text: 'L’urgence, pour t’empêcher de vérifier.' },
+        { zone: 'banque', text: 'Une excuse pour que ce soit toi qui paies.' },
+        { zone: 'virement', text: 'La vraie demande : de l’argent, vite.' },
+        { zone: 'appel', text: 'Pas d’appel possible : tu ne peux pas reconnaître sa voix.' },
+        { zone: 'bisous', text: 'Des bisous, n’importe qui peut en écrire.' },
+      ],
+      success: 0.6,
+    },
+    {
+      id: 'verifier',
+      kind: 'choice',
+      scene: 'Tonton a déjà ouvert son appli bancaire. Il s’arrête net : et si ce n’était pas elle ?',
+      line: 'Comment je peux être sûr que c’est bien ma fille ?',
+      prompt: 'Quelle est la meilleure façon de vérifier ?',
+      options: [
+        { id: 'nouveau', text: 'Appeler le nouveau numéro, pour entendre sa voix.' },
+        { id: 'photo', text: 'Lui demander d’envoyer une photo d’elle sur l’appli.' },
+        { id: 'famille', text: 'Transférer la conversation à toute la famille, pour avis.' },
+        { id: 'habituel', text: 'L’appeler sur son numéro habituel, celui qu’il connaît.' },
+      ],
+      answer: 'habituel',
+      explanation:
+        'Le plus sûr : joindre ton enfant par un moyen que tu connais déjà, comme son numéro habituel. S’il ne répond pas, demande-lui de te rappeler, ou contacte un proche qui est avec lui. Le nouveau numéro, lui, mène à l’escroc, et une photo peut très bien venir de ses réseaux sociaux.',
+      success: 0.72,
+    },
+    {
+      id: 'question',
+      kind: 'truefalse',
+      scene: '8 h 10. Sa fille ne décroche pas : elle doit être en cours. En attendant, Tonton pose une colle au nouveau numéro.',
+      line: 'Si c’est vraiment elle, elle se souvient du nom de son doudou !',
+      artifact: {
+        kind: 'chat',
+        contact: 'Nouveau numéro',
+        number: '06 39 98 57 30',
+        messages: [
+          { from: 'me', text: 'Comment s’appelait ton doudou, quand tu étais petite ?', time: '08:10' },
+          { from: 'them', text: '{{esquive|Papa, ce n’est vraiment pas le moment !}}', time: '08:11' },
+          { from: 'them', text: '{{pression|Fais vite le virement, sinon j’aurai des pénalités.}}', time: '08:11' },
+        ],
+      },
+      prompt: 'Une question que seul son enfant peut connaître aide à démasquer un imposteur.',
+      answer: true,
+      explanation:
+        'Une question précise, sur un souvenir que seul ton enfant connaît, peut trahir un imposteur : ici, il esquive et remet la pression. Mais le plus sûr reste de joindre ton enfant sur son numéro habituel. Tant que tu ne l’as pas eu, n’envoie rien.',
+      notes: [
+        { zone: 'esquive', text: 'Il esquive : sans doute parce qu’il ne connaît pas la réponse.' },
+        { zone: 'pression', text: 'Et il remet la pression, pour couper court.' },
+      ],
+      success: 0.8,
+    },
+    {
+      id: 'famille',
+      kind: 'trap',
+      scene: '12 h 30. Sa fille a enfin rappelé : tout va bien. Peu après, un nouveau message arrive.',
+      line: 'Celui-là, j’ai le droit de le transférer à toute la famille ?',
+      artifact: {
+        kind: 'chat',
+        contact: '{{contact|Ma fille}}',
+        number: '{{habituel|06 39 98 12 64}}',
+        messages: [
+          { from: 'them', text: 'Papa, c’est bien moi, sur mon numéro de toujours.', time: '12:31' },
+          { from: 'them', text: '{{conseil|Si un nouveau numéro te réclame de l’argent en mon nom, appelle-moi ici d’abord.}}', time: '12:31' },
+          { from: 'them', text: '{{rien|Je n’ai besoin de rien, promis.}} Bisous !', time: '12:32' },
+        ],
+      },
+      prompt: 'Ce message, piège ou pas ?',
+      answer: 'safe',
+      explanation:
+        'Ce message arrive du numéro habituel de sa fille, qu’il vient d’avoir au téléphone, et il ne demande rien : ni argent, ni code, ni lien. Il donne même le bon réflexe. Celui-là, Tonton peut le transférer à toute la famille !',
+      notes: [
+        { zone: 'contact', text: 'Le contact enregistré depuis toujours, pas un nouveau numéro.' },
+        { zone: 'habituel', text: 'Le numéro qu’il vient d’appeler pour vérifier.' },
+        { zone: 'conseil', text: 'Le bon réflexe : vérifier par le numéro habituel.' },
+        { zone: 'rien', text: 'Aucune demande : ni argent, ni code, ni lien.' },
+      ],
+      success: 0.78,
+    },
+  ],
+  moral:
+    'Un proche t’écrit d’un nouveau numéro et réclame de l’argent ? Ne réponds pas, n’envoie rien. Appelle-le sur son numéro habituel, et transfère le SMS au 33700.',
+  sources: [
+    { label: 'Cybermalveillance.gouv.fr : l’escroquerie « Coucou papa, coucou maman »', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/actualites/escroquerie-enfant-probleme-telephone-coucou-papa-maman' },
+    { label: 'INC, avec Cybermalveillance.gouv.fr : comment réagir', url: 'https://www.inc-conso.fr/content/escroquerie-coucou-papa-maman-comment-reagir-avec-cybermalveillancegouvfr' },
+    { label: 'Service-public.fr : signaler un SMS frauduleux au 33700', url: 'https://www.service-public.gouv.fr/particuliers/vosdroits/F36525/2?idFicheParent=F33267' },
+  ],
+}

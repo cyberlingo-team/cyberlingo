@@ -1,0 +1,117 @@
+export default {
+  id: 'disque-qui-claque',
+  title: 'Disquette perd la mémoire',
+  theme: 'Sauvegardes',
+  guest: 'floppy',
+  villain: null,
+  hook: 'Disquette sauvegarde tout, même ses phrases de drague. Ce matin, son disque dur fait un drôle de bruit.',
+  questions: [
+    {
+      id: 'meme-disque',
+      kind: 'truefalse',
+      scene: '9 h 00. Disquette montre fièrement son dossier « Copie de sauvegarde », rangé… sur le même ordinateur.',
+      line: 'Toutes mes photos sont en double ! Si l’une disparaît, j’ai l’autre.',
+      prompt: 'Une copie sur le même ordinateur protège ses photos si le disque tombe en panne.',
+      answer: false,
+      explanation:
+        'Si le disque tombe en panne, est volé ou piraté, l’original et la copie disparaissent ensemble. Une vraie sauvegarde se fait sur un autre support : disque dur externe, clé USB ou service en ligne. Et mieux vaut en avoir plusieurs, sur des supports différents.',
+      success: 0.79,
+    },
+    {
+      id: 'debrancher',
+      kind: 'choice',
+      scene: '9 h 30. Disquette a branché un disque dur externe. La sauvegarde vient de se terminer.',
+      line: 'Je le laisse branché en permanence, comme ça tout est automatique !',
+      artifact: {
+        kind: 'app',
+        app: 'Sauvegarde',
+        title: 'Sauvegarde terminée',
+        body: [
+          '{{bilan|12 486 fichiers copiés sur « Disque externe ».}}',
+          '{{date|Dernière sauvegarde : aujourd’hui, 9 h 28}}',
+          '{{prochaine|Prochaine sauvegarde prévue : demain, 9 h 00}}',
+        ],
+        buttons: ['Éjecter le disque', 'Fermer'],
+      },
+      prompt: 'Que doit faire Disquette maintenant ?',
+      options: [
+        { id: 'ejecter', text: 'Éjecter le disque, le débrancher, puis le ranger à l’abri.' },
+        { id: 'branche', text: 'Le laisser branché : la prochaine sauvegarde se fera toute seule.' },
+        { id: 'effacer', text: 'Effacer les originaux de l’ordinateur pour faire de la place.' },
+        { id: 'scotch', text: 'Le scotcher sous le bureau, branché, pour ne jamais le perdre.' },
+      ],
+      answer: 'ejecter',
+      explanation:
+        'Une sauvegarde toujours branchée peut être atteinte en même temps que l’ordinateur : un rançongiciel, ce virus qui bloque les fichiers contre une rançon, pourrait aussi la détruire. Débranche le disque après chaque sauvegarde, quitte à le rebrancher pour la suivante. Et garde les originaux : une sauvegarde est une copie, pas un déménagement.',
+      notes: [{ zone: 'prochaine', text: 'Pour la prochaine, il suffira de rebrancher le disque.' }],
+      success: 0.67,
+    },
+    {
+      id: 'trois-deux-un',
+      kind: 'choice',
+      scene: '10 h 00. Rack, qui sauvegarde le serveur du club de randonnée, passe une tête : « Tu connais la règle 3-2-1 ? »',
+      line: 'Trois, deux, un… partez ? C’est une course ?',
+      prompt: 'Que dit la règle 3-2-1 recommandée par l’ANSSI ?',
+      options: [
+        { id: 'jours', text: '3 sauvegardes par jour, pendant 2 semaines, puis 1 par mois.' },
+        { id: 'en-ligne', text: '3 copies des données, sur 2 supports différents, dont 1 en ligne.' },
+        { id: 'disques', text: '3 disques durs, 2 clés USB et 1 disquette.' },
+        { id: 'hors-ligne', text: '3 copies des données, sur 2 supports différents, dont 1 hors ligne.' },
+      ],
+      answer: 'hors-ligne',
+      explanation:
+        'Trois exemplaires de tes données : l’original et deux sauvegardes, sur deux supports différents, dont une hors ligne, c’est-à-dire débranchée de tout. Un service en ligne peut servir de sauvegarde, mais ce n’est pas la copie hors ligne de la règle : c’est elle qui reste à l’abri si tout ce qui est connecté est attaqué.',
+      success: 0.55,
+    },
+    {
+      id: 'restaurer',
+      kind: 'truefalse',
+      scene: '10 h 30. Les sauvegardes de Disquette s’empilent. Elle n’a jamais essayé d’en récupérer un seul fichier.',
+      line: 'Pourquoi vérifier ? Le logiciel a dit « terminé », donc c’est bon !',
+      prompt: 'Il faut vérifier de temps en temps qu’une sauvegarde se restaure bien.',
+      answer: true,
+      explanation:
+        'Parfois, une sauvegarde ne s’est pas faite correctement, et on ne le découvre qu’au moment d’en avoir besoin. Teste-la régulièrement : récupère quelques fichiers et vérifie qu’ils s’ouvrent. Vérifie aussi l’état du support : un disque de sauvegarde peut tomber en panne, lui aussi.',
+      success: 0.73,
+    },
+    {
+      id: 'plan-de-boulet',
+      kind: 'clues',
+      scene: '11 h 00. Boulet a tout entendu. Il tend à Disquette son propre plan de sauvegarde, très fier.',
+      line: 'Fais voir ça, Boulet… Tu es sûr de toi ?',
+      artifact: {
+        kind: 'note',
+        style: 'paper',
+        title: 'Mon plan de sauvegarde',
+        lines: [
+          '{{quoi|Quoi : mes photos, mes papiers et mes mails importants}}',
+          '{{quand|Quand : quand j’y pense}}',
+          '{{outil|Avec : l’outil de sauvegarde intégré à mon ordinateur}}',
+          '{{ou|Où : dans un dossier « Copie », sur le même ordinateur}}',
+          '{{cle|Plus une clé USB, branchée jour et nuit}}',
+          '{{signature|Boulet, le 12 mars}}',
+        ],
+      },
+      prompt: 'Touche les 3 erreurs du plan de Boulet.',
+      pick: 3,
+      answer: ['quand', 'ou', 'cle'],
+      explanation:
+        '« Quand j’y pense », ce n’est pas régulier : mieux vaut planifier les sauvegardes. Une copie sur le même ordinateur disparaît avec lui, et une clé toujours branchée peut être touchée par un rançongiciel. Choisir ses données importantes et utiliser l’outil intégré, en revanche, c’est très bien.',
+      notes: [
+        { zone: 'quand', text: 'Pas régulier : on planifie les sauvegardes.' },
+        { zone: 'ou', text: 'Même ordinateur : si le disque lâche, la copie part avec.' },
+        { zone: 'cle', text: 'Toujours branchée : on la débranche après chaque sauvegarde.' },
+        { zone: 'quoi', text: 'Bonne idée : choisir les données à protéger.' },
+        { zone: 'outil', text: 'L’outil intégré à l’ordinateur fait très bien l’affaire.' },
+      ],
+      success: 0.6,
+    },
+  ],
+  moral:
+    'Sauvegarde régulièrement sur un autre support que ton ordinateur, débranche-le après usage et teste tes sauvegardes. Le top : la règle 3-2-1 de l’ANSSI, 3 exemplaires, sur 2 supports, dont 1 hors ligne.',
+  sources: [
+    { label: 'Cybermalveillance.gouv.fr : les sauvegardes', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/sauvegardes' },
+    { label: 'ANSSI : les fondamentaux de la sauvegarde des systèmes d’information', url: 'https://messervices.cyber.gouv.fr/guides/fondamentaux-sauvegarde-systemes-dinformation' },
+    { label: 'ANSSI : les 10 règles d’or de la sécurité numérique', url: 'https://cyber.gouv.fr/securisation/10-regles-or-securite-numerique/' },
+  ],
+}

@@ -1,0 +1,131 @@
+export default {
+  id: 'faux-conseiller',
+  title: 'Allô, ici votre banque',
+  theme: 'Appel de la banque',
+  guest: 'ball-and-chain',
+  villain: 'banker',
+  hook: 'Le numéro de sa banque s’affiche sur le téléphone de Boulet. Au bout du fil : le « service fraude ».',
+  questions: [
+    {
+      id: 'appel',
+      kind: 'trap',
+      scene: '18 h 40. Boulet rentre du travail. Son téléphone sonne : c’est le numéro de sa banque.',
+      line: 'Ma banque qui m’appelle ? Pour une fois que ce n’est pas pour un découvert…',
+      artifact: {
+        kind: 'call',
+        caller: 'Banque du Grand Large',
+        number: '01 99 00 47 12',
+        lines: [
+          { who: 'caller', text: 'Bonjour monsieur, service fraude de la Banque du Grand Large. {{achat|Un paiement de 849 € vient d’être tenté avec votre carte.}}' },
+          { who: 'guest', text: 'Quoi ? Je n’ai rien acheté, moi !' },
+          { who: 'caller', text: '{{urgence|Je le bloque tout de suite.}} {{code|Vous allez recevoir un code par SMS : lisez-le-moi.}}' },
+        ],
+      },
+      prompt: 'Cet appel, piège ou pas ?',
+      answer: 'trap',
+      explanation:
+        'Jamais un conseiller de ta banque ne te demandera un code reçu par SMS. Ce code sert à valider une opération : le lire à l’appelant, c’est lui permettre de payer ou de virer de l’argent à ta place. Le paiement « tenté » sert surtout à te faire peur, pour que tu obéisses vite.',
+      notes: [
+        { zone: 'achat', text: 'Une fraude annoncée pour t’affoler.' },
+        { zone: 'urgence', text: 'Il joue les sauveurs, et il presse.' },
+        { zone: 'code', text: 'Un code reçu par SMS ne se donne à personne, même pas à ta banque.' },
+      ],
+      success: 0.8,
+    },
+    {
+      id: 'numero',
+      kind: 'truefalse',
+      scene: 'Boulet retourne sa carte bancaire : le numéro affiché est exactement celui imprimé au dos.',
+      line: 'C’est le même numéro ! Donc c’est forcément ma banque, non ?',
+      artifact: {
+        kind: 'note',
+        title: 'Au dos de la carte',
+        lines: ['Banque du Grand Large', 'Service clients : {{numero|01 99 00 47 12}}', 'Carte perdue ou volée ? Faites opposition.'],
+        style: 'label',
+      },
+      prompt: 'Le numéro affiché prouve que c’est bien sa banque qui appelle.',
+      answer: false,
+      explanation:
+        'Un escroc peut faire apparaître sur ton écran le numéro de quelqu’un d’autre : c’est l’usurpation de numéro. Les opérateurs la combattent, mais elle existe encore, y compris avec des numéros de banques. Le numéro affiché ne dit donc rien de la personne au bout du fil.',
+      notes: [{ zone: 'numero', text: 'Le vrai numéro de la banque… que l’escroc fait afficher sur ton écran.' }],
+      success: 0.5,
+    },
+    {
+      id: 'valider',
+      kind: 'choice',
+      scene: 'L’appelant insiste. Une notification s’affiche dans l’appli bancaire de Boulet.',
+      line: 'Il me dit de valider le paiement… pour l’annuler. Je valide, alors ?',
+      prompt: 'Que doit faire Boulet ?',
+      options: [
+        { id: 'valider', text: 'Valider, puisque le conseiller assure que ça annule le paiement.' },
+        { id: 'matricule', text: 'Demander son nom et son matricule au conseiller avant de valider.' },
+        { id: 'raccrocher', text: 'Raccrocher et joindre sa banque lui-même, par l’appli ou l’agence.' },
+        { id: 'rappel', text: 'Noter le numéro que donne le conseiller, pour le rappeler plus tard.' },
+      ],
+      answer: 'raccrocher',
+      explanation:
+        'Valider une opération, c’est l’autoriser, même si on te jure que c’est pour l’annuler. Ta banque n’a besoin d’aucune action de ta part pour bloquer un paiement suspect. Raccroche, puis contacte-la par tes moyens habituels : un nom, un matricule ou un numéro donnés par l’appelant ne prouvent rien.',
+      success: 0.7,
+    },
+    {
+      id: 'coursier',
+      kind: 'clues',
+      scene: 'Le lendemain, 10 h. Nouvel appel, nouveau « conseiller ». Celui-là connaît même le nom de Boulet.',
+      line: 'Un coursier rien que pour moi ? Ça, c’est du service !',
+      artifact: {
+        kind: 'call',
+        caller: 'Banque du Grand Large',
+        number: '01 99 00 47 12',
+        lines: [
+          { who: 'caller', text: 'Bonjour {{nom|monsieur Boulet}}, je reprends votre {{dossier|dossier n° 2209}}. Votre carte est compromise.' },
+          { who: 'caller', text: '{{coursier|Un coursier passe la récupérer chez vous dans une heure.}}' },
+          { who: 'guest', text: 'D’accord… Et je lui donne quoi, exactement ?' },
+          { who: 'caller', text: '{{couper|La carte coupée en deux}}, avec {{code|votre code secret dans l’enveloppe}}.' },
+        ],
+      },
+      prompt: 'Touche les 3 indices de l’arnaque.',
+      pick: 3,
+      answer: ['coursier', 'couper', 'code'],
+      explanation:
+        'Ta banque ne te demandera jamais ton code secret, ni de remettre ta carte à quelqu’un venu la chercher, même coupée en deux. Avec ta carte et ton code, l’escroc peut retirer de l’argent et faire des achats. Qu’il connaisse ton nom ne prouve rien : les escrocs ont souvent ce genre d’informations.',
+      notes: [
+        { zone: 'nom', text: 'Connaître ton nom ne prouve rien : les escrocs ont souvent ces infos.' },
+        { zone: 'dossier', text: 'Un numéro de dossier, ça s’invente en une seconde.' },
+        { zone: 'coursier', text: 'Ta banque n’envoie personne chercher ta carte.' },
+        { zone: 'couper', text: 'Coupée ou pas, ta carte ne se remet à personne.' },
+        { zone: 'code', text: 'Ton code secret ne se donne jamais, à personne.' },
+      ],
+      success: 0.62,
+    },
+    {
+      id: 'opposition',
+      kind: 'trap',
+      scene: 'Une semaine plus tard. Un SMS annonce à Boulet un achat qu’il n’a jamais fait.',
+      line: 'Ils me donnent un numéro pour annuler. Pratique, j’appelle !',
+      artifact: {
+        kind: 'sms',
+        sender: '{{expediteur|GRAND LARGE}}',
+        time: '14:22',
+        body: '{{achat|Paiement de 749 € chez Électro-Phare}}, {{delai|validé sous 24 h}}. {{numero|Si vous n’êtes pas à l’origine de cette opération, appelez le 01 99 00 82 36.}}',
+      },
+      prompt: 'Ce SMS, piège ou pas ?',
+      answer: 'trap',
+      explanation:
+        'C’est l’hameçonnage au faux numéro d’opposition : ce numéro mène à un faux conseiller, qui réclamera des codes ou te fera « valider pour annuler ». N’appelle pas le numéro donné dans un message. Vérifie toi-même dans ton appli ou ton espace bancaire, ou contacte ta banque par tes moyens habituels.',
+      notes: [
+        { zone: 'expediteur', text: 'Le nom affiché ne prouve pas que le SMS vient de ta banque.' },
+        { zone: 'achat', text: 'Un achat que tu n’as pas fait, pour t’affoler.' },
+        { zone: 'delai', text: 'Un délai, pour que tu appelles sans réfléchir.' },
+        { zone: 'numero', text: 'Ce numéro mène au faux « service fraude ».' },
+      ],
+      success: 0.68,
+    },
+  ],
+  moral:
+    'Ta banque t’appelle pour une fraude ? Ne donne aucun code, ne valide rien, ne remets jamais ta carte. Raccroche et contacte-la toi-même : appli, agence ou numéro habituel.',
+  sources: [
+    { label: 'Cybermalveillance.gouv.fr : la fraude au faux conseiller bancaire', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/fraude-faux-conseiller-bancaire' },
+    { label: 'Cybermalveillance.gouv.fr : l’hameçonnage au faux numéro d’opposition', url: 'https://www.cybermalveillance.gouv.fr/tous-nos-contenus/actualites/lhameconnage-au-faux-numero-dopposition-bancaire' },
+    { label: 'Banque de France : la fraude aux moyens de paiement', url: 'https://www.banque-france.fr/fr/votre-service/particuliers/la-banque-de-france-vous-aide/fraude-aux-moyens-de-paiement' },
+  ],
+}
