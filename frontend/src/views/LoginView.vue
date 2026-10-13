@@ -131,7 +131,7 @@ async function submit() {
 .auth-problem {
   padding: 0.6em 0.8em;
   font-weight: 600;
-  color: var(--alert);
+  color: var(--alert-ink);
   background: var(--alert-pale);
   border: 2px solid var(--alert);
 }

@@ -113,10 +113,10 @@ const nextLabel = computed(() => {
 
     <template v-else>
       <div ref="top" class="player-top" tabindex="-1">
-        <p class="player-title">
+        <h1 class="player-title">
           <span class="player-number">Épisode {{ mission.number }}</span>
           <span class="player-name">{{ typo(mission.title) }}</span>
-        </p>
+        </h1>
         <EpisodeStrip
           :questions="questions"
           :answers="answers"
@@ -172,12 +172,17 @@ const nextLabel = computed(() => {
   outline: none;
 }
 
+/* Le titre de la page tant que l'épisode est ouvert (la couverture porte le sien). */
 .player-title {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 2px 12px;
+  margin: 0;
   font-family: var(--font-title);
+  font-size: inherit;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .player-number {

@@ -84,6 +84,8 @@ function dayLink(day) {
 
 <template>
   <div class="page profile">
+    <!-- Le titre de la page tant que le Tux n'est pas arrivé. -->
+    <h1 v-if="!data" class="visually-hidden">Mon Tux</h1>
     <ErrorPanel v-if="error && !data" :error="error" :retry="reload" />
     <LoadingPanel v-else-if="!data" label="Chargement de ton Tux" />
 

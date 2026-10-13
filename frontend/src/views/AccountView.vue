@@ -226,7 +226,7 @@ function submitRemoval() {
 .form-problem {
   padding: 0.5em 0.75em;
   font-weight: 600;
-  color: var(--alert);
+  color: var(--alert-ink);
   background: var(--alert-pale);
   border: 2px solid var(--alert);
 }

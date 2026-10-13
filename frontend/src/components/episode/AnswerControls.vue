@@ -46,6 +46,22 @@ function chooseOption(id) {
 }
 
 const chosenOption = computed(() => (props.revealed ? props.revealed.answer : option.value))
+
+// Un groupe de boutons radio se parcourt aux flèches : Tab n'entre que sur la proposition choisie
+// (ou la première), les flèches passent d'une proposition à l'autre en la choisissant.
+const tabStop = computed(() => chosenOption.value ?? props.question.options?.[0]?.id)
+const ARROWS = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }
+
+function onChoiceKey(event, index) {
+  const step = ARROWS[event.key]
+  if (!step || locked.value) return
+  event.preventDefault()
+  const options = props.question.options
+  const next = (index + step + options.length) % options.length
+  chooseOption(options[next].id)
+  event.currentTarget.parentElement.children[next].focus()
+}
+
 const remaining = computed(() => props.question.pick - props.selectedZones.length)
 </script>
 
@@ -74,28 +90,30 @@ const remaining = computed(() => props.question.pick - props.selectedZones.lengt
 
     <!-- Une proposition parmi trois ou quatre. -->
     <div v-else-if="question.kind === 'choice'" class="choices">
-      <ul class="choice-list" role="radiogroup" :aria-label="question.prompt">
-        <li v-for="item in question.options" :key="item.id">
-          <button
-            type="button"
-            role="radio"
-            class="choice"
-            :class="{
-              'is-chosen': chosenOption === item.id,
-              'is-right': revealed && revealed.solution === item.id,
-              'is-wrong': revealed && revealed.answer === item.id && !revealed.correct,
-            }"
-            :aria-checked="chosenOption === item.id"
-            :disabled="locked"
-            @click="chooseOption(item.id)"
-          >
-            <span class="choice-box" aria-hidden="true"></span>
-            <span class="choice-text">{{ typo(item.text) }}</span>
-            <span v-if="revealed && revealed.solution === item.id" class="choice-mark">la bonne réponse</span>
-            <span v-else-if="revealed && revealed.answer === item.id" class="choice-mark">ta réponse</span>
-          </button>
-        </li>
-      </ul>
+      <div class="choice-list" role="radiogroup" :aria-label="question.prompt">
+        <button
+          v-for="(item, index) in question.options"
+          :key="item.id"
+          type="button"
+          role="radio"
+          class="choice"
+          :class="{
+            'is-chosen': chosenOption === item.id,
+            'is-right': revealed && revealed.solution === item.id,
+            'is-wrong': revealed && revealed.answer === item.id && !revealed.correct,
+          }"
+          :aria-checked="chosenOption === item.id"
+          :tabindex="tabStop === item.id ? 0 : -1"
+          :disabled="locked"
+          @click="chooseOption(item.id)"
+          @keydown="onChoiceKey($event, index)"
+        >
+          <span class="choice-box" aria-hidden="true"></span>
+          <span class="choice-text">{{ typo(item.text) }}</span>
+          <span v-if="revealed && revealed.solution === item.id" class="choice-mark">la bonne réponse</span>
+          <span v-else-if="revealed && revealed.answer === item.id" class="choice-mark">ta réponse</span>
+        </button>
+      </div>
       <button v-if="!revealed" type="button" class="button validate" :disabled="!option || sending" @click="emit('answer', option)">
         {{ sending ? 'Envoi…' : 'Valider ma réponse' }}
       </button>
@@ -206,9 +224,6 @@ const remaining = computed(() => props.question.pick - props.selectedZones.lengt
 }
 
 .choice-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: grid;
   gap: 8px;
 }

@@ -40,6 +40,8 @@ const following = computed(() => {
     text="Les épisodes paraissent un par jour depuis le lancement du site. Celui-ci n’existe pas, ou pas encore : pas de fuite des épisodes de demain."
   />
   <div v-else class="page">
+    <!-- Le titre de la page tant que l'épisode n'est pas arrivé (sa couverture porte ensuite le sien). -->
+    <h1 v-if="!data" class="visually-hidden">Un épisode déjà paru</h1>
     <ErrorPanel v-if="error && !data" :error="error" :retry="reload" />
     <LoadingPanel v-else-if="!data" label="Chargement de l’épisode" />
     <template v-else>
