@@ -12,8 +12,32 @@ export async function reinitialiser(page, base) {
   await attendre(page)
 }
 
+// Une capture pleine page ne fait pas défiler l'écran : les images en chargement différé
+// (loading="lazy") resteraient vides, et celles jamais affichées ne sont pas encore décodées
+// (decoding="async"). On les charge et on les décode toutes avant de capturer.
+async function chargerImages(page) {
+  await page.evaluate(async () => {
+    const images = [...document.images]
+    for (const image of images) image.loading = 'eager'
+    const chargees = Promise.all(
+      images.map((image) =>
+        image.complete
+          ? null
+          : new Promise((fini) => {
+              image.addEventListener('load', fini, { once: true })
+              image.addEventListener('error', fini, { once: true })
+            }),
+      ),
+    )
+    // Pas plus de cinq secondes : une image qui ne répond pas ne bloque pas le parcours.
+    await Promise.race([chargees, new Promise((fini) => setTimeout(fini, 5000))])
+    await Promise.all(images.map((image) => image.decode().catch(() => {})))
+  })
+}
+
 export async function etape(page, nom, format, options = {}) {
   await attendre(page, options.attente ?? 700)
+  if (options.pleinePage) await chargerImages(page)
   const chemin = await capturer(page, nom, format, { pleinePage: options.pleinePage ?? false })
   console.log(`  ${chemin}`)
   return chemin
@@ -67,4 +91,56 @@ export async function repondre(page, { choix = 0 } = {}) {
 export async function attendreCorrection(page) {
   await page.getByRole('button', { name: /^(Case suivante|Voir la fin de l’épisode|Reprendre|Revenir)/ }).waitFor()
   await attendre(page, 900)
+}
+
+// La mission publiée à une date, lue directement dans les données de la simulation : un
+// parcours peut ainsi répondre juste, comme un joueur qui a compris.
+export async function missionDuJour(date = aujourdhui()) {
+  const { missionForDate } = await import('../../../frontend/src/api/simulation/calendar.js')
+  return missionForDate(date)
+}
+
+export function aujourdhui() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const espaces = (texte) => texte.replace(/[\s  ]+/g, ' ').trim()
+
+// Les zones d'un artefact : { id: texte }.
+function zonesDe(artefact) {
+  const zones = {}
+  for (const m of JSON.stringify(artefact || {}).matchAll(/\{\{([^|}]+)\|([^}]*)\}\}/g)) zones[m[1]] = espaces(m[2])
+  return zones
+}
+
+// Répond à la case affichée, juste (par défaut) ou faux exprès.
+export async function repondreJuste(page, question, { faux = false } = {}) {
+  const { kind, answer } = question
+  if (kind === 'trap') {
+    const piege = (answer === 'trap') !== faux
+    await page.getByRole('button', { name: piege ? /^Piège/ : /^Fiable/ }).click()
+  } else if (kind === 'truefalse') {
+    await page.getByRole('button', { name: (answer === true) !== faux ? /^Vrai/ : /^Faux/ }).click()
+  } else if (kind === 'choice') {
+    const juste = question.options.findIndex((o) => o.id === answer)
+    const index = faux ? (juste + 1) % question.options.length : juste
+    await page.getByRole('radio').nth(index).click()
+    await page.getByRole('button', { name: 'Valider ma réponse' }).click()
+  } else if (kind === 'clues') {
+    const zones = zonesDe(question.artifact)
+    const visees = faux
+      ? [...answer.slice(0, question.pick - 1), Object.keys(zones).find((z) => !answer.includes(z))]
+      : answer.slice(0, question.pick)
+    const boutons = page.locator('button.zone--pick')
+    const n = await boutons.count()
+    for (let i = 0; i < n; i++) {
+      const texte = espaces((await boutons.nth(i).textContent()) || '')
+      if (visees.some((z) => zones[z] === texte)) await boutons.nth(i).click()
+    }
+    await page.getByRole('button', { name: /^Valider mes indices/ }).click()
+  } else {
+    throw new Error(`Type de case inconnu : ${kind}`)
+  }
+  return kind
 }
