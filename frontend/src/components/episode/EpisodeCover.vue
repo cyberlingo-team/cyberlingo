@@ -3,7 +3,7 @@
 import { computed } from 'vue'
 import Picture from '../comic/Picture.vue'
 import { gangImage } from '../../lib/images.js'
-import { capitalize, formatDay, formatNumber, lowerFirst, typo } from '../../lib/format.js'
+import { capitalize, episodeMinutes, formatDay, formatNumber, lowerFirst, typo } from '../../lib/format.js'
 
 const props = defineProps({
   mission: { type: Object, required: true },
@@ -15,7 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(['start'])
 
-const minutes = computed(() => Math.max(2, Math.round(props.mission.questions.length * 0.6)))
+const minutes = computed(() => episodeMinutes(props.mission.questions.length))
 
 const readers = computed(() => {
   const stats = props.stats
@@ -31,8 +31,7 @@ const startLabel = computed(() => (props.answered > 0 ? `Reprendre à la case ${
   <section class="cover panel" aria-labelledby="cover-title">
     <div class="cover-head">
       <p class="cover-issue">
-        Épisode {{ mission.number }}
-        <span class="cover-date">{{ isToday ? 'du jour, ' : '' }}{{ formatDay(mission.date) }}</span>
+        Épisode {{ mission.number }}<span class="cover-date">, {{ formatDay(mission.date) }}</span>
       </p>
       <p class="cover-theme">{{ mission.theme }}</p>
     </div>
@@ -84,6 +83,7 @@ const startLabel = computed(() => (props.answered > 0 ? `Reprendre à la case ${
 .cover-date {
   font-weight: 500;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .cover-theme {

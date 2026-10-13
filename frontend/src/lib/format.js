@@ -43,6 +43,11 @@ export function ordinal(rank) {
   return rank === 1 ? '1er' : `${rank}e`
 }
 
+// Durée de lecture d'un épisode : un peu plus d'une demi-minute par case.
+export function episodeMinutes(questionCount) {
+  return Math.max(2, Math.round(questionCount * 0.6))
+}
+
 // Les dates échangées avec le serveur sont au format « AAAA-MM-JJ ».
 export function parseDate(isoDate) {
   const [year, month, day] = isoDate.split('-').map(Number)

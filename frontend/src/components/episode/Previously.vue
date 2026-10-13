@@ -3,7 +3,7 @@
 // à la manière du narrateur d'une série.
 import { computed } from 'vue'
 import MuscleName from '../tux/MuscleName.vue'
-import { addDaysIso, plural, relativeDay } from '../../lib/format.js'
+import { addDaysIso, episodeMinutes, formatDay, plural, relativeDay } from '../../lib/format.js'
 
 const props = defineProps({
   me: { type: Object, default: null },
@@ -28,10 +28,12 @@ const story = computed(() => {
   if (props.progress.completed) return { kind: 'done', streak: streak.current }
   if (streak.current > 0) return { kind: 'running', streak: streak.current, stage, remaining }
   if (streak.lastPlayed) {
+    const stop = addDaysIso(streak.lastPlayed, 1)
+    const when = relativeDay(stop)
     return {
       kind: 'broken',
       run: lastRun(me.days, streak.lastPlayed),
-      when: relativeDay(addDaysIso(streak.lastPlayed, 1)),
+      when: when === formatDay(stop) ? `le ${when}` : when,
     }
   }
   return { kind: 'first' }
@@ -41,8 +43,8 @@ const story = computed(() => {
 <template>
   <p class="previously caption">
     <template v-if="story.kind === 'guest'">
-      Chaque jour, un nouvel épisode. Un membre de la bande à Tux tombe sur une arnaque : à toi de la repérer avant lui.
-      {{ questionCount }} cases, 3 minutes, et Tux le prof corrige.
+      Chaque jour, un nouvel épisode. Un membre de la bande à Tux tombe sur une arnaque : à toi de la repérer avant lui,
+      en {{ questionCount }} cases et {{ episodeMinutes(questionCount) }} minutes. Tux le prof corrige.
     </template>
     <template v-else-if="story.kind === 'done'">
       Épisode du jour bouclé. <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" /> tient sa série :

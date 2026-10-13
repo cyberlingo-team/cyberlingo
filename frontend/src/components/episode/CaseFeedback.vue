@@ -23,6 +23,19 @@ const root = ref(null)
 
 const verdict = computed(() => (props.revealed.correct ? 'Bien vu !' : 'Raté !'))
 
+// Pour une question à indices : les choix du joueur comparés aux vrais indices.
+const clues = computed(() => {
+  const { question, revealed } = props
+  if (question.kind !== 'clues' || !Array.isArray(revealed.solution) || !Array.isArray(revealed.answer)) return null
+  const found = revealed.answer.filter((zone) => revealed.solution.includes(zone)).length
+  return {
+    found,
+    wrong: revealed.answer.length - found,
+    extra: revealed.solution.length - found,
+    good: props.notes.some((note) => note.good),
+  }
+})
+
 // Ce qui était juste, dit en clair quand la réponse ne le montre pas déjà.
 const truth = computed(() => {
   const { question, revealed } = props
@@ -31,16 +44,26 @@ const truth = computed(() => {
     return revealed.correct ? 'Ce message était fiable.' : 'Ce n’était pas un piège.'
   }
   if (question.kind === 'truefalse') return revealed.solution ? 'C’est vrai.' : 'C’est faux.'
-  if (question.kind === 'clues' && !revealed.correct) return 'Les vrais indices sont entourés en rouge sur le document.'
+  const c = clues.value
+  if (c) {
+    if (!c.wrong) {
+      const all = c.found > 1 ? `Tes ${c.found} choix sont de vrais indices.` : 'Ton choix est un vrai indice.'
+      return c.extra ? `${all} Il y en avait même un de plus.` : all
+    }
+    if (!c.found) return 'Aucun de tes choix n’était un indice.'
+    return c.wrong > 1 ? `${c.wrong} de tes choix n’étaient pas des indices.` : 'Un de tes choix n’était pas un indice.'
+  }
   return null
 })
 
+// La part des joueurs qui ont trouvé, dite sans en faire trop.
 const others = computed(() => {
   const rate = props.revealed.success
   if (rate === null || rate === undefined) return null
-  if (rate >= 80) return `${rate} % des joueurs ont trouvé.`
-  if (rate >= 50) return `${rate} % des joueurs ont trouvé : pas si facile.`
-  return `Seulement ${rate} % des joueurs ont trouvé.`
+  const share = `${rate < 40 ? 'Seulement ' : ''}${rate} % des joueurs ont trouvé`
+  if (rate < 50 && props.revealed.correct) return `${share}. Tu en fais partie.`
+  if (rate >= 40 && rate < 60) return `${share} : celle-là divise.`
+  return `${share}.`
 })
 
 const buttonLabel = computed(() => props.nextLabel || (props.isLast ? 'Voir la fin de l’épisode' : 'Case suivante'))
@@ -61,12 +84,19 @@ onMounted(() => {
         :alt="revealed.correct ? 'Tux le prof, loupe à la main, approuve.' : 'Tux le prof se tape le front.'"
         eager
       />
-      <Balloon tail="left" class="feedback-balloon">
+      <Balloon tail="left-down" class="feedback-balloon">
         <p class="feedback-verdict">{{ verdict }}</p>
         <p v-if="truth" class="feedback-truth">{{ truth }}</p>
         <p class="feedback-explanation">{{ typo(revealed.explanation) }}</p>
       </Balloon>
     </div>
+
+    <ul v-if="clues" class="feedback-key" aria-label="Comment lire la correction">
+      <li><span class="key key--picked">Surligné</span> : ce que tu as touché.</li>
+      <li><span class="key key--bad">Entouré en rouge</span> : un vrai indice.</li>
+      <li v-if="clues.wrong"><span class="key key--wrong">Barré</span> : ce n’était pas un indice.</li>
+      <li v-if="clues.good"><span class="key key--good">Entouré en bleu</span> : un détail qui ne trahit rien.</li>
+    </ul>
 
     <ol v-if="notes.length" class="feedback-notes" aria-label="Annotations du prof">
       <li v-for="note in notes" :key="note.zone" :class="{ 'is-good': note.good }">
@@ -142,6 +172,45 @@ onMounted(() => {
   font-weight: 700;
 }
 
+/* La légende de la correction, avec les mêmes marques que sur le document. */
+.feedback-key {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  font-size: 0.95rem;
+}
+
+.key {
+  padding: 0 0.3em;
+  font-weight: 700;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.key--picked {
+  background: var(--caption);
+}
+
+.key--bad,
+.key--good {
+  border-radius: 0.9em 0.7em 1em 0.6em;
+  box-shadow: 0 0 0 2px var(--alert);
+}
+
+.key--good {
+  box-shadow: 0 0 0 2px var(--toque);
+}
+
+.key--wrong {
+  background: var(--caption);
+  text-decoration: line-through;
+  text-decoration-color: var(--alert);
+  text-decoration-thickness: 2px;
+}
+
 .feedback-notes {
   list-style: none;
   margin: 0;
@@ -201,12 +270,24 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 520px) {
+/* Sur téléphone, la bulle prend toute la largeur et le prof parle d'en dessous. */
+@media (max-width: 640px) {
   .feedback-scene {
-    grid-template-columns: 78px 1fr;
-    gap: 22px;
+    grid-template-columns: 1fr;
+    gap: 30px;
   }
 
+  .feedback-balloon {
+    grid-row: 1;
+  }
+
+  .feedback-prof {
+    width: 86px;
+    margin-left: 4px;
+  }
+}
+
+@media (max-width: 520px) {
   .feedback-next {
     width: 100%;
   }

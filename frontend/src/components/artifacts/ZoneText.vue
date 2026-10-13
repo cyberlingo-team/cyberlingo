@@ -2,7 +2,7 @@
 // Un texte d'artefact, découpé en zones (voir lib/zones.js). Selon le moment, une zone est :
 //   - du texte ordinaire, tant qu'on ne cherche rien (mode « read ») ;
 //   - un bouton, quand le joueur cherche les indices (mode « pick ») ;
-//   - un passage entouré au stylo rouge, numéroté, après la correction (mode « review »).
+//   - un passage entouré au stylo, numéroté, après la correction (mode « review »).
 import { computed, inject } from 'vue'
 import { parseZones } from '../../lib/zones.js'
 import { typo } from '../../lib/format.js'
@@ -31,7 +31,8 @@ const mode = computed(() => zones?.mode.value || 'read')
       v-else
       class="zone"
       :class="zones.classFor(part.zone)"
+      :data-zone="part.zone"
       :data-note="zones.noteNumber(part.zone) || undefined"
-    >{{ part.text }}<span v-if="zones.noteNumber(part.zone)" class="visually-hidden"> (annotation {{ zones.noteNumber(part.zone) }})</span></span>
+    >{{ part.text }}<span v-if="zones.describe(part.zone)" class="visually-hidden"> ({{ zones.describe(part.zone) }})</span></span>
   </template>
 </template>

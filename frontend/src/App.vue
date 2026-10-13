@@ -61,5 +61,7 @@ router.afterEach((to, from) => {
 #contenu {
   display: block;
   min-height: calc(100vh - var(--header-height) - 160px);
+  /* Un tampon qui s'abat ou une image qui grandit ne doit jamais élargir la page sur téléphone. */
+  overflow-x: clip;
 }
 </style>
