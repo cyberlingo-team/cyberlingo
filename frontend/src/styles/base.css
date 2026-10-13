@@ -10,8 +10,12 @@
   --toque: #1b2a8f;
   --toque-pale: #e4e7f8;
   --beak: #f57c03;
+  /* Le même orange, foncé pour le texte sur fond clair (contraste 5:1). */
+  --beak-ink: #b45309;
   --alert: #d42a1e;
   --alert-pale: #fbe4e1;
+  /* Le même rouge, foncé pour le texte posé sur le fond rose (contraste 5:1). */
+  --alert-ink: #b8241a;
   --caption: #ffd84a;
   --caption-pale: #fff3c4;
   --muted: #5b524c;

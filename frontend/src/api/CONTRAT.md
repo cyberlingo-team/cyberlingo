@@ -34,7 +34,9 @@ une par route :
 ## Règles communes
 
 **Format.** Tout est en JSON, en UTF-8. Les dates sont des chaînes `AAAA-MM-JJ`, au fuseau de
-Paris : la mission du jour change à minuit, heure française.
+Paris : la mission du jour change à minuit, heure française. Les textes (messages, contenu des
+épisodes) s'écrivent avec des espaces ordinaires, même devant « : ; ? ! » : l'interface pose
+elle-même les espaces insécables du français (`typo()` dans `lib/format.js`).
 
 **Session.** Elle est portée par un **cookie `httpOnly`** qui contient un JWT signé (page
 `/minimal/authentification` du cours) : `HttpOnly`, `SameSite=Lax`, `Secure` en production,

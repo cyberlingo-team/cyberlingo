@@ -313,12 +313,14 @@ function statusText(episode) {
   object-fit: contain;
 }
 
+/* Le tampon penche : ses coins dépassent de sa boîte. On leur laisse de la place pour qu'ils ne
+   mordent ni sur le trait du dessus ni sur la ligne des points. */
 .mini-status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px 8px;
-  padding: 8px 10px 10px;
+  gap: 12px 8px;
+  padding: 13px 10px 10px;
   border-top: 2px solid var(--ink);
 }
 
@@ -330,7 +332,7 @@ function statusText(episode) {
   font-family: var(--font-title);
   font-weight: 750;
   font-size: 0.86rem;
-  color: var(--beak);
+  color: var(--beak-ink);
 }
 
 .mini--today {
