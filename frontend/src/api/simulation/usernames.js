@@ -1,0 +1,42 @@
+// Pseudos des joueurs de démonstration. Inventés : aucun ne désigne une personne réelle.
+// Le premier sert aux tests de mise en page : il fait exactement 30 caractères, le maximum.
+
+export const LONGEST_USERNAME = 'Capitaine_des_mots_de_passe_42'
+
+export const USERNAMES = [
+  'lucie.mrt', 'Kev_du_31', 'PoneyMasqué', 'jb.toulouse', 'Ma3lle', 'loutre_zen', 'nono_le_robot',
+  'Tartiflette_Max', 'chloé_b', 'Yanis_77', 'maxou.dev', 'Pingouin_Furtif', 'Elsa.rgr', 'Romain_Lbt',
+  'camcam', 'théo_k', 'Nina_ptt', 'lea_ch', 'bastien.f', 'SarahBzh', 'Mehdi_92', 'inès.lrt',
+  'PaulOChocolat', 'Clem_Ent', 'Juju_31', 'Manon.dlc', 'hugo_vrt', 'Alix.zen', 'Noé_Bcq', 'anaïs_b',
+  'Gabin_42', 'Zoé.ptt', 'Lilou_06', 'Tom_Hrt', 'Jade.lvl', 'ethan_dsm', 'Louise_Brn', 'Arthur_mx',
+  'Mila.rch', 'Nathan_Gv', 'Léna_31', 'victor_pdl', 'Rose.mtn', 'Adam_Kz', 'Ambre_vt', 'sami_rbt',
+  'Lina.bzh', 'Jules_Fr', 'eva_lmr', 'Raphaël_T', 'Margot.dl', 'Axel_44', 'Agathe_Sn', 'Robin.hd',
+  'Croissant_Sécurisé', 'ClicPasSurTout', 'Captain_Cookie', 'La_Taupe_Prudente', 'Sardine_Agile',
+  'Antivirus_Humain', 'Manchot_Empereur', 'Gratin_Dauphinois', 'Saucisson_Masqué', 'Cyber_Mamie',
+  'Papy_Geek_81', 'Ninja_du_31', 'Raclette_2FA', 'QR_ou_pas_QR', 'Hameçon_Raté', 'Wifi_Pas_Gratuit',
+  'Le_Doute_Méthodique', 'MarmotteVigilante', 'Licorne_Prudente', 'Caramel_Mou', 'Tempête_Douce',
+  'banquise_chill', 'glaçon_nomade', 'Krill_Royal', 'fanfan.lpt', 'Mathis_Rch', 'Lola_Bdx', 'yasmine.k',
+  'Simon_Lgr', 'Capucine_33', 'Elio.prs', 'Maël_Bzh', 'jeanne.dlp', 'Sacha_Mtp', 'Timéo_69', 'Inaya_k',
+  'Côme.vdb', 'Anna_Lyo', 'Oscar.dpt', 'Lyna_59', 'Basile_Rn', 'Nour.blt', 'Gaspard_Ly', 'Léon_Mrs',
+  'Céleste.v', 'Abel_Ncy', 'Héloïse_B', 'Marius_13', 'Lison.cr', 'Kenzo_Prs', 'Apolline_D', 'Naël_Tls',
+  'Romane.gt', 'Soan_74', 'Aya_Nts', 'Lucien.pr', 'Joséphine_L', 'Milan_Brst', 'Alba.rz', 'Ilyes_95',
+  'Clara_Mtz', 'Eliott_Dj', 'Maya.lbr', 'Sohan_Ang', 'Victoire.p', 'Ismaël_Rns', 'Olivia.ch', 'Noa_Pau',
+  'mot_de_passe_en_béton', 'Fenêtre_Fermée', 'Pas_Né_d_Hier', 'Le_Cliqueur_Repenti', 'Tux_Fan_2000',
+  'Bretzel_Binaire', 'Haricot_Magique', 'Paupiette_Pro', 'Clafoutis_Furtif', 'Panda_Prudent',
+  'Ornithorynque', 'Zébulon_92', 'Chouquette_Zen', 'Pistache_Pro', 'Cornichon_Ninja', 'Moustache_Inc',
+  'Biscotte_Agile', 'Coquillette', 'Tournesol_7', 'Galette_Saucisse', 'Crêpe_Au_Sucre', 'Quiche_Lorraine',
+  'Brioche_Tranquille', 'Myrtille_Rapide', 'Cassoulet_31', 'Pain_Perdu_Retrouvé', 'Kiwi_Sauvage',
+  'gégé_du_rugby', 'Mimi_Pinceau', 'Toto_la_Praline', 'Lulu_Berlu', 'Fifi_Ricochet', 'Bidule_Truc',
+  'Machin_Chose', 'Pépite_44', 'Grenouille_Zen', 'Hibou_Studieux', 'Renard_Futé', 'Écureuil_Malin',
+  'Hérisson_Prudent', 'Blaireau_Agile', 'Castor_Bâtisseur', 'Lama_Sérieux', 'Koala_Concentré',
+  'Yack_Attaque', 'Phoque_Repenti', 'Morse_Code', 'Orque_Tranquille', 'Narval_Rêveur', 'Baleine_Bleue',
+  'Mouette_Rieuse', 'Albatros_Lent', 'Pélican_Pressé', 'Macareux_Moine', 'Goéland_Gourmand',
+  'Pingouin_Pas_Manchot', 'Calamar_Calme', 'Crabe_Rapide', 'Méduse_Zen', 'Otarie_Joyeuse',
+  'nath.prt', 'Amandine_K', 'Benoît.lr', 'Cyril_Mz', 'Delphine_P', 'Étienne_Rv', 'Fabien.gt',
+  'Gaëlle_Bn', 'Hélène.st', 'Ibrahim_Dj', 'Jérôme_Lm', 'Karima.b', 'Laurent_Px', 'Mélanie_Rc',
+  'Nicolas.dv', 'Océane_Tl', 'Pierre_Ag', 'Quentin.mb', 'Rachid_El', 'Sophie_Lg', 'Thierry.bc',
+  'Ugo_Fn', 'Valérie_Cs', 'William.tr', 'Xavier_Bd', 'Yohan_Pt', 'Zakaria_Lc', 'Aurélie.mn',
+  'Baptiste_Vl', 'Coralie_Fx', 'Damien.rs', 'Élodie_Mq', 'Florian_Hz', 'Gwenaëlle.k', 'Hugo_le_Grand',
+  'Inès_dans_les_nuages', 'Joachim.dm', 'Kévin_Zr', 'Laetitia_Bl', 'Maxime.ft', 'Nadia_Ks',
+  'Olivier_Th', 'Pauline.sb', 'Rémi_Gx', 'Sandrine_Lt', 'Tristan.ov', 'Ulysse_Kb', 'Vanessa_Pr',
+]
