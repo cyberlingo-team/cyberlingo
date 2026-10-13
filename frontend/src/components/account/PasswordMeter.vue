@@ -28,10 +28,10 @@ const ratio = computed(() => Math.min(1, bits.value / minBits.value))
 const enough = computed(() => bits.value >= minBits.value)
 
 const verdict = computed(() => {
-  if (!props.password) return `La CNIL recommande au moins ${minBits.value} bits. La jauge se remplit pendant que tu tapes.`
-  if (enough.value) return `${bits.value} bits, pour ${minBits.value} recommandés par la CNIL : c’est solide.`
-  if (bits.value < minBits.value / 2) return `${bits.value} bits sur ${minBits.value} : bien trop fragile pour l’instant.`
-  return `${bits.value} bits sur ${minBits.value} : encore un effort, allonge-le.`
+  if (!props.password) return `La CNIL recommande au moins ${minBits.value}\u00a0bits. La jauge se remplit pendant que tu tapes.`
+  if (enough.value) return `${bits.value}\u00a0bits, pour ${minBits.value} recommandés par la CNIL : c’est solide.`
+  if (bits.value < minBits.value / 2) return `${bits.value}\u00a0bits sur ${minBits.value} : bien trop fragile pour l’instant.`
+  return `${bits.value}\u00a0bits sur ${minBits.value} : encore un effort, allonge-le.`
 })
 </script>
 

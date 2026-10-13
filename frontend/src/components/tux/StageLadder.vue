@@ -30,7 +30,7 @@ defineProps({
         :alt="level !== null && stage.level > level ? 'Stade pas encore atteint' : stage.name"
       />
       <span class="step-name">{{ level !== null && stage.level > level ? '?' : stage.name }}</span>
-      <span class="step-points">{{ stage.minPoints ? `${formatNumber(stage.minPoints)} pts` : 'au départ' }}</span>
+      <span class="step-points">{{ stage.minPoints ? `${formatNumber(stage.minPoints)} pts` : 'au départ' }}</span>
     </li>
   </ol>
 </template>

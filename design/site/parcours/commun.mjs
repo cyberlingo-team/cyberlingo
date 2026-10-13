@@ -36,6 +36,9 @@ async function chargerImages(page) {
 }
 
 export async function etape(page, nom, format, options = {}) {
+  // Le pointeur s'écarte sur l'en-tête : sinon, quand la capture pleine page agrandit la fenêtre,
+  // un bouton passe dessous et se fige à mi-chemin de son survol.
+  await page.mouse.move(1, 1)
   await attendre(page, options.attente ?? 700)
   if (options.pleinePage) await chargerImages(page)
   const chemin = await capturer(page, nom, format, { pleinePage: options.pleinePage ?? false })

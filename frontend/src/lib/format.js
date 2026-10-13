@@ -14,7 +14,8 @@ export function typo(text) {
     .replace(/ :/g, `${NBSP}:`)
     .replace(/(\d) ([€%])/g, `$1${NNBSP}$2`)
     .replace(/(\d) h (\d)/g, `$1${NBSP}h${NBSP}$2`)
-    .replace(/(\d) (h|min|jours?|ans?|points?|caractères|bits)(?![\p{L}])/gu, `$1${NBSP}$2`)
+    // Un nombre ne se sépare pas du mot qui le suit : « 80 bits », « 3 minutes », « 13 octobre ».
+    .replace(/(\d) (?=\p{Ll})/gu, `$1${NBSP}`)
 }
 
 // « l’Inspecteur » en début de phrase devient « L’Inspecteur ».

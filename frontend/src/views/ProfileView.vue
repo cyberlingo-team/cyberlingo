@@ -162,8 +162,8 @@ function dayLink(day) {
           <div class="fact">
             <dt>Épisodes</dt>
             <dd>
-              <strong>{{ formatNumber(me.totals.episodes) }}</strong> joués le jour même<template v-if="successRate !== null">,
-                {{ formatNumber(me.totals.correct) }} bonnes réponses sur {{ formatNumber(me.totals.questions) }}
+              <strong>{{ formatNumber(me.totals.episodes) }}</strong> {{ me.totals.episodes >= 2 ? 'joués' : 'joué' }} le jour même<template v-if="successRate !== null">,
+                {{ plural(me.totals.correct, 'bonne réponse', 'bonnes réponses') }} sur {{ formatNumber(me.totals.questions) }}
                 ({{ successRate }} %)</template>.
             </dd>
           </div>

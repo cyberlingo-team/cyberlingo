@@ -20,7 +20,7 @@ const minutes = computed(() => episodeMinutes(props.mission.questions.length))
 const readers = computed(() => {
   const stats = props.stats
   if (!stats || !stats.players) return null
-  const who = stats.players > 1 ? `${formatNumber(stats.players)} joueurs l’ont déjà lu` : 'Un joueur l’a déjà lu'
+  const who = stats.players > 1 ? `${formatNumber(stats.players)}\u00a0joueurs l’ont déjà lu` : 'Un joueur l’a déjà lu'
   return stats.successRate === null ? `${who} aujourd’hui.` : `${who} aujourd’hui, avec ${stats.successRate} % de bonnes réponses.`
 })
 

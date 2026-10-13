@@ -216,6 +216,15 @@ function statusText(episode) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
+
+  /* Les trois filtres tiennent sur une ligne d'un téléphone de 390 px. */
+  .filters {
+    gap: 6px;
+  }
+
+  .filter {
+    padding-inline: 0.55em;
+  }
 }
 
 .covers-item {

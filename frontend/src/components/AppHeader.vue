@@ -41,7 +41,7 @@ const meLabel = computed(() => (user.value ? `Mon Tux : ${user.value.username},
           <Picture class="me-tux" :image="stageImage(user.stage.level, { mini: true })" alt="" eager />
           <span class="me-text" aria-hidden="true">
             <MuscleName class="me-name" :name="user.username" :level="user.stage.level" :wrap="false" />
-            <span class="me-points">{{ formatNumber(user.points) }} pts</span>
+            <span class="me-points">{{ formatNumber(user.points) }}&nbsp;{{ user.points > 1 ? 'pts' : 'pt' }}</span>
           </span>
         </RouterLink>
         <template v-else-if="session.status !== 'loading'">
