@@ -6,6 +6,8 @@
 // La session est un cookie httpOnly posé par le serveur : l'interface ne voit jamais de jeton.
 // Pour savoir qui est connecté, elle le demande (GET /api/session).
 
+import { typo } from '../lib/format.js'
+
 export const USE_SIMULATION = true
 
 export class ApiError extends Error {
@@ -48,6 +50,9 @@ export async function request(method, path, body) {
   const { status, body: data } = response
   if (status >= 200 && status < 300) return data
   if (status === 0) throw new ApiError(0, 'network', 'Le serveur ne répond pas.')
+  // Les messages du serveur arrivent en texte brut : on y pose les espaces insécables du
+  // français, pour qu'une ligne ne commence jamais par un deux-points.
   const error = data?.error
-  throw new ApiError(status, error?.code || 'unknown', error?.message || 'Le serveur a renvoyé une erreur.', error?.fields || {})
+  const fields = Object.fromEntries(Object.entries(error?.fields || {}).map(([name, text]) => [name, typo(text)]))
+  throw new ApiError(status, error?.code || 'unknown', typo(error?.message || 'Le serveur a renvoyé une erreur.'), fields)
 }

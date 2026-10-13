@@ -11,7 +11,8 @@ import { getGame, getLeaderboard } from '../api/index.js'
 import { loadSession, session } from '../lib/session.js'
 import { useResource } from '../lib/resource.js'
 import { sceneImage, stageImage } from '../lib/images.js'
-import { formatDay, formatNumber, ordinal, plural } from '../lib/format.js'
+import Ordinal from '../components/Ordinal.vue'
+import { formatDay, formatNumber, plural } from '../lib/format.js'
 
 const route = useRoute()
 
@@ -84,7 +85,7 @@ const span = computed(() => {
         <Picture class="standing-tux" :image="stageImage(me.level, { mini: true })" alt="" />
         <div class="standing-text">
           <p class="standing-rank">
-            <span class="standing-number">{{ ordinal(me.rank) }}</span>
+            <Ordinal class="standing-number" :rank="me.rank" />
             <span class="standing-of">sur {{ formatNumber(board.players) }}</span>
           </p>
           <p>
@@ -94,7 +95,7 @@ const span = computed(() => {
           <p v-if="me.ahead" class="standing-ahead">
             {{ plural(me.ahead.gap, 'point') }} {{ me.ahead.gap > 1 ? 'te séparent' : 'te sépare' }} de
             <MuscleName :name="me.ahead.username" :level="me.ahead.level" class="standing-rival" />
-            ({{ ordinal(me.ahead.rank) }}).
+            (<Ordinal :rank="me.ahead.rank" />).
             <template v-if="me.next && me.next.date !== board.to">
               Demain, le prochain épisode peut te rapporter jusqu’à {{ plural(me.next.maxPoints, 'point') }}.
             </template>
@@ -103,7 +104,7 @@ const span = computed(() => {
               {{ plural(me.next.maxPoints, 'point') }}.
             </template>
           </p>
-          <p v-else class="standing-ahead">Personne devant toi. Reste dans la course demain : ton Tux a des envieux.</p>
+          <p v-else class="standing-ahead">Personne devant toi. Reste dans la course demain : ton Tux a des envieux.</p>
         </div>
       </section>
 
@@ -113,20 +114,20 @@ const span = computed(() => {
             ? 'Pas encore de points sur les 7 derniers jours.'
             : 'Pas encore de points.'
         }}
-        Un épisode suffit pour entrer au classement :
+        Un épisode suffit pour entrer au classement :
         <RouterLink to="/">celui du jour t’attend</RouterLink>.
       </p>
 
       <section v-else class="guest-call panel">
         <Picture class="guest-egg" :image="sceneImage('egg')" alt="" />
         <p>
-          Ton nom n’est pas encore dans la liste. Crée ton compte : ton Tux éclot, et chaque épisode lui donne du muscle
+          Ton nom n’est pas encore dans la liste. Crée ton compte : ton Tux éclot, et chaque épisode lui donne du muscle
           et des points.
         </p>
         <RouterLink class="button" :to="{ path: '/inscription', query: { redirect: '/classement' } }">Créer mon compte</RouterLink>
       </section>
 
-      <section class="board panel" :aria-label="`Classement : ${span}`">
+      <section class="board panel" :aria-label="`Classement : ${span}`">
         <p class="board-span">
           {{ span }}, {{ plural(board.players, 'joueur') }} {{ board.players > 1 ? 'ont' : 'a' }} marqué des points.
         </p>

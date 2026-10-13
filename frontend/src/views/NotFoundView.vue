@@ -20,7 +20,7 @@ const address = computed(() => route.fullPath)
     <div class="lost-scene panel">
       <Picture class="lost-image" :image="sceneImage('prof-lost')" alt="Tux le prof, perdu, une carte dépliée entre les ailes." eager />
       <Balloon class="lost-balloon" tail="left">
-        Je cherche « <span class="lost-address">{{ address }}</span> » depuis tout à l’heure. Rien. Pas même un
+        Je cherche « <span class="lost-address">{{ address }}</span> » depuis tout à l’heure. Rien. Pas même un
         panneau.
       </Balloon>
     </div>
@@ -28,7 +28,7 @@ const address = computed(() => route.fullPath)
     <p class="lead">
       {{
         props.text ||
-        'L’adresse est peut-être mal recopiée, ou la page a déménagé. Une adresse bizarre, c’est aussi le premier indice d’un piège : bon réflexe de vérifier.'
+        'L’adresse est peut-être mal recopiée, ou la page a déménagé. Une adresse bizarre, c’est aussi le premier indice d’un piège : bon réflexe de vérifier.'
       }}
     </p>
     <div class="lost-actions">

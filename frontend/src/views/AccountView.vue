@@ -49,7 +49,7 @@ function submitRename() {
     const { user: updated } = await renameMe(rename.values.username.trim())
     setSessionUser(updated)
     rename.values.username = updated.username
-    rename.done = `C’est fait : au classement, tu t’appelles maintenant ${updated.username}.`
+    rename.done = `C’est fait : au classement, tu t’appelles maintenant ${updated.username}.`
   })
 }
 
@@ -120,7 +120,7 @@ function submitRemoval() {
         />
         <p v-if="rename.fields.username" class="field-error" role="alert">{{ rename.fields.username }}</p>
         <p id="account-username-hint" class="field-hint">
-          {{ rules?.username.minLength || 3 }} à {{ rules?.username.maxLength || 30 }} caractères : lettres, chiffres,
+          {{ rules?.username.minLength || 3 }} à {{ rules?.username.maxLength || 30 }} caractères : lettres, chiffres,
           point, tiret et tiret bas. Tes points et ta série te suivent.
         </p>
       </div>
@@ -167,7 +167,7 @@ function submitRemoval() {
 
     <section class="panel panel--pad account-form" aria-labelledby="account-logout">
       <h2 id="account-logout" class="account-title">Se déconnecter</h2>
-      <p>Sur un ordinateur partagé, déconnecte-toi en partant : la session reste ouverte sinon.</p>
+      <p>Sur un ordinateur partagé, déconnecte-toi en partant : la session reste ouverte sinon.</p>
       <p v-if="leaveProblem" class="form-problem" role="alert">{{ leaveProblem }}</p>
       <button class="button button--paper" type="button" :disabled="leaving" @click="leave">
         {{ leaving ? 'Déconnexion…' : 'Me déconnecter' }}

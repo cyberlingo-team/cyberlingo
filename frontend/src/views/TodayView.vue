@@ -10,8 +10,13 @@ import { loadSession, refreshSession } from '../lib/session.js'
 import { useResource } from '../lib/resource.js'
 
 const version = ref(0)
+// Une fois l'épisode fini, « Précédemment » passe à « Épisode du jour bouclé », avec les points à jour.
+const finished = ref(false)
+const freshMe = ref(null)
 
 const { data, error, reload } = useResource(async () => {
+  finished.value = false
+  freshMe.value = null
   const [today, user] = await Promise.all([getTodayMission(), loadSession()])
   let me = null
   if (user) {
@@ -25,8 +30,10 @@ const { data, error, reload } = useResource(async () => {
   return { ...today, me }
 })
 
-function onFinished() {
+async function onFinished() {
   refreshSession()
+  finished.value = true
+  if (data.value?.me) freshMe.value = await getMe().catch(() => null)
 }
 </script>
 
@@ -35,7 +42,11 @@ function onFinished() {
     <ErrorPanel v-if="error && !data" :error="error" :retry="reload" />
     <LoadingPanel v-else-if="!data" label="Chargement de l’épisode du jour" />
     <template v-else>
-      <Previously :me="data.me" :progress="data.progress" :question-count="data.mission.questions.length" />
+      <Previously
+        :me="freshMe || data.me"
+        :progress="finished ? { ...data.progress, completed: true } : data.progress"
+        :question-count="data.mission.questions.length"
+      />
       <EpisodePlayer
         :key="version"
         :mission="data.mission"

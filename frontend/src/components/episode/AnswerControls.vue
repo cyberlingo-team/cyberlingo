@@ -105,7 +105,7 @@ const remaining = computed(() => props.question.pick - props.selectedZones.lengt
     <div v-else-if="question.kind === 'clues' && !revealed" class="clues">
       <p class="clues-count" aria-live="polite">
         <template v-if="remaining > 0">
-          {{ selectedZones.length }} indice{{ selectedZones.length > 1 ? 's' : '' }} sur {{ question.pick }} :
+          {{ selectedZones.length }} indice{{ selectedZones.length > 1 ? 's' : '' }} sur {{ question.pick }} :
           encore {{ remaining }} à toucher dans {{ question.artifact ? 'le document' : 'la case' }}.
         </template>
         <template v-else>Tes {{ question.pick }} indices sont choisis.</template>

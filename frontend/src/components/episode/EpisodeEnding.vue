@@ -13,7 +13,8 @@ import NextEpisode from './NextEpisode.vue'
 import { getResult } from '../../api/index.js'
 import { useResource } from '../../lib/resource.js'
 import { sceneImage, stageImage, villainImage } from '../../lib/images.js'
-import { formatDay, formatNumber, ordinal, plural, typo } from '../../lib/format.js'
+import Ordinal from '../Ordinal.vue'
+import { formatDay, formatNumber, plural, typo } from '../../lib/format.js'
 import { playSound } from '../../lib/sound.js'
 import { reducedMotion } from '../../lib/preferences.js'
 
@@ -48,7 +49,7 @@ const perfect = computed(() => result.value && result.value.correct === result.v
 const scoreLine = computed(() => {
   const r = result.value
   if (!r) return ''
-  if (r.correct === r.total) return `Sans-faute : ${r.total} cases sur ${r.total}.`
+  if (r.correct === r.total) return `Sans-faute : ${r.total} cases sur ${r.total}.`
   if (r.correct === 0) return `Aucune bonne réponse sur ${r.total}. Les explications sont là pour ça.`
   return `${r.correct} bonne${r.correct > 1 ? 's' : ''} réponse${r.correct > 1 ? 's' : ''} sur ${r.total}.`
 })
@@ -117,7 +118,7 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
       </section>
       <section v-else class="unmask unmask--none panel">
         <Picture class="unmask-prof" :image="sceneImage('prof-reading')" alt="Tux le prof lit sa bande dessinée dans un fauteuil." />
-        <p class="unmask-none-text">Pas d’escroc dans cet épisode : juste un bon réflexe à prendre avant qu’il serve.</p>
+        <p class="unmask-none-text">Pas d’escroc dans cet épisode : juste un bon réflexe à prendre avant qu’il serve.</p>
       </section>
 
       <!-- Le score et les points -->
@@ -140,7 +141,7 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
           </dl>
         </template>
         <p v-else-if="result.mode === 'practice'" class="score-note">
-          Épisode rattrapé : il ne rapporte pas de points, mais les réflexes, eux, restent.
+          Épisode rattrapé : il ne rapporte pas de points, mais les réflexes, eux, restent.
         </p>
 
         <!-- Le Tux grandit (épisode du jour, joueur connecté) -->
@@ -149,9 +150,10 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
             class="growth-tux"
             :image="stageImage(player.after.stage.level)"
             :alt="`Ton Tux, stade ${player.after.stage.name}.`"
+            eager
           />
           <div class="growth-text">
-            <p v-if="leveledUp" class="growth-burst">Nouveau stade !</p>
+            <p v-if="leveledUp" class="growth-burst">Nouveau stade !</p>
             <p class="growth-title">
               <template v-if="leveledUp">Ton Tux passe <strong>{{ player.after.stage.name }}</strong>.</template>
               <template v-else>Ton Tux, {{ player.after.stage.name }}, prend {{ plural(result.points.total, 'point') }} de muscle.</template>
@@ -162,14 +164,16 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
                 :to="gauge.to"
                 :before="gauge.before"
                 :after="gauge.after"
-                :label="`Points de ton Tux : ${gauge.after} sur ${gauge.to}`"
+                :label="`Points de ton Tux : ${gauge.after} sur ${gauge.to}`"
               />
               <p>Encore {{ plural(gauge.remaining, 'point') }} avant le stade {{ gauge.nextName }}.</p>
             </template>
             <p v-else>Tu as atteint le dernier stade. Les arnaques n’ont qu’à bien se tenir.</p>
             <p class="growth-streak">
-              Série : {{ plural(player.streak.current, 'jour') }} de suite<template v-if="player.streak.best > player.streak.current">
-                (record : {{ plural(player.streak.best, 'jour') }})</template><template v-else-if="player.streak.current > 1"> : c’est ton record.</template>
+              <template v-if="player.streak.current <= 1 && player.streak.best <= 1">Série : premier jour. Reviens demain pour la faire grandir.</template>
+              <template v-else-if="player.streak.current <= 1">Série : c’est reparti, premier jour (record : {{ plural(player.streak.best, 'jour') }}).</template>
+              <template v-else-if="player.streak.best > player.streak.current">Série : {{ plural(player.streak.current, 'jour') }} de suite (record : {{ plural(player.streak.best, 'jour') }}).</template>
+              <template v-else>Série : {{ plural(player.streak.current, 'jour') }} de suite, c’est ton record.</template>
             </p>
           </div>
         </div>
@@ -178,15 +182,15 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
       <!-- La place au classement -->
       <section v-if="rank" class="rank panel" aria-labelledby="rank-title">
         <h3 id="rank-title" class="rank-title">
-          {{ ordinal(rank.position) }} <span class="rank-of">sur {{ formatNumber(rank.players) }} cette semaine</span>
+          <Ordinal :rank="rank.position" /> <span class="rank-of">sur {{ formatNumber(rank.players) }} cette semaine</span>
         </h3>
         <p v-if="gained > 0">Tu gagnes {{ gained }} place{{ gained > 1 ? 's' : '' }} avec cet épisode.</p>
         <p v-if="rank.ahead" class="rank-ahead">
           Encore <strong>{{ plural(rank.ahead.gap + 1, 'point') }}</strong> et tu doubles
           <MuscleName :name="rank.ahead.username" :level="rank.ahead.level" class="rank-name" />
-          ({{ ordinal(rank.ahead.rank) }}).
+          (<Ordinal :rank="rank.ahead.rank" />).
           <template v-if="rank.next && rank.ahead.gap + 1 <= rank.next.maxPoints">
-            Demain, un épisode peut rapporter jusqu’à {{ plural(rank.next.maxPoints, 'point') }} : de quoi passer devant.
+            Demain, un épisode peut rapporter jusqu’à {{ plural(rank.next.maxPoints, 'point') }} : de quoi passer devant.
           </template>
           <template v-else-if="rank.next">
             Demain, un épisode peut rapporter jusqu’à {{ plural(rank.next.maxPoints, 'point') }}.
@@ -202,7 +206,7 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
         <div class="guest-text">
           <h3 id="guest-title" class="guest-title">Ton Tux attend dans son œuf.</h3>
           <p>
-            Crée ton compte maintenant : cet épisode te rapporte
+            Crée ton compte maintenant : cet épisode te rapporte
             <strong>{{ plural(result.points.total, 'point') }}</strong>, ton Tux éclot et ta série commence aujourd’hui.
           </p>
           <div class="guest-actions">
@@ -220,7 +224,7 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
         <h3 id="sources-title" class="sources-title">Pour aller plus loin</h3>
         <ul class="sources-list">
           <li v-for="source in result.sources" :key="source.url">
-            <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.label }}</a>
+            <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ typo(source.label) }}</a>
           </li>
         </ul>
       </section>
@@ -267,7 +271,7 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
 /* Léopold démasqué. */
 .unmask {
   display: grid;
-  grid-template-columns: minmax(120px, 0.7fr) 1.3fr;
+  grid-template-columns: minmax(120px, 0.9fr) 1.1fr;
   align-items: center;
   gap: clamp(16px, 4vw, 36px);
   padding: clamp(14px, 3.4vw, 26px);
@@ -284,12 +288,14 @@ const gained = computed(() => (rank.value && rank.value.previous ? rank.value.pr
   max-height: 300px;
 }
 
+/* Le tampon reste dans la colonne de l'image : il ne mord ni sur le cadre ni sur le texte. */
 .unmask-stamp {
   position: absolute;
   bottom: 18%;
   left: 50%;
   translate: -50% 0;
-  font-size: clamp(1.5rem, 5.6vw, 2.2rem);
+  font-size: clamp(1.5rem, 5.6vw, 1.95rem);
+  white-space: nowrap;
 }
 
 .unmask-text {

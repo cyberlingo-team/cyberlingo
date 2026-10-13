@@ -61,7 +61,7 @@ const unmaskedCount = computed(() => disguises.value.filter((d) => unmasked.valu
             Il corrige chaque case au stylo rouge, ne s’énerve jamais et soupire parfois. Ton Tux, lui, commence poussin
             et prend du muscle à chaque épisode.
           </p>
-          <Balloon tail="left" class="prof-balloon">Un message pressé qui réclame ton code ? C’est déjà un indice.</Balloon>
+          <Balloon tail="left" class="prof-balloon">Un message pressé qui réclame ton code ? C’est déjà un indice.</Balloon>
         </div>
       </section>
 
@@ -77,7 +77,7 @@ const unmaskedCount = computed(() => disguises.value.filter((d) => unmasked.valu
             <p class="cousin-seen">
               <template v-if="lastSeen[member.id]">
                 Vu dans
-                <RouterLink :to="lastSeen[member.id].status === 'today' ? '/' : `/episode/${lastSeen[member.id].date}`">{{ typo(`« ${lastSeen[member.id].title} »`) }}</RouterLink>,
+                <RouterLink :to="lastSeen[member.id].status === 'today' ? '/' : `/episode/${lastSeen[member.id].date}`">{{ typo(`« ${lastSeen[member.id].title} »`) }}</RouterLink>,
                 {{ formatDay(lastSeen[member.id].date) }}.
               </template>
               <template v-else>Pas encore invité dans un épisode.</template>

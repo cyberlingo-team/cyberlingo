@@ -80,8 +80,8 @@ const STATUS_TEXT = {
 }
 
 function statusText(episode) {
-  if (episode.status === 'played') return `Joué : ${episode.score.correct} sur ${episode.score.total}`
-  if (episode.status === 'practiced') return `Rattrapé : ${episode.score.correct} sur ${episode.score.total}`
+  if (episode.status === 'played') return `Joué : ${episode.score.correct} sur ${episode.score.total}`
+  if (episode.status === 'practiced') return `Rattrapé : ${episode.score.correct} sur ${episode.score.total}`
   return STATUS_TEXT[episode.status] || ''
 }
 </script>
@@ -97,13 +97,13 @@ function statusText(episode) {
       <p v-if="signedIn" class="lead">
         Tu en as joué {{ playedCount }} sur {{ episodes.length }}.
         <template v-if="toCatchUp.length">
-          Ceux qui te manquent se rattrapent ici : même correction, mais sans points.
+          Ceux qui te manquent se rattrapent ici : même correction, mais sans points.
         </template>
         <template v-else>Tu n’en as manqué aucun.</template>
       </p>
       <p v-else class="lead">
         {{ plural(episodes.length, 'épisode') }} parus depuis le {{ formatDay(launch).replace(/^\S+ /, '') }}. Lis-les
-        dans l’ordre que tu veux : chacun se suffit à lui-même.
+        dans l’ordre que tu veux : chacun se suffit à lui-même.
       </p>
 
       <div v-if="signedIn" class="filters" role="group" aria-label="Afficher">
@@ -120,7 +120,7 @@ function statusText(episode) {
       </div>
 
       <p v-if="!weeks.length" class="caption empty">
-        {{ filter === 'catch-up' ? 'Rien à rattraper : tu as joué tous les épisodes parus. Le prochain sort à minuit.' : 'Tu n’as encore joué aucun épisode. Celui du jour t’attend.' }}
+        {{ filter === 'catch-up' ? 'Rien à rattraper : tu as joué tous les épisodes parus. Le prochain sort à minuit.' : 'Tu n’as encore joué aucun épisode. Celui du jour t’attend.' }}
       </p>
 
       <section v-for="week in weeks" :key="week.start" class="week" :aria-labelledby="`week-${week.start}`">
@@ -129,7 +129,9 @@ function statusText(episode) {
           <li v-for="episode in week.episodes" :key="episode.date" class="covers-item">
             <RouterLink :to="linkFor(episode)" class="mini" :class="`mini--${episode.status}`">
               <span class="mini-head">
-                <span class="mini-number">N° {{ episode.number }}</span>
+                <span class="mini-number">
+                  <span class="visually-hidden">Épisode </span><span aria-hidden="true">N<sup>o</sup>&nbsp;</span>{{ episode.number }}
+                </span>
                 <span class="mini-date">{{ formatShortDay(episode.date) }}</span>
               </span>
               <span class="mini-title">{{ typo(episode.title) }}</span>
@@ -254,6 +256,13 @@ function statusText(episode) {
   font-weight: 700;
   color: var(--paper);
   background: var(--ink);
+}
+
+/* L'abréviation de « numéro » prend un o en exposant : le signe ° est celui des degrés. */
+.mini-number sup {
+  font-size: 0.66em;
+  line-height: 0;
+  vertical-align: 0.42em;
 }
 
 .mini-date {

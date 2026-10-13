@@ -43,29 +43,29 @@ const story = computed(() => {
 <template>
   <p class="previously caption">
     <template v-if="story.kind === 'guest'">
-      Chaque jour, un nouvel épisode. Un membre de la bande à Tux tombe sur une arnaque : à toi de la repérer avant lui,
+      Chaque jour, un nouvel épisode. Un membre de la bande à Tux tombe sur une arnaque : à toi de la repérer avant lui,
       en {{ questionCount }} cases et {{ episodeMinutes(questionCount) }} minutes. Tux le prof corrige.
     </template>
     <template v-else-if="story.kind === 'done'">
-      Épisode du jour bouclé. <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" /> tient sa série :
+      Épisode du jour bouclé. <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" /> tient sa série :
       {{ plural(story.streak, 'jour') }}. Prochain épisode à minuit.
     </template>
     <template v-else-if="story.kind === 'running'">
-      <span class="previously-label">Précédemment :</span>
-      <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" /> a tenu {{ plural(story.streak, 'jour') }} de suite.
+      <span class="previously-label">Précédemment&nbsp;:</span> <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" />
+      a tenu {{ plural(story.streak, 'jour') }} de suite.
       Son Tux, {{ story.stage.name }},
       <template v-if="story.stage.next">n’est plus qu’à {{ plural(story.remaining, 'point') }} du stade {{ story.stage.next.name }}.</template>
       <template v-else>a atteint le dernier stade.</template>
     </template>
     <template v-else-if="story.kind === 'broken'">
-      <span class="previously-label">Précédemment :</span>
+      <span class="previously-label">Précédemment&nbsp;:</span>
       la série de <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" /> s’est arrêtée {{ story.when }},
-      après {{ plural(story.run, 'jour') }}. Son Tux garde tous ses muscles : un épisode aujourd’hui, et c’est reparti.
+      après {{ plural(story.run, 'jour') }}. Son Tux garde tous ses muscles : un épisode aujourd’hui, et c’est reparti.
     </template>
     <template v-else>
-      <span class="previously-label">Précédemment :</span>
-      rien du tout. Le Tux de <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" /> vient d’éclore
-      et n’a encore jamais vu d’arnaque. Tout commence aujourd’hui.
+      <span class="previously-label">Précédemment&nbsp;:</span>
+      rien du tout. Le Tux de <MuscleName :name="me.user.username" :level="me.stage.level" class="previously-name" /> n’a encore
+      jamais vu d’arnaque. Tout commence aujourd’hui.
     </template>
   </p>
 </template>

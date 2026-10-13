@@ -36,8 +36,8 @@ onBeforeUnmount(() => clearInterval(timer))
     <div class="next-text">
       <h2 id="next-title" class="next-title">Demain, épisode {{ next.number }}</h2>
       <p class="caption next-hook">{{ typo(next.hook) }}</p>
-      <p v-if="next.villain">Léopold essaie déjà un nouveau déguisement. Sauras-tu le reconnaître à temps ?</p>
-      <p v-else>Pas d’escroc prévu demain : juste un réflexe de plus pour ton Tux.</p>
+      <p v-if="next.villain">Léopold essaie déjà un nouveau déguisement. Sauras-tu le reconnaître à temps ?</p>
+      <p v-else>Pas d’escroc prévu demain : juste un réflexe de plus pour ton Tux.</p>
       <p class="next-when">Parution à minuit, dans {{ countdown }}.</p>
     </div>
   </section>

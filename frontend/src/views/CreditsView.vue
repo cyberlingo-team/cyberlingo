@@ -17,7 +17,7 @@ import logo from '../assets/brand/tux-prof.svg'
     <section class="panel panel--pad credit-block" aria-labelledby="credits-logo">
       <img :src="logo" class="credit-logo" width="120" height="120" alt="" />
       <div class="credit-text">
-        <h2 id="credits-logo">Le logo : Tux en professeur</h2>
+        <h2 id="credits-logo">Le logo : Tux en professeur</h2>
         <p>
           D’après <strong>Tux</strong> de Larry Ewing (lewing@isc.tamu.edu), réalisé avec The GIMP. Usage libre avec
           cette mention. L’icône de l’onglet en est le recadrage sur la tête.
@@ -33,7 +33,7 @@ import logo from '../assets/brand/tux-prof.svg'
         <h2 id="credits-stages">Les huit stades du Tux</h2>
         <p>
           Huit images générées pour CyberLingo avec Codex (OpenAI) à partir du logo, d’après <strong>Tux</strong> de
-          Larry Ewing. Modifiées pour le site : fond blanc rendu transparent, marges recadrées, réduites et converties
+          Larry Ewing. Modifiées pour le site : fond blanc rendu transparent, marges recadrées, réduites et converties
           en WebP, avec une miniature pour chacune.
         </p>
       </div>
@@ -49,10 +49,10 @@ import logo from '../assets/brand/tux-prof.svg'
         <li v-for="item in GANG_CREDITS" :key="item.id" class="gang-item panel">
           <Picture class="gang-image" :image="gangImage(item.id)" />
           <div class="gang-text">
-            <p class="gang-title">« {{ item.title }} »</p>
+            <p class="gang-title">« {{ item.title }} »</p>
             <p>par {{ item.authors }}</p>
             <p>
-              Licence :
+              Licence :
               <a v-if="LICENSES[item.license]" :href="LICENSES[item.license]" rel="license noopener" target="_blank">{{ item.license }}</a>
               <template v-else>{{ item.license }}</template>.
               <a :href="item.source" rel="noopener" target="_blank">Voir l’original</a>
@@ -67,14 +67,14 @@ import logo from '../assets/brand/tux-prof.svg'
       <h2 id="credits-created" class="credit-heading">Créées pour CyberLingo</h2>
       <p>
         Dix-neuf images dessinées pour le site avec l’outil de génération d’images de Codex (OpenAI), dans le style du
-        logo et d’après <strong>Tux</strong> de Larry Ewing, puis détourées, recadrées et converties en WebP :
+        logo et d’après <strong>Tux</strong> de Larry Ewing, puis détourées, recadrées et converties en WebP :
       </p>
       <ul class="plain-list">
         <li v-for="line in CREATED_IMAGES" :key="line">{{ line }}.</li>
       </ul>
       <p>
         Léopold, le léopard de mer escroc, et tous les personnages des épisodes sont inventés. Les bruitages sont
-        synthétisés par le navigateur pendant le jeu : aucun son enregistré.
+        synthétisés par le navigateur pendant le jeu : aucun son enregistré.
       </p>
     </section>
 
@@ -101,7 +101,7 @@ import logo from '../assets/brand/tux-prof.svg'
           <a :href="source.url" rel="noopener" target="_blank">{{ source.name }}</a>{{ index < SOURCES.length - 2 ? ', ' : index === SOURCES.length - 2 ? ' et de ' : '' }}
         </template>.
         Chaque épisode cite ses sources à la fin. Les banques, boutiques, numéros, adresses et messages des épisodes sont
-        inventés : toute ressemblance avec une vraie arnaque est voulue, avec une vraie marque, non.
+        inventés : toute ressemblance avec une vraie arnaque est voulue, avec une vraie marque, non.
       </p>
     </section>
 
@@ -109,7 +109,7 @@ import logo from '../assets/brand/tux-prof.svg'
       <h2 id="credits-privacy" class="credit-heading">Tes données</h2>
       <p>
         CyberLingo garde ton pseudo, ton mot de passe haché et salé, tes réponses et tes points. Ni e-mail, ni nom, ni
-        publicité, ni traceur. Le seul cookie est celui de ta session ; tes réglages de bruitages et d’animations
+        publicité, ni traceur. Le seul cookie est celui de ta session ; tes réglages de bruitages et d’animations
         restent dans ton navigateur. Tu peux supprimer ton compte à tout moment depuis la page
         <RouterLink to="/mon-compte">Mon compte</RouterLink>.
       </p>
