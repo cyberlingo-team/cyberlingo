@@ -146,7 +146,7 @@ const finished = computed(() => !props.path.current)
           :key="node.id"
           class="cl-path-node-wrap"
           :class="{ chest: node.type === 'chest', 'has-label': node.status === 'current' && i > 0 }"
-          :style="{ left: `${offset(u, i)}px` }"
+          :style="{ left: `${offset(u, i)}px` }"
         >
           <div v-if="node.status === 'current' && active !== node.id" class="cl-start-label" aria-hidden="true">
             {{ node.type === 'chest' ? 'Ouvrir' : 'Commencer' }}
