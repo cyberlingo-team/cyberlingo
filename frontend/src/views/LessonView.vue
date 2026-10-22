@@ -1,8 +1,10 @@
 <script setup>
-// Une leçon du chemin (/lecon/:id) ou la mission du jour (/mission-du-jour), en plein écran :
-// la barre de progression en haut, une question à la fois, la correction en bas, puis le bilan.
+// Une leçon du chemin (/lecon/:id) ou la mission du jour (/mission-du-jour), en plein écran, sur
+// le gabarit de la leçon de la copie de référence : la barre de progression en haut, une question
+// à la fois, « Passer » ou « Valider » en bas, puis la correction. Les questions ratées reviennent
+// à la fin (« Corrigeons tes erreurs ») avant le bilan.
 // Une leçon commencée reprend là où on l'a laissée ; une erreur coûte une bouée, sauf dans la
-// mission du jour.
+// mission du jour et quand on corrige ses erreurs en fin de leçon.
 import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icon from '../components/app/Icon.vue'
@@ -13,15 +15,14 @@ import LessonResult from '../components/lesson/LessonResult.vue'
 import { getTodayMission, sendAnswer, getResult, startLesson, sendLessonAnswer, getLessonResult } from '../api/index.js'
 import { session } from '../lib/session.js'
 import { refreshInventory } from '../lib/inventory.js'
+import { sceneImage } from '../lib/images.js'
 import { playSound } from '../lib/sound.js'
-import { reducedMotion } from '../lib/preferences.js'
-import { typo } from '../lib/format.js'
 
 const route = useRoute()
 const router = useRouter()
 const daily = computed(() => route.name === 'daily')
 
-// loading, error, locked, missing, nobuoys, question, result
+// loading, error, locked, missing, question, result
 const phase = ref('loading')
 const error = shallowRef(null)
 const lesson = shallowRef(null)
@@ -32,13 +33,28 @@ const choice = ref(null)
 const sending = ref(false)
 const result = shallowRef(null)
 const stage = ref(null)
-const top = ref(null)
+const quit = ref(false)
+const noBuoys = ref(false)
+const quitImage = sceneImage('prof-facepalm').src
+
+// La seconde chance : les questions ratées, rejouées sans compter, et leurs nouvelles réponses.
+const review = ref(null)
+const retried = reactive({})
 
 const questions = computed(() => lesson.value?.questions || [])
-const question = computed(() => questions.value[current.value])
-const revealed = computed(() => (question.value ? answers[question.value.id] || null : null))
-const answeredCount = computed(() => questions.value.filter((q) => answers[q.id]).length)
+const question = computed(() => (review.value ? questions.value.find((q) => q.id === review.value.ids[review.value.index]) : questions.value[current.value]))
+const revealed = computed(() => {
+  if (!question.value) return null
+  return review.value ? retried[question.value.id] || null : answers[question.value.id] || null
+})
 const firstOpen = () => questions.value.findIndex((q) => !answers[q.id])
+const missed = () => questions.value.filter((q) => answers[q.id] && !answers[q.id].correct).map((q) => q.id)
+
+const total = computed(() => questions.value.length + (review.value?.ids.length || 0))
+const done = computed(() => {
+  const first = questions.value.filter((q) => answers[q.id]).length
+  return review.value ? first + review.value.index + (revealed.value ? 1 : 0) : first
+})
 
 const ready = computed(() => {
   const q = question.value
@@ -54,6 +70,7 @@ function setAnswers(list) {
 async function load() {
   phase.value = 'loading'
   error.value = null
+  review.value = null
   try {
     if (daily.value) {
       const data = await getTodayMission()
@@ -73,8 +90,10 @@ async function load() {
     phase.value = 'question'
   } catch (cause) {
     if (cause.code === 'lesson_locked') phase.value = 'locked'
-    else if (cause.code === 'no_buoys') phase.value = 'nobuoys'
-    else if (cause.code === 'lesson_not_found') phase.value = 'missing'
+    else if (cause.code === 'no_buoys') {
+      phase.value = 'buoys'
+      noBuoys.value = true
+    } else if (cause.code === 'lesson_not_found') phase.value = 'missing'
     else {
       error.value = cause
       phase.value = 'error'
@@ -82,19 +101,29 @@ async function load() {
   }
 }
 
-async function check() {
-  if (!ready.value || sending.value || revealed.value) return
-  sending.value = true
+// La correction d'une question rejouée se fait ici : on connaît déjà la solution.
+function retry(q, answer) {
+  const first = answers[q.id]
+  const correct = answer !== null && (q.kind === 'clues' ? answer.every((zone) => first.solution.includes(zone)) : answer === first.solution)
+  retried[q.id] = { ...first, answer, correct }
+  playSound(correct ? 'correct' : 'wrong')
+}
+
+// skip : le joueur passe la question (réponse null), elle compte comme une erreur.
+async function check({ skip = false } = {}) {
+  if ((!skip && !ready.value) || sending.value || revealed.value) return
   const q = question.value
+  const answer = skip ? null : q.kind === 'clues' ? [...choice.value] : choice.value
+  if (review.value) return retry(q, answer)
+  sending.value = true
   try {
-    const answer = q.kind === 'clues' ? [...choice.value] : choice.value
     const data = daily.value ? await sendAnswer(lesson.value.date, q.id, answer) : await sendLessonAnswer(lesson.value.id, q.id, answer)
     answers[q.id] = { answer: data.answer, correct: data.correct, solution: data.solution, explanation: data.explanation, notes: data.notes, success: data.success }
     if (data.buoys) buoys.value = data.buoys
     playSound(data.correct ? 'correct' : 'wrong')
   } catch (cause) {
     // Déjà répondu ailleurs, plus de bouée : on recharge la leçon telle que le serveur la connaît.
-    if (cause.code === 'no_buoys') phase.value = 'nobuoys'
+    if (cause.code === 'no_buoys') noBuoys.value = true
     else if (cause.status === 409) load()
     else {
       error.value = cause
@@ -106,15 +135,22 @@ async function check() {
 }
 
 function next() {
-  const open = firstOpen()
-  if (open < 0) return showResult()
-  if (!daily.value && buoys.value && buoys.value.count < 1) {
-    phase.value = 'nobuoys'
+  choice.value = null
+  window.scrollTo({ top: 0 })
+  if (review.value) {
+    if (review.value.index + 1 < review.value.ids.length) review.value.index++
+    else showResult()
     return
   }
-  current.value = open
-  choice.value = null
-  top.value?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' })
+  const open = firstOpen()
+  if (open >= 0) {
+    if (!daily.value && buoys.value && buoys.value.count < 1) noBuoys.value = true
+    else current.value = open
+    return
+  }
+  const ids = missed()
+  if (ids.length) review.value = { ids, index: 0 }
+  else showResult()
 }
 
 // Le bilan de la mission du jour et celui d'une leçon n'ont pas tout à fait la même forme.
@@ -166,12 +202,12 @@ async function showResult() {
   }
 }
 
-function close() {
+function leave() {
   router.push('/apprendre')
 }
 
 function onKey(event) {
-  if (phase.value !== 'question' || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return
+  if (phase.value !== 'question' || quit.value || noBuoys.value || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return
   if (event.key === 'Enter' && !event.target.closest?.('button, a')) {
     event.preventDefault()
     if (revealed.value) next()
@@ -181,202 +217,211 @@ function onKey(event) {
   stage.value?.onKey(event)
 }
 
+const nextLabel = computed(() => {
+  if (review.value) return review.value.index + 1 < review.value.ids.length ? 'Continuer' : 'Voir le bilan'
+  return firstOpen() < 0 && !missed().length ? 'Voir le bilan' : 'Continuer'
+})
+
+// Le pied de page grandit avec la correction : la page garde de quoi défiler au-dessus.
+const footerHeight = ref(140)
+const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(([entry]) => (footerHeight.value = entry.target.offsetHeight))
+function watchFooter(component) {
+  observer?.disconnect()
+  if (component?.$el) observer?.observe(component.$el)
+}
+
 onMounted(() => {
   load()
   document.addEventListener('keydown', onKey)
 })
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
-
-const nextLabel = computed(() => (firstOpen() < 0 ? 'Voir le bilan' : 'Continuer'))
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey)
+  observer?.disconnect()
+})
 </script>
 
 <template>
-  <div class="lesson" :class="`lesson--${phase}`">
-    <LessonResult v-if="phase === 'result'" :result="result" @continue="close" />
+  <div class="cl-app cl-lesson" :style="{ paddingBottom: phase === 'question' ? `${footerHeight + 24}px` : undefined }">
+    <LessonResult v-if="phase === 'result'" :result="result" @continue="leave" />
 
     <template v-else>
-      <header ref="top" class="lesson-top">
-        <button type="button" class="lesson-close" aria-label="Quitter (ta progression est gardée)" @click="close">
+      <header class="cl-lesson-header">
+        <button type="button" class="cl-back" aria-label="Quitter la leçon" @click="phase === 'question' ? (quit = true) : leave()">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
         </button>
-        <div
-          class="meter lesson-meter"
-          role="progressbar"
-          :aria-valuenow="answeredCount"
-          aria-valuemin="0"
-          :aria-valuemax="questions.length || 1"
-          aria-label="Questions répondues"
-        >
-          <div class="meter-fill" :data-empty="answeredCount === 0" :style="{ width: `${(answeredCount / (questions.length || 1)) * 100}%` }"></div>
+        <div class="cl-progress" role="progressbar" :aria-valuenow="done" aria-valuemin="0" :aria-valuemax="total || 1" aria-label="Avancée de la leçon">
+          <div :style="{ width: `${(done / (total || 1)) * 100}%` }"></div>
         </div>
-        <p v-if="daily" class="lesson-badge lesson-badge--daily"><Icon name="flamme" :size="26" /><span>Mission du jour</span></p>
-        <p v-else-if="buoys" class="lesson-badge" :class="{ 'is-empty': buoys.count < 1 }">
-          <Icon name="bouee" :size="30" /><span>{{ buoys.count }}</span>
+        <span v-if="daily" class="cl-daily-badge"><Icon name="flamme" :size="28" /><span class="cl-daily-label">Mission du jour</span></span>
+        <span v-else-if="buoys" class="cl-hearts" :class="{ empty: buoys.count < 1 }">
+          <Icon name="bouee" :size="30" />{{ buoys.count }}
           <span class="visually-hidden">bouée{{ buoys.count > 1 ? 's' : '' }} sur {{ buoys.max }}</span>
-        </p>
+        </span>
       </header>
 
-      <main id="contenu" class="lesson-main" tabindex="-1">
+      <main id="contenu" class="cl-lesson-main" tabindex="-1">
         <StatePanel v-if="phase === 'loading'" label="On prépare la leçon…" />
         <StatePanel v-else-if="phase === 'error'" state="error" :error="error" :retry="load" />
 
-        <div v-else-if="phase === 'locked' || phase === 'missing'" class="blocked">
+        <section v-else-if="phase === 'locked' || phase === 'missing'" class="cl-blocked">
           <Icon name="coffre" :size="110" />
-          <h1 class="blocked-title">{{ phase === 'locked' ? 'Pas encore !' : 'Leçon introuvable' }}</h1>
-          <p class="muted">{{ phase === 'locked' ? 'Cette étape se débloque quand tu as fini celles d’avant sur le chemin.' : 'Cette leçon n’existe pas, ou plus.' }}</p>
-          <RouterLink to="/apprendre" class="button">Retour au chemin</RouterLink>
-        </div>
-
-        <div v-else-if="phase === 'nobuoys'" class="blocked">
-          <Icon name="bouee" :size="120" />
-          <h1 class="blocked-title">Plus de bouée !</h1>
-          <p class="muted">Chaque erreur dans une leçon coûte une bouée. Elles se regonflent toutes cette nuit. La mission du jour, elle, ne coûte jamais de bouée.</p>
-          <div class="blocked-actions">
-            <RouterLink v-if="session.user" to="/boutique" class="button">Regonfler à la boutique</RouterLink>
-            <RouterLink to="/mission-du-jour" class="button button--blue">Jouer la mission du jour</RouterLink>
-            <RouterLink to="/apprendre" class="button button--ghost">Retour au chemin</RouterLink>
-          </div>
-        </div>
+          <h1>{{ phase === 'locked' ? 'Pas encore !' : 'Leçon introuvable' }}</h1>
+          <p>{{ phase === 'locked' ? 'Cette étape se débloque quand tu as fini celles d’avant sur le chemin.' : 'Cette leçon n’existe pas, ou plus.' }}</p>
+          <RouterLink to="/apprendre" class="cl-button green">Retour au chemin</RouterLink>
+        </section>
 
         <template v-else-if="phase === 'question' && question">
-          <p v-if="lesson.replay" class="lesson-note">Tu rejoues cette leçon : elle ne rapporte pas de points, mais une erreur coûte quand même une bouée.</p>
-          <p class="lesson-title">{{ daily ? 'Mission du jour' : lesson.kind === 'review' ? 'Bilan du thème' : lesson.unit.title }} · {{ typo(lesson.title) }}</p>
+          <p v-if="lesson.replay" class="cl-lesson-note">Tu rejoues cette leçon : elle ne rapporte pas de points, mais une erreur coûte quand même une bouée.</p>
           <QuestionStage
             ref="stage"
-            :key="question.id"
+            :key="`${review ? 'r' : 'q'}-${question.id}`"
             v-model:choice="choice"
             :question="question"
             :guest="question.guest || lesson.guest"
             :revealed="revealed"
             :locked="sending"
+            :review="Boolean(review)"
           />
         </template>
       </main>
 
-      <LessonFooter v-if="phase === 'question' && question" :question="question" :ready="ready" :sending="sending" :revealed="revealed" :next-label="nextLabel" @check="check" @next="next" />
+      <LessonFooter
+        v-if="phase === 'question' && question"
+        :ref="watchFooter"
+        :question="question"
+        :ready="ready"
+        :sending="sending"
+        :revealed="revealed"
+        :next-label="nextLabel"
+        :can-skip="!review"
+        @check="check()"
+        @skip="check({ skip: true })"
+        @next="next"
+      />
     </template>
+
+    <div v-if="quit" class="cl-modal-backdrop" @click.self="quit = false">
+      <section class="cl-dialog" role="dialog" aria-modal="true" aria-labelledby="quit-title">
+        <img :src="quitImage" alt="" class="cl-dialog-image" />
+        <h2 id="quit-title">Tu veux vraiment quitter ?</h2>
+        <p>Tes réponses sont gardées : tu reprendras à la même question.</p>
+        <button type="button" class="cl-button green" @click="quit = false">Continuer</button>
+        <button type="button" class="cl-button" @click="leave">Quitter</button>
+      </section>
+    </div>
+
+    <div v-if="noBuoys" class="cl-modal-backdrop">
+      <section class="cl-dialog" role="dialog" aria-modal="true" aria-labelledby="buoys-title">
+        <Icon name="bouee" :size="96" class="cl-dialog-icon" />
+        <h2 id="buoys-title">Tu n’as plus de bouées</h2>
+        <p>Chaque erreur dans une leçon coûte une bouée. Elles se regonflent toutes cette nuit. La mission du jour, elle, n’en coûte jamais.</p>
+        <RouterLink v-if="session.user" to="/boutique" class="cl-button green">Regonfler à la boutique</RouterLink>
+        <RouterLink to="/mission-du-jour" class="cl-button blue">Jouer la mission du jour</RouterLink>
+        <button type="button" class="cl-button" @click="leave">Plus tard</button>
+      </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.lesson {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
-}
-
-.lesson-top {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  width: min(1000px, 100%);
-  margin: 0 auto;
-  padding: 24px var(--gutter) 8px;
-  scroll-margin-top: 0;
-}
-
-.lesson-close {
+.cl-back {
   display: grid;
-  flex-shrink: 0;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   color: #9aa0b4;
   background: none;
   border: 0;
-  border-radius: 50%;
 }
 
-.lesson-close:hover {
-  color: var(--ink);
-  background: var(--wash);
-}
-
-.lesson-close svg {
+.cl-back svg {
   width: 26px;
   height: 26px;
 }
 
-.lesson-meter {
-  --meter: var(--success);
-  flex: 1;
-}
-
-.lesson-badge {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 6px;
-  font-size: 1.1rem;
-  font-weight: 900;
-  color: var(--toque-bright);
-}
-
-.lesson-badge.is-empty {
-  color: #9aa0b4;
-}
-
-.lesson-badge--daily {
-  font-size: 0.85rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--beak-ink);
-}
-
-.lesson-main {
-  flex: 1;
-  width: min(640px, 100%);
-  margin: 0 auto;
-  padding: 16px var(--gutter) 32px;
-}
-
-.lesson-title {
-  margin-bottom: 14px;
-  font-size: 0.85rem;
-  font-weight: 800;
+.cl-back:hover {
   color: var(--muted);
 }
 
-.lesson-note {
-  margin-bottom: 14px;
-  padding: 10px 14px;
-  font-size: 0.92rem;
-  color: var(--toque);
-  background: var(--toque-pale);
-  border-radius: var(--radius-small);
+.cl-lesson-header {
+  height: 96px;
 }
 
-.blocked {
+.cl-progress {
+  flex: 1;
+}
+
+.cl-hearts {
+  color: var(--alert);
+}
+
+.cl-hearts.empty {
+  color: #9aa0b4;
+}
+
+.cl-daily-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  color: var(--beak-ink);
+  white-space: nowrap;
+}
+
+.cl-lesson-main {
+  width: 600px;
+  max-width: calc(100% - 48px);
+  margin: 0 auto;
+}
+
+.cl-lesson-main:focus {
+  outline: none;
+}
+
+.cl-lesson-note {
+  margin-top: 12px;
+  padding: 10px 14px;
+  font-size: 15px;
+  color: var(--beak-ink);
+  background: var(--beak-pale);
+  border-radius: 12px;
+}
+
+.cl-blocked {
   display: grid;
   justify-items: center;
-  gap: 14px;
-  padding: 48px 0;
+  gap: 16px;
+  margin-top: 48px;
   text-align: center;
 }
 
-.blocked-title {
-  font-size: 1.8rem;
+.cl-blocked p,
+.cl-dialog p {
+  color: var(--muted);
 }
 
-.blocked .muted {
-  max-width: 42ch;
+.cl-dialog .cl-button {
+  width: 100%;
 }
 
-.blocked-actions {
-  display: grid;
-  gap: 12px;
-  width: min(340px, 100%);
+.cl-dialog-image {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+  object-fit: contain;
 }
 
-@media (max-width: 640px) {
-  .lesson-top {
-    padding-top: 14px;
-    gap: 12px;
+.cl-dialog-icon {
+  margin: 0 auto;
+}
+
+@media (max-width: 699px) {
+  .cl-lesson-main {
+    max-width: calc(100% - 32px);
   }
 
-  .lesson-badge--daily span {
+  .cl-daily-label {
     display: none;
   }
 }

@@ -1,7 +1,8 @@
 <script setup>
-// Le bilan d'une leçon ou de la mission du jour : ce qu'elle a rapporté, le Tux qui prend du
-// muscle, ce qu'il faut retenir et les sources. Pour la mission du jour, on démasque Léopold
-// et on montre la place au classement de la semaine.
+// Le bilan d'une leçon ou de la mission du jour, en écrans successifs comme dans la copie de
+// référence : ce qu'elle a rapporté et le Tux qui prend du muscle, puis selon le cas Léopold à
+// démasquer, la série, les quêtes remplies, ce qu'il faut retenir, et l'invitation à créer son
+// profil. « Continuer » passe à l'écran suivant.
 import { computed, onMounted, ref } from 'vue'
 import Icon from '../app/Icon.vue'
 import { session } from '../../lib/session.js'
@@ -20,6 +21,24 @@ const r = computed(() => props.result)
 const perfect = computed(() => r.value.correct === r.value.total)
 const accuracy = computed(() => Math.round((r.value.correct / r.value.total) * 100))
 
+const steps = computed(() =>
+  [
+    'result',
+    r.value.villain && 'villain',
+    r.value.kind === 'daily' && r.value.streak && 'streak',
+    r.value.earned?.length && 'quests',
+    (r.value.moral || r.value.reflexes?.length) && 'moral',
+    !session.user && 'profile',
+  ].filter(Boolean),
+)
+const index = ref(0)
+const step = computed(() => steps.value[index.value])
+
+function next() {
+  if (index.value + 1 < steps.value.length) index.value++
+  else emit('continue')
+}
+
 const title = computed(() => {
   if (r.value.kind === 'daily') return perfect.value ? 'Mission du jour : sans faute !' : 'Mission du jour terminée !'
   if (r.value.kind === 'review') return perfect.value ? 'Bilan sans faute !' : 'Bilan terminé !'
@@ -31,12 +50,11 @@ const after = computed(() => r.value.player?.after || null)
 const grew = computed(() => before.value && after.value && after.value.stage.level > before.value.stage.level)
 const tux = computed(() => stageImage(after.value?.stage.level ?? 0))
 
-const tiles = computed(() => {
+const stats = computed(() => {
   const list = []
   if (r.value.points !== null && r.value.points !== undefined) list.push({ id: 'points', label: r.value.mode === 'guest' ? 'Points (avec un profil)' : 'Points', value: `+${formatNumber(r.value.points)}`, icon: 'haltere' })
-  list.push({ id: 'accuracy', label: 'Précision', value: `${accuracy.value} %`, icon: 'cible' })
-  if (r.value.kind === 'daily' && r.value.streak) list.push({ id: 'streak', label: 'Série', value: plural(r.value.streak, 'jour'), icon: 'flamme' })
-  else if (r.value.sardines) list.push({ id: 'sardines', label: 'Sardines', value: `+${r.value.sardines}`, icon: 'sardine' })
+  list.push({ id: 'accuracy', label: perfect.value ? 'Sans faute' : 'Précision', value: `${accuracy.value} %`, icon: 'cible' })
+  if (r.value.sardines) list.push({ id: 'sardines', label: 'Sardines', value: `+${r.value.sardines}`, icon: 'sardine' })
   return list
 })
 
@@ -55,302 +73,224 @@ const rankText = computed(() => {
   return `Tu es à la ${place} place du classement de la semaine, sur ${rank.players} joueurs.`
 })
 
-onMounted(() => {
-  playSound(grew.value ? 'grow' : 'correct')
-})
+const moralImage = sceneImage('prof-magnifier').src
+const guestImage = sceneImage('egg').src
 
-const moralImage = sceneImage('prof-magnifier')
+onMounted(() => playSound(grew.value ? 'grow' : 'correct'))
 </script>
 
 <template>
-  <main id="contenu" class="result" tabindex="-1">
-    <div class="result-hero">
-      <img :src="tux.src" alt="" class="result-tux" :class="{ 'is-growing': grew }" />
-      <h1 class="result-title">{{ title }}</h1>
-      <p class="result-sub">{{ typo(r.title) }} · {{ r.correct }} bonne{{ r.correct > 1 ? 's' : '' }} réponse{{ r.correct > 1 ? 's' : '' }} sur {{ r.total }}</p>
-      <p v-if="grew" class="result-grew">Ton Tux passe au stade <strong>{{ after.stage.name }}</strong> !</p>
-      <p v-else-if="r.firstTime === false" class="result-replay">Leçon rejouée : elle ne rapporte pas de points cette fois.</p>
-    </div>
-
-    <ul class="tiles">
-      <li v-for="tile in tiles" :key="tile.id" class="tile" :class="`tile--${tile.id}`">
-        <p class="tile-label">{{ tile.label }}</p>
-        <p class="tile-value"><Icon :name="tile.icon" :size="26" />{{ tile.value }}</p>
-      </li>
-    </ul>
-
-    <section v-if="r.villain" class="card card--pad villain">
-      <img :src="villainImage(unmasked ? 'unmasked' : r.villain.id).src" alt="" class="villain-image" />
-      <div class="villain-text">
-        <p class="kicker villain-kicker">Qui était derrière ?</p>
-        <template v-if="unmasked">
-          <p class="villain-title">C’était Léopold, {{ r.villain.disguise }} !</p>
-          <p class="villain-quip">« {{ typo(r.villain.quip) }} »</p>
-        </template>
-        <template v-else>
-          <p class="villain-title">Un drôle de personnage rôdait dans cette mission.</p>
-          <button type="button" class="button button--blue button--small" @click="unmask">Le démasquer</button>
-        </template>
+  <main id="contenu" class="cl-results" :class="`cl-result-${step}`" tabindex="-1">
+    <template v-if="step === 'result'">
+      <img :src="tux.src" alt="" class="cl-result-tux" :class="{ growing: grew }" />
+      <h1>{{ title }}</h1>
+      <p>{{ typo(r.title) }} · {{ r.correct }} bonne{{ r.correct > 1 ? 's' : '' }} réponse{{ r.correct > 1 ? 's' : '' }} sur {{ r.total }}</p>
+      <p v-if="grew" class="cl-result-grew">Ton Tux passe au stade <strong>{{ after.stage.name }}</strong> !</p>
+      <p v-else-if="r.firstTime === false" class="cl-result-small">Leçon rejouée : elle ne rapporte pas de points cette fois.</p>
+      <div class="cl-results-stats">
+        <div v-for="stat in stats" :key="stat.id" :class="`cl-stat-${stat.id}`">
+          <strong>{{ stat.label }}</strong>
+          <span><Icon :name="stat.icon" :size="28" />{{ stat.value }}</span>
+        </div>
       </div>
-    </section>
+    </template>
 
-    <p v-if="rankText" class="rank card card--pad"><Icon name="podium" :size="40" /><span>{{ rankText }}</span></p>
+    <template v-else-if="step === 'villain'">
+      <img :src="villainImage(unmasked ? 'unmasked' : r.villain.id).src" alt="" class="cl-result-villain" />
+      <template v-if="unmasked">
+        <h1>{{ typo(`C’était Léopold, ${r.villain.disguise} !`) }}</h1>
+        <p>« {{ typo(r.villain.quip) }} »</p>
+      </template>
+      <template v-else>
+        <h1>Qui était derrière ?</h1>
+        <p>Un drôle de personnage rôdait dans cette mission.</p>
+        <button type="button" class="cl-button blue" @click="unmask">Le démasquer</button>
+      </template>
+    </template>
 
-    <ul v-if="r.earned?.length" class="earned">
-      <li v-for="quest in r.earned" :key="quest.id" class="earned-item">
-        <Icon name="coffre-ouvert" :size="40" />
-        <span>Quête réussie : <strong>{{ quest.title }}</strong> · +{{ plural(quest.reward, 'sardine') }}</span>
-      </li>
-    </ul>
+    <template v-else-if="step === 'streak'">
+      <Icon name="flamme" :size="140" />
+      <h1>{{ plural(r.streak, 'jour') }} de série !</h1>
+      <p v-if="rankText">{{ rankText }}</p>
+      <p>Reviens demain pour la mission du jour : ta série continue.</p>
+    </template>
 
-    <section v-if="r.moral || r.reflexes?.length" class="card card--pad lesson-moral">
-      <img :src="moralImage.src" alt="" class="moral-image" />
-      <div class="moral-text">
-        <h2 class="moral-title">À retenir</h2>
-        <p v-if="r.moral">{{ typo(r.moral) }}</p>
-        <ul v-else class="reflexes">
-          <li v-for="item in r.reflexes" :key="item.title"><strong>{{ typo(item.title) }} :</strong> {{ typo(item.moral) }}</li>
-        </ul>
-      </div>
-    </section>
-
-    <section v-if="r.sources?.length" class="sources">
-      <h2 class="kicker sources-title">Pour aller plus loin</h2>
-      <ul>
-        <li v-for="source in r.sources" :key="source.url"><a :href="source.url" target="_blank" rel="noopener">{{ typo(source.label) }}</a></li>
+    <template v-else-if="step === 'quests'">
+      <h1>{{ r.earned.length > 1 ? 'Quêtes réussies !' : 'Quête réussie !' }}</h1>
+      <ul class="cl-result-quests">
+        <li v-for="quest in r.earned" :key="quest.id">
+          <Icon name="coffre-ouvert" :size="56" />
+          <span><strong>{{ quest.title }}</strong> +{{ plural(quest.reward, 'sardine') }}</span>
+        </li>
       </ul>
-    </section>
+    </template>
 
-    <section v-if="!session.user" class="card card--pad guest">
-      <p class="guest-title">Garde tes progrès</p>
-      <p class="muted">Crée un profil gratuit : tes points, ta série et ton Tux te suivent, et tu entres au classement.</p>
-      <RouterLink to="/inscription" class="button button--blue">Créer un profil</RouterLink>
-    </section>
+    <template v-else-if="step === 'moral'">
+      <img :src="moralImage" alt="" class="cl-result-prof" />
+      <h1>À retenir</h1>
+      <p v-if="r.moral" class="cl-result-moral">{{ typo(r.moral) }}</p>
+      <ul v-else class="cl-result-reflexes">
+        <li v-for="item in r.reflexes" :key="item.title"><strong>{{ typo(item.title) }} :</strong> {{ typo(item.moral) }}</li>
+      </ul>
+      <section v-if="r.sources?.length" class="cl-result-sources">
+        <h2>Pour aller plus loin</h2>
+        <a v-for="source in r.sources" :key="source.url" :href="source.url" target="_blank" rel="noopener">{{ typo(source.label) }}</a>
+      </section>
+    </template>
 
-    <div class="result-actions">
-      <button type="button" class="button button--wide" @click="emit('continue')">Continuer</button>
-    </div>
+    <template v-else-if="step === 'profile'">
+      <img :src="guestImage" alt="" class="cl-result-prof" />
+      <h1>C’est le moment de créer ton profil !</h1>
+      <p>C’est gratuit : tes points, ta série et ton Tux te suivent, et tu entres au classement.</p>
+      <RouterLink class="cl-button green" to="/inscription">Créer un profil</RouterLink>
+      <button type="button" class="cl-button cl-later" @click="next">Plus tard</button>
+    </template>
   </main>
+
+  <footer v-if="step !== 'profile'" class="cl-action-footer">
+    <div>
+      <button type="button" class="cl-button green" :disabled="step === 'villain' && !unmasked" @click="next">Continuer</button>
+    </div>
+  </footer>
 </template>
 
 <style scoped>
-.result {
-  display: grid;
-  gap: 22px;
-  width: min(600px, 100%);
-  margin: 0 auto;
-  padding: 32px var(--gutter) 48px;
+.cl-results {
+  gap: 4px;
+  padding-block: 32px 180px;
 }
 
-.result-hero {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  text-align: center;
+.cl-results:focus {
+  outline: none;
 }
 
-.result-tux {
-  width: auto;
-  height: 190px;
-}
-
-.result-tux.is-growing {
-  animation: grow 0.9s cubic-bezier(0.3, 1.6, 0.5, 1);
-}
-
-.result-title {
-  font-size: clamp(1.7rem, 5vw, 2.2rem);
+.cl-app .cl-results h1 {
   color: var(--beak);
 }
 
-.result-sub {
-  color: var(--muted);
+.cl-result-tux {
+  width: auto;
+  height: 220px;
 }
 
-.result-grew {
+.cl-result-tux.growing {
+  animation: grow 0.9s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.cl-result-grew {
+  margin-top: 12px;
   padding: 8px 14px;
   font-weight: 700;
   color: var(--toque);
   background: var(--toque-pale);
-  border-radius: var(--radius-small);
+  border-radius: 12px;
 }
 
-.result-replay {
-  font-size: 0.95rem;
-  color: var(--muted);
+.cl-results .cl-result-small {
+  margin-top: 8px;
+  font-size: 16px;
 }
 
-/* Les tuiles de score, à la manière d'un tableau de bord. */
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  padding: 0;
-  list-style: none;
+.cl-results-stats {
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-.tile {
-  --tone: var(--beak);
-  overflow: hidden;
-  text-align: center;
-  background: var(--tone);
-  border: 2px solid var(--tone);
-  border-radius: var(--radius);
-}
-
-.tile--accuracy {
-  --tone: var(--success);
-}
-
-.tile--streak {
-  --tone: var(--alert);
-}
-
-.tile--sardines {
-  --tone: var(--toque-bright);
-}
-
-.tile-label {
-  padding: 4px 8px;
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #fff;
-}
-
-.tile-value {
+.cl-results-stats span {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 14px 8px;
-  font-size: 1.35rem;
-  font-weight: 900;
+}
+
+/* Les couleurs des tuiles : points en orange, précision en vert, sardines en bleu. */
+.cl-results-stats > div {
+  --tone: var(--beak);
+  border-color: var(--tone);
+}
+
+.cl-results-stats > .cl-stat-accuracy {
+  --tone: var(--success);
+}
+
+.cl-results-stats > .cl-stat-sardines {
+  --tone: var(--toque-bright);
+}
+
+.cl-results-stats > div strong {
+  background: var(--tone);
+}
+
+.cl-results-stats > div span {
   color: var(--tone);
-  background: var(--paper);
-  border-radius: calc(var(--radius) - 2px);
 }
 
-/* Léopold. */
-.villain {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.villain-image {
-  flex-shrink: 0;
+.cl-result-villain {
   width: auto;
-  height: 150px;
+  height: 240px;
 }
 
-.villain-text {
+.cl-results .cl-button {
+  margin-top: 24px;
+}
+
+.cl-result-quests {
   display: grid;
-  justify-items: start;
-  gap: 8px;
-}
-
-.villain-kicker {
-  color: var(--beak-ink);
-}
-
-.villain-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-}
-
-.villain-quip {
-  font-style: italic;
-  color: var(--muted);
-}
-
-.rank {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-weight: 700;
-}
-
-.earned {
-  display: grid;
-  gap: 8px;
+  gap: 12px;
+  margin-top: 24px;
   padding: 0;
   list-style: none;
 }
 
-.earned-item {
+.cl-result-quests li {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: var(--beak-pale);
-  border-radius: var(--radius-small);
-}
-
-.lesson-moral {
-  display: flex;
-  align-items: flex-start;
   gap: 16px;
+  padding: 12px 18px;
+  text-align: left;
+  background: var(--beak-pale);
+  border-radius: 16px;
 }
 
-.moral-image {
-  flex-shrink: 0;
-  width: 84px;
+.cl-result-prof {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
 }
 
-.moral-text {
+.cl-results .cl-result-moral {
+  color: var(--ink);
+}
+
+.cl-result-reflexes {
   display: grid;
   gap: 8px;
-}
-
-.moral-title {
-  font-size: 1.2rem;
-  color: var(--toque);
-}
-
-.reflexes {
-  display: grid;
-  gap: 6px;
   padding-left: 1.1em;
+  text-align: left;
 }
 
-.sources {
+.cl-result-sources {
   display: grid;
   gap: 6px;
+  margin-top: 28px;
 }
 
-.sources-title {
+.cl-result-sources h2 {
+  font-size: 15px;
   color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
-.sources ul {
-  display: grid;
-  gap: 4px;
-  padding-left: 1.1em;
+.cl-result-sources a {
+  font-weight: 700;
+  color: var(--toque-bright);
 }
 
-.guest {
-  display: grid;
-  justify-items: start;
-  gap: 8px;
-  background: var(--toque-pale);
-  border-color: var(--toque-line);
-}
-
-.guest-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--toque);
-}
-
-.result-actions {
-  position: sticky;
-  bottom: 0;
-  margin-inline: calc(-1 * var(--gutter));
-  padding: 16px var(--gutter);
-  background: var(--paper);
-  border-top: 2px solid var(--rule);
+.cl-results .cl-later {
+  margin-top: 12px;
+  border: 0;
+  color: var(--toque-bright);
 }
 
 @keyframes grow {
@@ -362,18 +302,19 @@ const moralImage = sceneImage('prof-magnifier')
   }
 }
 
-@media (max-width: 520px) {
-  .villain {
-    flex-direction: column;
-    text-align: center;
+@media (max-width: 699px) {
+  .cl-result-tux,
+  .cl-result-villain {
+    height: 180px;
   }
 
-  .villain-text {
-    justify-items: center;
+  .cl-app .cl-results h1 {
+    font-size: 26px;
+    line-height: 32px;
   }
 
-  .moral-image {
-    display: none;
+  .cl-results p {
+    font-size: 17px;
   }
 }
 </style>

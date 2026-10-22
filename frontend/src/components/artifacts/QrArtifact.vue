@@ -85,7 +85,8 @@ const finders = [
   width: min(250px, 100%);
   padding: 14px 14px 12px;
   background: #fff;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
   border-radius: 10px;
   transform: rotate(1.6deg);
   box-shadow: inset 0 0 0 5px #f2b705;

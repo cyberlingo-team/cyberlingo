@@ -1,5 +1,6 @@
 <script setup>
-// Une adresse qui ne mène nulle part : Tux le prof s'est perdu avec nous.
+// Une adresse qui ne mène nulle part : Tux le prof s'est perdu avec nous. Sa bulle et les
+// boutons reprennent ceux de l'arrivée, sur le modèle de la copie de référence.
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppShell from '../components/app/AppShell.vue'
@@ -17,14 +18,16 @@ const picture = sceneImage('prof-lost')
 
 <template>
   <AppShell>
-    <div class="lost">
-      <div class="lost-talk">
-        <img :src="picture.src" alt="Tux le prof, perdu, une carte dépliée entre les ailes." class="lost-image" />
-        <p class="lost-bubble">
-          Je cherche « <span class="lost-address">{{ address }}</span> » depuis tout à l’heure. Rien. Pas même un panneau.
+    <div class="lost solo">
+      <div class="cl-tux-message">
+        <div class="cl-onboarding-duo">
+          <img :src="picture.src" alt="Tux le prof, perdu, une carte dépliée entre les ailes." />
+        </div>
+        <p class="cl-speech">
+          Je cherche « <span class="lost-address">{{ address }}</span> » depuis tout à l’heure. Rien. Pas même un panneau.
         </p>
       </div>
-      <h1 class="section-title">{{ props.title }}</h1>
+      <h1>{{ props.title }}</h1>
       <p class="lost-text">
         {{
           props.text ||
@@ -32,8 +35,8 @@ const picture = sceneImage('prof-lost')
         }}
       </p>
       <div class="lost-actions">
-        <RouterLink class="button" to="/apprendre">Retour au chemin</RouterLink>
-        <RouterLink class="button button--ghost" to="/mission-du-jour">Mission du jour</RouterLink>
+        <RouterLink class="cl-button green" to="/apprendre">Retour au chemin</RouterLink>
+        <RouterLink class="cl-button" to="/mission-du-jour">Mission du jour</RouterLink>
       </div>
     </div>
   </AppShell>
@@ -44,43 +47,34 @@ const picture = sceneImage('prof-lost')
   display: grid;
   justify-items: center;
   gap: 16px;
-  padding-top: 24px;
+  padding: 24px 0 40px;
   text-align: center;
 }
 
-.lost-talk {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
+/* La bulle au-dessus de Tux, sans le décalage vers le bas de l'écran d'arrivée. */
+.lost .cl-tux-message {
+  transform: none;
+  margin-bottom: 16px;
 }
 
-.lost-image {
-  width: auto;
+.lost .cl-onboarding-duo {
   height: 220px;
 }
 
-.lost-bubble {
-  position: relative;
-  order: -1;
-  max-width: 34ch;
-  margin-bottom: 8px;
-  padding: 12px 16px;
-  font-weight: 700;
-  border: 2px solid var(--rule);
-  border-radius: var(--radius);
+.lost .cl-onboarding-duo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
-.lost-bubble::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  width: 14px;
-  height: 14px;
-  background: var(--paper);
-  border-right: 2px solid var(--rule);
-  border-bottom: 2px solid var(--rule);
-  transform: translate(-50%, -7px) rotate(45deg);
+.lost .cl-speech {
+  max-width: 340px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.lost h1 {
+  font-size: 28px;
 }
 
 .lost-address {
@@ -90,6 +84,7 @@ const picture = sceneImage('prof-lost')
 
 .lost-text {
   max-width: 46ch;
+  font-size: 17px;
   color: var(--muted);
 }
 
@@ -98,5 +93,17 @@ const picture = sceneImage('prof-lost')
   flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 699px) {
+  .lost .cl-onboarding-duo {
+    height: 160px;
+  }
+
+  .lost-actions {
+    flex-direction: column;
+    align-self: stretch;
+  }
 }
 </style>

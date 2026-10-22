@@ -1,6 +1,6 @@
 <script setup>
-// Le bas de l'écran de leçon : le bouton « Valider », puis le verdict (vert ou rouge), avec
-// l'explication et le bouton « Continuer ». Entrée fait l'un ou l'autre.
+// Le bas de l'écran de leçon, repris de la copie de référence : « Passer » et « Valider », puis
+// le verdict (vert ou rouge) avec la bonne réponse, l'explication et « Continuer ».
 import { computed, nextTick, ref, watch } from 'vue'
 import { typo } from '../../lib/format.js'
 
@@ -10,37 +10,37 @@ const props = defineProps({
   revealed: { type: Object, default: null },
   question: { type: Object, required: true },
   nextLabel: { type: String, default: 'Continuer' },
+  // En fin de leçon, on rejoue les questions ratées : on ne peut plus les passer.
+  canSkip: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['check', 'next'])
+const emit = defineEmits(['check', 'skip', 'next'])
 
-const verdict = computed(() => {
-  const r = props.revealed
-  if (!r) return null
-  return r.correct ? 'Bien vu !' : 'Raté…'
-})
-
-// Ce qui était juste, dit en clair quand les tuiles ne le montrent pas.
+// Ce qui était juste, dit en clair.
 const truth = computed(() => {
   const { question, revealed } = props
   if (!revealed || revealed.correct) return null
   if (question.kind === 'trap') return revealed.solution === 'trap' ? 'C’était un piège.' : 'Ce n’était pas un piège.'
   if (question.kind === 'truefalse') return revealed.solution ? 'C’était vrai.' : 'C’était faux.'
-  if (question.kind === 'choice') {
-    const option = question.options.find((o) => o.id === revealed.solution)
-    return option ? `La bonne réponse : ${typo(option.text)}` : null
-  }
+  if (question.kind === 'choice') return typo(question.options.find((o) => o.id === revealed.solution)?.text || '')
   if (question.kind === 'clues') {
-    const found = revealed.answer.filter((zone) => revealed.solution.includes(zone)).length
-    return found ? `${found} indice${found > 1 ? 's' : ''} sur ${revealed.solution.length} trouvé${found > 1 ? 's' : ''}.` : 'Aucun de tes choix n’était un indice.'
+    const found = (revealed.answer || []).filter((zone) => revealed.solution.includes(zone)).length
+    return found ? `${found} indice${found > 1 ? 's' : ''} sur ${revealed.solution.length} trouvé${found > 1 ? 's' : ''}.` : 'Aucun indice trouvé.'
   }
   return null
 })
 
+// Pour les indices, la ligne du dessous dit combien ont été trouvés : « Bonne réponse : » ne va pas.
+const heading = computed(() => {
+  const { question, revealed } = props
+  if (revealed.correct) return 'Excellent !'
+  if (revealed.answer === null) return question.kind === 'clues' ? 'Question passée.' : 'Question passée. Bonne réponse :'
+  return question.kind === 'clues' ? 'Pas tout à fait…' : 'Bonne réponse :'
+})
+
 const others = computed(() => {
   const rate = props.revealed?.success
-  if (rate === null || rate === undefined) return null
-  return `${rate} % des joueurs ont trouvé.`
+  return rate === null || rate === undefined ? null : `${rate} % des joueurs ont trouvé.`
 })
 
 const nextButton = ref(null)
@@ -55,25 +55,27 @@ watch(
 </script>
 
 <template>
-  <footer class="footer" :class="revealed ? (revealed.correct ? 'footer--right' : 'footer--wrong') : ''">
-    <div class="footer-inner">
-      <div v-if="revealed" class="verdict" role="status" aria-live="polite">
-        <span class="verdict-badge" aria-hidden="true">
+  <footer class="cl-lesson-footer" :class="{ correct: revealed?.correct, incorrect: revealed && !revealed.correct }">
+    <div>
+      <section v-if="revealed" class="cl-feedback" role="status">
+        <span class="cl-feedback-icon" aria-hidden="true">
           <svg v-if="revealed.correct" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
           <svg v-else viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" /></svg>
         </span>
-        <div class="verdict-text">
-          <p class="verdict-title">{{ verdict }}</p>
-          <p v-if="truth" class="verdict-truth">{{ truth }}</p>
-          <p class="verdict-explanation">{{ typo(revealed.explanation) }}</p>
-          <p v-if="others" class="verdict-others">{{ others }}</p>
+        <div class="cl-feedback-text">
+          <h2>{{ heading }}</h2>
+          <p v-if="truth" class="cl-truth">{{ truth }}</p>
+          <p class="cl-explanation">{{ typo(revealed.explanation) }}</p>
+          <p v-if="others" class="cl-others">{{ others }}</p>
         </div>
-      </div>
+      </section>
+      <button v-else-if="canSkip" type="button" class="cl-button" :disabled="sending" @click="emit('skip')">Passer</button>
+      <span v-else></span>
 
-      <button v-if="revealed" ref="nextButton" type="button" class="button footer-button" :class="revealed.correct ? 'button--success' : 'button--danger'" @click="emit('next')">
+      <button v-if="revealed" ref="nextButton" type="button" class="cl-button green" :class="{ red: !revealed.correct }" @click="emit('next')">
         {{ nextLabel }}
       </button>
-      <button v-else type="button" class="button button--success footer-button footer-check" :disabled="!ready || sending" @click="emit('check')">
+      <button v-else type="button" class="cl-button green" :disabled="!ready || sending" @click="emit('check')">
         {{ sending ? 'Envoi…' : 'Valider' }}
       </button>
     </div>
@@ -81,113 +83,80 @@ watch(
 </template>
 
 <style scoped>
-.footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-  background: var(--paper);
-  border-top: 2px solid var(--rule);
+/* Notre correction est plus longue que celle de la copie : le pied s'allonge avec elle. */
+.cl-lesson-footer {
+  height: auto;
+  min-height: 140px;
 }
 
-.footer-inner {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 20px;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 20px var(--gutter);
+.cl-lesson-footer > div {
+  min-height: 140px;
+  padding-block: 24px;
 }
 
-.footer--right {
-  background: var(--success-pale);
-  border-top-color: transparent;
-}
-
-.footer--wrong {
-  background: var(--alert-pale);
-  border-top-color: transparent;
-}
-
-.verdict {
-  display: flex;
-  flex: 1;
+.cl-feedback {
   align-items: flex-start;
-  gap: 16px;
   min-width: 0;
 }
 
-.verdict-badge {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  color: var(--success);
-  background: var(--paper);
-  border-radius: 50%;
+.cl-feedback-icon svg {
+  width: 44px;
+  height: 44px;
 }
 
-.footer--wrong .verdict-badge {
-  color: var(--alert);
-}
-
-.verdict-badge svg {
-  width: 34px;
-  height: 34px;
-}
-
-.verdict-text {
+.cl-feedback-text {
   display: grid;
   gap: 4px;
-  max-height: 34vh;
+  max-height: 38vh;
   overflow-y: auto;
 }
 
-.verdict-title {
-  font-size: 1.45rem;
-  font-weight: 900;
-  color: var(--success-ink);
-}
-
-.footer--wrong .verdict-title,
-.footer--wrong .verdict-truth {
-  color: var(--alert-ink);
-}
-
-.verdict-truth {
+.cl-truth {
+  font-size: 18px;
   font-weight: 800;
-  color: var(--success-ink);
 }
 
-.verdict-explanation {
-  font-size: 0.97rem;
+.cl-explanation {
+  color: var(--ink);
 }
 
-.verdict-others {
-  font-size: 0.85rem;
+.cl-others {
+  font-size: 14px;
   color: var(--muted);
 }
 
-.footer-button {
-  flex-shrink: 0;
-  min-width: 180px;
+.cl-lesson-footer .cl-button:disabled {
+  color: #9aa0b4;
+  background: var(--rule);
+  border-color: var(--rule);
 }
 
-@media (max-width: 640px) {
-  .footer-inner {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
+@media (max-width: 699px) {
+  .cl-lesson-footer {
+    min-height: 110px;
+  }
+
+  .cl-lesson-footer > div {
+    min-height: 110px;
+    flex-wrap: wrap;
     padding-block: 16px;
   }
 
-  .verdict-badge {
+  .cl-feedback {
+    flex-basis: 100%;
+  }
+
+  .cl-feedback-icon {
     display: none;
   }
 
-  .footer-button {
-    width: 100%;
+  .cl-app .cl-feedback h2 {
+    font-size: 20px;
+  }
+
+  .cl-explanation {
+    font-size: 15px;
+    line-height: 21px;
   }
 }
 </style>

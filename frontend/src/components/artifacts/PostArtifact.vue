@@ -33,7 +33,8 @@ const paragraphs = computed(() => [].concat(props.artifact.text || []))
   gap: 10px;
   padding: 14px 16px;
   background: #fff;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
   border-radius: 12px;
 }
 

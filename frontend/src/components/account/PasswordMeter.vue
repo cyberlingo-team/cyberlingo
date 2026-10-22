@@ -3,6 +3,7 @@
 // longueur × log2(taille de l'alphabet utilisé). Les tailles d'alphabet et le seuil viennent du
 // serveur (GET /api/auth/rules), qui refait le calcul de son côté : cette jauge ne fait que
 // prévenir. Rien de ce qui est tapé ne quitte le navigateur avant l'envoi du formulaire.
+// La jauge reprend la barre de progression de la copie de référence.
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -28,17 +29,17 @@ const ratio = computed(() => Math.min(1, bits.value / minBits.value))
 const enough = computed(() => bits.value >= minBits.value)
 
 const verdict = computed(() => {
-  if (!props.password) return `La CNIL recommande au moins ${minBits.value}\u00a0bits. La jauge se remplit pendant que tu tapes.`
-  if (enough.value) return `${bits.value}\u00a0bits, pour ${minBits.value} recommandés par la CNIL : c’est solide.`
-  if (bits.value < minBits.value / 2) return `${bits.value}\u00a0bits sur ${minBits.value} : bien trop fragile pour l’instant.`
-  return `${bits.value}\u00a0bits sur ${minBits.value} : encore un effort, allonge-le.`
+  if (!props.password) return `La CNIL recommande au moins ${minBits.value} bits. La jauge se remplit pendant que tu tapes.`
+  if (enough.value) return `${bits.value} bits, pour ${minBits.value} recommandés par la CNIL : c’est solide.`
+  if (bits.value < minBits.value / 2) return `${bits.value} bits sur ${minBits.value} : bien trop fragile pour l’instant.`
+  return `${bits.value} bits sur ${minBits.value} : encore un effort, allonge-le.`
 })
 </script>
 
 <template>
   <div :id="id" class="strength" :class="{ 'is-enough': enough }">
-    <div class="strength-track" aria-hidden="true">
-      <div class="strength-fill" :style="{ width: `${Math.max(ratio * 100, password ? 6 : 0)}%` }"></div>
+    <div class="cl-progress strength-track" aria-hidden="true">
+      <div :style="{ width: `${Math.max(ratio * 100, password ? 6 : 0)}%` }"></div>
     </div>
     <p class="strength-text" aria-live="polite">{{ verdict }}</p>
   </div>
@@ -47,31 +48,24 @@ const verdict = computed(() => {
 <style scoped>
 .strength {
   display: grid;
-  gap: 6px;
+  gap: 8px;
+  text-align: left;
 }
 
 .strength-track {
-  position: relative;
-  height: 12px;
-  overflow: hidden;
-  background: var(--rule);
-  border-radius: 999px;
+  flex: none;
+  height: 14px;
 }
 
-.strength-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
+/* Orange tant que c'est trop faible, vert une fois le seuil atteint. */
+.strength:not(.is-enough) .strength-track > div,
+.strength:not(.is-enough) .strength-track > div::after {
   background: var(--beak);
-  border-radius: inherit;
-  transition: width 0.2s ease-out;
-}
-
-.is-enough .strength-fill {
-  background: var(--success);
 }
 
 .strength-text {
-  font-size: 0.9rem;
+  font-size: 14px;
+  line-height: 20px;
   color: var(--muted);
 }
 

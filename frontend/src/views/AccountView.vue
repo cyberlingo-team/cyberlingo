@@ -1,9 +1,11 @@
 <script setup>
-// Mon compte : changer de pseudo, de mot de passe, se déconnecter, supprimer son compte.
-// La page n'est atteignable que connecté (voir le routeur).
-import { computed, reactive, ref, watch } from 'vue'
+// Mon compte : changer de pseudo, de mot de passe, se déconnecter, supprimer son compte. La mise
+// en page reprend le compte de la copie de référence : des formulaires sous des titres de
+// section, et la suppression confirmée dans une fenêtre. La page n'est atteignable que connecté
+// (voir le routeur).
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import AppShell from '../components/app/AppShell.vue'
+import SettingsFrame from '../components/account/SettingsFrame.vue'
 import PasswordInput from '../components/account/PasswordInput.vue'
 import PasswordMeter from '../components/account/PasswordMeter.vue'
 import { changePassword, deleteAccount, getAccountRules, renameMe } from '../api/index.js'
@@ -95,6 +97,22 @@ async function leave() {
 const removal = useForm({ password: '' })
 const confirming = ref(false)
 
+// La fenêtre de confirmation prend le focus en s'ouvrant et le rend au bouton en se fermant.
+async function openRemoval() {
+  confirming.value = true
+  await nextTick()
+  document.getElementById('account-delete-password')?.focus()
+}
+
+async function closeRemoval() {
+  confirming.value = false
+  removal.values.password = ''
+  removal.fields = {}
+  removal.problem = ''
+  await nextTick()
+  document.getElementById('account-delete-open')?.focus()
+}
+
 function submitRemoval() {
   return run(removal, async () => {
     await deleteAccount(removal.values.password)
@@ -106,21 +124,18 @@ function submitRemoval() {
 </script>
 
 <template>
-  <AppShell width="text">
-  <div class="account">
-    <h1 class="section-title">Mon compte</h1>
+  <SettingsFrame title="Mon compte">
     <p v-if="user" class="account-lead">
       Connecté en tant que <strong>{{ user.username }}</strong>. <RouterLink to="/mon-tux">Revenir à mon Tux</RouterLink>
     </p>
 
-    <form class="card card--pad account-form" novalidate @submit.prevent="submitRename">
-      <h2 class="account-title">Changer de pseudo</h2>
-      <div class="field">
+    <h2>Changer de pseudo</h2>
+    <form novalidate @submit.prevent="submitRename">
+      <div class="account-field">
         <label for="account-username">Nouveau pseudo</label>
         <input
           id="account-username"
           v-model="rename.values.username"
-          class="input"
           type="text"
           autocomplete="username"
           autocapitalize="off"
@@ -130,147 +145,178 @@ function submitRemoval() {
           :aria-invalid="rename.fields.username ? 'true' : undefined"
           aria-describedby="account-username-hint"
         />
-        <p v-if="rename.fields.username" class="field-error" role="alert">{{ rename.fields.username }}</p>
-        <p id="account-username-hint" class="field-hint">
+        <p v-if="rename.fields.username" class="cl-form-error" role="alert">{{ rename.fields.username }}</p>
+        <p id="account-username-hint" class="account-hint">
           {{ rules?.username.minLength || 3 }} à {{ rules?.username.maxLength || 30 }} caractères : lettres, chiffres,
           point, tiret et tiret bas. Tes points et ta série te suivent.
         </p>
       </div>
-      <p v-if="rename.problem" class="form-problem" role="alert">{{ rename.problem }}</p>
-      <p v-if="rename.done" class="form-done" role="status">{{ rename.done }}</p>
-      <button class="button" type="submit" :disabled="rename.sending || rename.values.username.trim() === user?.username">
+      <p v-if="rename.problem" class="cl-form-error" role="alert">{{ rename.problem }}</p>
+      <p v-if="rename.done" class="account-done" role="status">{{ rename.done }}</p>
+      <button class="cl-button blue" type="submit" :disabled="rename.sending || rename.values.username.trim() === user?.username">
         {{ rename.sending ? 'Enregistrement…' : 'Changer de pseudo' }}
       </button>
     </form>
 
-    <form class="card card--pad account-form" novalidate @submit.prevent="submitPassword">
-      <h2 class="account-title">Changer de mot de passe</h2>
+    <h2>Changer de mot de passe</h2>
+    <form novalidate @submit.prevent="submitPassword">
       <!-- Le pseudo, invisible, aide les gestionnaires de mots de passe à ranger le nouveau. -->
       <input class="visually-hidden" type="text" name="username" autocomplete="username" :value="user?.username" tabindex="-1" aria-hidden="true" readonly />
-      <div class="field">
+      <div class="account-field">
         <label for="account-current">Mot de passe actuel</label>
         <PasswordInput
           id="account-current"
           v-model="password.values.currentPassword"
+          label="Mot de passe actuel"
           autocomplete="current-password"
           :invalid="Boolean(password.fields.currentPassword)"
         />
-        <p v-if="password.fields.currentPassword" class="field-error" role="alert">{{ password.fields.currentPassword }}</p>
+        <p v-if="password.fields.currentPassword" class="cl-form-error" role="alert">{{ password.fields.currentPassword }}</p>
       </div>
-      <div class="field">
+      <div class="account-field">
         <label for="account-new">Nouveau mot de passe</label>
         <PasswordInput
           id="account-new"
           v-model="password.values.newPassword"
+          label="Nouveau mot de passe"
+          placeholder="Nouveau mot de passe"
           autocomplete="new-password"
           :maxlength="rules?.password.maxLength"
           :invalid="Boolean(password.fields.newPassword)"
           describedby="account-new-meter"
         />
-        <p v-if="password.fields.newPassword" class="field-error" role="alert">{{ password.fields.newPassword }}</p>
+        <p v-if="password.fields.newPassword" class="cl-form-error" role="alert">{{ password.fields.newPassword }}</p>
         <PasswordMeter id="account-new-meter" :password="password.values.newPassword" :rules="rules?.password" />
       </div>
-      <p v-if="password.problem" class="form-problem" role="alert">{{ password.problem }}</p>
-      <p v-if="password.done" class="form-done" role="status">{{ password.done }}</p>
-      <button class="button" type="submit" :disabled="password.sending">
+      <p v-if="password.problem" class="cl-form-error" role="alert">{{ password.problem }}</p>
+      <p v-if="password.done" class="account-done" role="status">{{ password.done }}</p>
+      <button class="cl-button blue" type="submit" :disabled="password.sending">
         {{ password.sending ? 'Enregistrement…' : 'Changer de mot de passe' }}
       </button>
     </form>
 
-    <section class="card card--pad account-form" aria-labelledby="account-logout">
-      <h2 id="account-logout" class="account-title">Se déconnecter</h2>
-      <p>Sur un ordinateur partagé, déconnecte-toi en partant : la session reste ouverte sinon.</p>
-      <p v-if="leaveProblem" class="form-problem" role="alert">{{ leaveProblem }}</p>
-      <button class="button button--ghost" type="button" :disabled="leaving" @click="leave">
-        {{ leaving ? 'Déconnexion…' : 'Me déconnecter' }}
-      </button>
-    </section>
+    <h2>Session</h2>
+    <p class="account-text">Sur un ordinateur partagé, déconnecte-toi en partant : la session reste ouverte sinon.</p>
+    <p v-if="leaveProblem" class="cl-form-error" role="alert">{{ leaveProblem }}</p>
+    <button class="cl-button" type="button" :disabled="leaving" @click="leave">
+      {{ leaving ? 'Déconnexion…' : 'Se déconnecter' }}
+    </button>
 
-    <section class="card card--pad account-form danger" aria-labelledby="account-delete">
-      <h2 id="account-delete" class="account-title">Supprimer mon compte</h2>
-      <p>
-        Ton pseudo, ton mot de passe, tes réponses, tes points et ton Tux sont effacés pour de bon. Personne ne pourra les
-        récupérer, pas même nous.
-      </p>
-      <button v-if="!confirming" class="button button--danger" type="button" @click="confirming = true">
-        Supprimer mon compte
-      </button>
-      <form v-else class="danger-confirm" novalidate @submit.prevent="submitRemoval">
-        <div class="field">
-          <label for="account-delete-password">Pour confirmer, ton mot de passe</label>
-          <PasswordInput
-            id="account-delete-password"
-            v-model="removal.values.password"
-            autocomplete="current-password"
-            :invalid="Boolean(removal.fields.password)"
-          />
-          <p v-if="removal.fields.password" class="field-error" role="alert">{{ removal.fields.password }}</p>
-        </div>
-        <p v-if="removal.problem" class="form-problem" role="alert">{{ removal.problem }}</p>
-        <div class="danger-actions">
-          <button class="button button--danger" type="submit" :disabled="removal.sending">
-            {{ removal.sending ? 'Suppression…' : 'Supprimer définitivement' }}
-          </button>
-          <button class="text-button" type="button" @click="confirming = false">Garder mon compte</button>
-        </div>
+    <h2>Supprimer mon compte</h2>
+    <p class="account-text">
+      Ton pseudo, ton mot de passe, tes réponses, tes points et ton Tux sont effacés pour de bon. Personne ne pourra les
+      récupérer, pas même nous.
+    </p>
+    <button id="account-delete-open" class="cl-button" type="button" @click="openRemoval">Supprimer mon compte</button>
+
+    <div v-if="confirming" class="cl-modal-backdrop" @click.self="closeRemoval" @keydown.esc="closeRemoval">
+      <form
+        class="cl-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="account-delete-title"
+        novalidate
+        @submit.prevent="submitRemoval"
+      >
+        <h2 id="account-delete-title">Supprimer ton compte ?</h2>
+        <p>Ton Tux, tes points et tes réponses seront définitivement effacés. Pour confirmer, tape ton mot de passe.</p>
+        <PasswordInput
+          id="account-delete-password"
+          v-model="removal.values.password"
+          autocomplete="current-password"
+          :invalid="Boolean(removal.fields.password)"
+        />
+        <p v-if="removal.fields.password" class="cl-form-error" role="alert">{{ removal.fields.password }}</p>
+        <p v-if="removal.problem" class="cl-form-error" role="alert">{{ removal.problem }}</p>
+        <button class="cl-button blue" type="button" @click="closeRemoval">Garder mon compte</button>
+        <button class="cl-button red" type="submit" :disabled="removal.sending">
+          {{ removal.sending ? 'Suppression…' : 'Confirmer la suppression' }}
+        </button>
       </form>
-    </section>
-  </div>
-  </AppShell>
+    </div>
+  </SettingsFrame>
 </template>
 
 <style scoped>
-.account {
-  display: grid;
-  gap: 20px;
-}
-
 .account-lead {
-  margin-top: -8px;
+  margin-top: -32px;
+  font-size: 17px;
   color: var(--muted);
 }
 
-.account-form {
-  display: grid;
-  gap: 14px;
+.account-lead a,
+.account-text a {
+  font-weight: 700;
+  color: var(--toque-bright);
+}
+
+form:not(.cl-dialog) {
   justify-items: start;
 }
 
-.account-form .field {
+.account-field {
+  display: grid;
+  gap: 8px;
   justify-self: stretch;
-  max-width: 460px;
 }
 
-.account-title {
-  font-size: 1.2rem;
+/* Le libellé au-dessus, le champ dessous : la marge de la copie de référence fait doublon. */
+.account-field input,
+.account-field :deep(input),
+.cl-dialog :deep(input) {
+  margin-top: 0;
 }
 
-.form-done {
-  padding: 0.7em 0.9em;
+.account-hint {
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--muted);
+}
+
+.account-done {
+  padding: 12px 14px;
   font-weight: 700;
   color: var(--success-ink);
   background: var(--success-pale);
-  border-radius: var(--radius-small);
+  border-radius: 12px;
 }
 
-.danger {
-  border-color: #f2aaa4;
+.account-text {
+  max-width: 600px;
+  margin-bottom: 20px;
+  color: var(--muted);
 }
 
-.danger .account-title {
-  color: var(--alert-ink);
+/* Dans la fenêtre, le titre n'a pas le filet des titres de section. */
+.cl-app .cl-dialog h2 {
+  margin: 0;
+  padding: 0;
+  font-size: 24px;
+  color: var(--ink);
+  border: 0;
 }
 
-.danger-confirm {
-  display: grid;
-  gap: 12px;
-  justify-self: stretch;
+.cl-app .cl-dialog .cl-button {
+  padding-inline: 16px;
 }
 
-.danger-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
+.cl-app .cl-dialog .cl-button.red {
+  color: #fff;
+}
+
+.cl-dialog .cl-form-error {
+  margin-top: -8px;
+  text-align: left;
+}
+
+@media (max-width: 699px) {
+  .account-lead {
+    margin-top: -16px;
+  }
+
+  form .cl-button,
+  .cl-dialog .cl-button {
+    width: 100%;
+  }
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup>
-// Un champ de mot de passe qu'on peut afficher en clair, pour relire ce qu'on a tapé.
+// Un champ de mot de passe qu'on peut afficher en clair, pour relire ce qu'on a tapé. Le bouton
+// se loge à droite du champ, comme le lien « Oublié ? » de la copie de référence.
 import { ref } from 'vue'
 
 const model = defineModel({ type: String, default: '' })
@@ -10,19 +11,22 @@ defineProps({
   invalid: { type: Boolean, default: false },
   describedby: { type: String, default: undefined },
   maxlength: { type: Number, default: undefined },
+  placeholder: { type: String, default: 'Mot de passe' },
+  label: { type: String, default: 'Mot de passe' },
 })
 
 const visible = ref(false)
 </script>
 
 <template>
-  <div class="password">
+  <div class="cl-password">
     <input
       :id="id"
       v-model="model"
-      class="input password-input"
       :type="visible ? 'text' : 'password'"
       :autocomplete="autocomplete"
+      :aria-label="label"
+      :placeholder="placeholder"
       :aria-invalid="invalid ? 'true' : undefined"
       :aria-describedby="describedby"
       :maxlength="maxlength"
@@ -37,33 +41,30 @@ const visible = ref(false)
 </template>
 
 <style scoped>
-.password {
+.cl-password {
   position: relative;
 }
 
-.password-input {
-  padding-right: 6.6em;
+.cl-password input {
+  padding-right: 104px;
 }
 
 .password-toggle {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  bottom: 8px;
-  min-width: 5.6em;
-  padding: 0 0.7em;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
+  top: 0;
+  right: 6px;
+  bottom: 0;
+  padding: 0 10px;
+  font: 800 15px var(--font-title);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: var(--toque-bright);
-  background: var(--paper);
-  border: 2px solid var(--rule);
-  border-radius: 10px;
+  color: #9aa0b4;
+  background: none;
+  border: 0;
+  cursor: pointer;
 }
 
 .password-toggle:hover {
-  background: var(--toque-pale);
-  border-color: var(--toque-line);
+  color: var(--toque-bright);
 }
 </style>

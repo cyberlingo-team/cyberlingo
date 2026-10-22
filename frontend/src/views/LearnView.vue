@@ -15,16 +15,9 @@ const { data: path, error, reload } = useResource(getPath)
     <h1 class="visually-hidden">Apprendre</h1>
     <StatePanel v-if="error" state="error" :error="error" :retry="reload" />
     <StatePanel v-else-if="!path" label="On prépare ton chemin…" />
-    <div v-else class="learn">
+    <template v-else>
       <DailyCard :daily="path.daily" />
       <LearningPath :path="path" @changed="reload" />
-    </div>
+    </template>
   </AppShell>
 </template>
-
-<style scoped>
-.learn {
-  display: grid;
-  gap: 36px;
-}
-</style>

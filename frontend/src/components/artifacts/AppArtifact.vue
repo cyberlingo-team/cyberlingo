@@ -29,7 +29,8 @@ const buttons = computed(() => [].concat(props.artifact.buttons || []))
   gap: 8px;
   padding: 16px 18px 14px;
   background: #fbfbfd;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
   border-radius: 20px;
 }
 

@@ -33,7 +33,8 @@ const initial = computed(() => {
 <style scoped>
 .chat {
   max-width: 400px;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
   border-radius: 22px;
   overflow: hidden;
   background: #efeae2;

@@ -29,7 +29,8 @@ defineProps({ artifact: { type: Object, required: true } })
 /* Le post-it jaune, collé de travers. */
 .note--postit {
   background: #fff07a;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
   transform: rotate(-1.5deg);
 }
 
@@ -39,7 +40,8 @@ defineProps({ artifact: { type: Object, required: true } })
   background-image: linear-gradient(transparent calc(1.6em - 1px), #b9d4ec calc(1.6em - 1px), #b9d4ec 1.6em);
   background-size: 100% 1.6em;
   background-position: 0 16px;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
   border-left: 6px double #e28b8b;
 }
 
@@ -50,7 +52,8 @@ defineProps({ artifact: { type: Object, required: true } })
   line-height: 1.5;
   color: #1d1d1f;
   background: #f1f2f4;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
   border-radius: 8px;
   box-shadow: inset 0 0 0 4px #fff;
 }

@@ -31,7 +31,8 @@ defineProps({ artifact: { type: Object, required: true } })
 .wifi {
   max-width: 440px;
   background: #fff;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
   border-radius: 14px;
   overflow: hidden;
 }

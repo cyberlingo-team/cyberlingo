@@ -1,6 +1,6 @@
 <script setup>
-// Se connecter avec son pseudo et son mot de passe. La réponse du serveur dépose le cookie de
-// session ; l'interface, elle, ne voit jamais de jeton.
+// Se connecter avec son pseudo et son mot de passe, sur le modèle de la copie de référence. La
+// réponse du serveur dépose le cookie de session ; l'interface, elle, ne voit jamais de jeton.
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AuthScene from '../components/account/AuthScene.vue'
@@ -9,7 +9,6 @@ import { login } from '../lib/session.js'
 import { showFlash } from '../lib/flash.js'
 import { claimedMessage } from '../lib/claimed.js'
 import { safeRedirect } from '../lib/navigation.js'
-import { sceneImage } from '../lib/images.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,6 +17,7 @@ const form = reactive({ username: '', password: '' })
 const fields = ref({})
 const problem = ref('')
 const sending = ref(false)
+const forgot = ref(false)
 
 // Une erreur ne vaut que pour la valeur envoyée : dès qu'on retouche le champ, elle s'efface.
 for (const name of ['username', 'password']) {
@@ -53,98 +53,74 @@ async function submit() {
 </script>
 
 <template>
-  <AuthScene :image="sceneImage('prof-magnifier')">
-    <template #top>
-      <RouterLink :to="signupLink" class="button button--ghost button--small">Créer un profil</RouterLink>
-    </template>
-    <template #line>Avant d’entrer, je vérifie : ton pseudo et ton mot de passe, s’il te plaît.</template>
-
-    <form class="auth-form" novalidate @submit.prevent="submit">
-      <h1 class="auth-title">Se connecter</h1>
-
-      <p v-if="problem" class="form-problem" role="alert">{{ problem }}</p>
-
-      <div class="field">
-        <label for="login-username">Pseudo</label>
-        <input
-          id="login-username"
-          v-model="form.username"
-          class="input"
-          type="text"
-          autocomplete="username"
-          autocapitalize="off"
-          autocorrect="off"
-          spellcheck="false"
-          maxlength="60"
-          :aria-invalid="fields.username ? 'true' : undefined"
-          :aria-describedby="fields.username ? 'login-username-error' : undefined"
-        />
-        <p v-if="fields.username" id="login-username-error" class="field-error">{{ fields.username }}</p>
-      </div>
-
-      <div class="field">
-        <label for="login-password">Mot de passe</label>
-        <PasswordInput
-          id="login-password"
-          v-model="form.password"
-          autocomplete="current-password"
-          :invalid="Boolean(fields.password)"
-          :describedby="fields.password ? 'login-password-error' : undefined"
-        />
-        <p v-if="fields.password" id="login-password-error" class="field-error">{{ fields.password }}</p>
-      </div>
-
-      <button class="button button--blue button--wide" type="submit" :disabled="sending">
-        {{ sending ? 'Vérification…' : 'Me connecter' }}
-      </button>
-
-      <p class="auth-switch">
-        Pas encore de profil ?
-        <RouterLink :to="signupLink">Créer un profil</RouterLink>
-      </p>
-
-      <details class="auth-forgot">
-        <summary>Mot de passe oublié ?</summary>
-        <p>
-          CyberLingo ne te demande pas d’adresse e-mail : on ne peut donc pas t’envoyer de lien pour le changer.
-          Il te faudra créer un nouveau profil, avec un autre pseudo. Pour la prochaine fois, un gestionnaire de mots
-          de passe s’en souvient à ta place.
-        </p>
-      </details>
+  <AuthScene title="Connexion" :switch-to="signupLink" switch-label="Créer un profil">
+    <form novalidate @submit.prevent="submit">
+      <input
+        id="login-username"
+        v-model="form.username"
+        type="text"
+        aria-label="Pseudo"
+        placeholder="Pseudo"
+        autocomplete="username"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+        maxlength="60"
+        :aria-invalid="fields.username ? 'true' : undefined"
+        :aria-describedby="fields.username ? 'login-username-error' : undefined"
+      />
+      <p v-if="fields.username" id="login-username-error" class="cl-form-error">{{ fields.username }}</p>
+      <PasswordInput
+        id="login-password"
+        v-model="form.password"
+        autocomplete="current-password"
+        :invalid="Boolean(fields.password)"
+        :describedby="fields.password ? 'login-password-error' : undefined"
+      />
+      <p v-if="fields.password" id="login-password-error" class="cl-form-error">{{ fields.password }}</p>
+      <p v-if="problem" class="cl-form-error" role="alert">{{ problem }}</p>
+      <button class="cl-button blue" type="submit" :disabled="sending">{{ sending ? 'Vérification…' : 'Se connecter' }}</button>
     </form>
+
+    <button type="button" class="auth-link" :aria-expanded="forgot" @click="forgot = !forgot">Mot de passe oublié ?</button>
+    <p v-if="forgot" class="cl-local-notice" role="status">
+      CyberLingo ne te demande pas d’adresse e-mail : on ne peut donc pas t’envoyer de lien pour le changer. Il te
+      faudra créer un nouveau profil, avec un autre pseudo. Pour la prochaine fois, un gestionnaire de mots de passe
+      s’en souvient à ta place.
+    </p>
+
+    <div class="cl-auth-or">ou</div>
+    <RouterLink class="cl-button auth-wide" :to="signupLink">Créer un profil</RouterLink>
+
+    <div class="cl-auth-terms">
+      <p>Pas de compte Google ni d’adresse e-mail : un pseudo et un mot de passe suffisent.</p>
+      <p>Le site ne dépose qu’un cookie, celui de ta session.</p>
+    </div>
   </AuthScene>
 </template>
 
 <style scoped>
-.auth-form {
-  display: grid;
-  gap: 18px;
-}
-
-.auth-title {
-  font-size: 1.8rem;
-  text-align: center;
-}
-
-.auth-switch {
-  text-align: center;
-  color: var(--muted);
-}
-
-.auth-forgot {
-  padding-top: 14px;
-  font-size: 0.95rem;
-  border-top: 2px solid var(--rule);
-}
-
-.auth-forgot summary {
-  cursor: pointer;
-  font-weight: 800;
+.auth-link {
+  margin-top: 20px;
+  font: 800 15px var(--font-title);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   color: var(--toque-bright);
+  background: none;
+  border: 0;
+  cursor: pointer;
 }
 
-.auth-forgot p {
-  margin-top: 8px;
-  color: var(--muted);
+.cl-local-notice {
+  text-align: left;
+}
+
+.auth-wide {
+  width: 100%;
+}
+
+.cl-form-error {
+  margin-top: -4px;
+  text-align: left;
 }
 </style>
