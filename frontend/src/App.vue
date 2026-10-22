@@ -1,18 +1,15 @@
 <script setup>
-// La planche qui accueille tous les écrans : en-tête, contenu, pied de page et, sur téléphone,
-// la barre d'onglets en bas.
-import { nextTick, ref } from 'vue'
+// La racine du site : le message éphémère (« Tu es déconnecté »…) et l'écran demandé. Chaque
+// écran pose sa propre coque (AppShell pour l'appli, plein écran pour une leçon) et son <main>,
+// d'identifiant « contenu ».
+import { nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import AppHeader from './components/AppHeader.vue'
-import AppFooter from './components/AppFooter.vue'
-import AppTabBar from './components/AppTabBar.vue'
 import FlashMessage from './components/FlashMessage.vue'
 import { loadSession } from './lib/session.js'
 
 loadSession()
 
 const router = useRouter()
-const main = ref(null)
 let first = true
 
 // Après un changement de page, le lecteur d'écran repart du début du contenu.
@@ -22,21 +19,16 @@ router.afterEach((to, from) => {
     return
   }
   if (to.path === from.path) return
-  nextTick(() => main.value?.focus({ preventScroll: true }))
+  nextTick(() => document.getElementById('contenu')?.focus({ preventScroll: true }))
 })
 </script>
 
 <template>
   <a class="skip-link" href="#contenu">Aller au contenu</a>
-  <AppHeader />
   <FlashMessage />
-  <main id="contenu" ref="main" tabindex="-1">
-    <RouterView v-slot="{ Component, route }">
-      <component :is="Component" :key="route.path" />
-    </RouterView>
-  </main>
-  <AppFooter />
-  <AppTabBar />
+  <RouterView v-slot="{ Component, route }">
+    <component :is="Component" :key="route.path" />
+  </RouterView>
 </template>
 
 <style>
@@ -46,11 +38,10 @@ router.afterEach((to, from) => {
   left: 8px;
   z-index: 100;
   padding: 8px 14px;
-  font-family: var(--font-title);
-  font-weight: 700;
-  color: var(--ink);
-  background: var(--caption);
-  border: var(--line) solid var(--ink);
+  font-weight: 800;
+  color: #fff;
+  background: var(--toque);
+  border-radius: var(--radius-small);
   transform: translateY(-200%);
 }
 
@@ -58,10 +49,8 @@ router.afterEach((to, from) => {
   transform: none;
 }
 
-#contenu {
-  display: block;
-  min-height: calc(100vh - var(--header-height) - 160px);
-  /* Un tampon qui s'abat ou une image qui grandit ne doit jamais élargir la page sur téléphone. */
+#app {
+  /* Une image qui grandit ne doit jamais élargir la page sur téléphone. */
   overflow-x: clip;
 }
 </style>

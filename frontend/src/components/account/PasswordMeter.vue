@@ -36,56 +36,47 @@ const verdict = computed(() => {
 </script>
 
 <template>
-  <div :id="id" class="meter" :class="{ 'is-enough': enough }">
-    <div class="meter-track" aria-hidden="true">
-      <div class="meter-fill" :style="{ transform: `scaleX(${ratio})` }"></div>
-      <span v-for="tick in 4" :key="tick" class="meter-tick" :style="{ left: `${tick * 20}%` }"></span>
+  <div :id="id" class="strength" :class="{ 'is-enough': enough }">
+    <div class="strength-track" aria-hidden="true">
+      <div class="strength-fill" :style="{ width: `${Math.max(ratio * 100, password ? 6 : 0)}%` }"></div>
     </div>
-    <p class="meter-text" aria-live="polite">{{ verdict }}</p>
+    <p class="strength-text" aria-live="polite">{{ verdict }}</p>
   </div>
 </template>
 
 <style scoped>
-.meter {
+.strength {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
-.meter-track {
+.strength-track {
   position: relative;
-  height: 14px;
-  background: var(--paper);
-  border: 2px solid var(--ink);
+  height: 12px;
   overflow: hidden;
+  background: var(--rule);
+  border-radius: 999px;
 }
 
-.meter-fill {
+.strength-fill {
   position: absolute;
-  inset: 0;
+  inset: 0 auto 0 0;
   background: var(--beak);
-  transform-origin: left;
-  transition: transform 0.2s ease-out;
+  border-radius: inherit;
+  transition: width 0.2s ease-out;
 }
 
-.is-enough .meter-fill {
-  background: var(--toque);
+.is-enough .strength-fill {
+  background: var(--success);
 }
 
-.meter-tick {
-  position: absolute;
-  top: 0;
-  bottom: 50%;
-  width: 2px;
-  background: var(--ink);
-}
-
-.meter-text {
-  font-size: 0.92rem;
+.strength-text {
+  font-size: 0.9rem;
   color: var(--muted);
 }
 
-.is-enough .meter-text {
-  color: var(--toque);
-  font-weight: 600;
+.is-enough .strength-text {
+  color: var(--success-ink);
+  font-weight: 700;
 }
 </style>

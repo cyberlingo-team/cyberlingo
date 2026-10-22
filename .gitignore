@@ -8,3 +8,6 @@ generated/
 
 # Planches de travail locales
 design/da-candidats/
+
+# Relevé local de la copie de référence (propriété de Duolingo, jamais versionné)
+design/duo/

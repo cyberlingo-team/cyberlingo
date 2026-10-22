@@ -1,35 +1,69 @@
-/* Les fondations visuelles de CyberLingo : une planche de bande dessinée posée sur la banquise.
-   Couleurs tirées du logo (noir du Tux, bleu de la toque, orange du bec) et de l'imprimerie de
-   BD (jaune des récitatifs, rouge des tampons, trame de points). */
+/* Les fondations visuelles de CyberLingo : une appli d'apprentissage claire et ronde, aux
+   couleurs du logo. Le bleu de la toque guide (titres, navigation, liens), l'orange du bec
+   appelle à l'action (boutons principaux). Chaque thème du parcours a sa couleur. */
 
 :root {
-  --ink: #120a06;
+  --ink: #1d2233;
   --paper: #ffffff;
-  --page: #dceef6;
-  --dots: #c3e1ee;
-  --toque: #1b2a8f;
-  --toque-pale: #e4e7f8;
-  --beak: #f57c03;
-  /* Le même orange, foncé pour le texte sur fond clair (contraste 5:1). */
-  --beak-ink: #b45309;
-  --alert: #d42a1e;
-  --alert-pale: #fbe4e1;
-  /* Le même rouge, foncé pour le texte posé sur le fond rose (contraste 5:1). */
-  --alert-ink: #b8241a;
-  --caption: #ffd84a;
-  --caption-pale: #fff3c4;
-  --muted: #5b524c;
-  --rule: #d9d3cf;
+  --page: #ffffff;
+  --muted: #687089;
+  --rule: #e3e6ef;
+  --rule-strong: #cfd4e2;
+  --wash: #f5f7fc;
 
-  --font-title: 'Anybody Variable', 'Arial Narrow', Arial, sans-serif;
-  --font-hand: 'Playpen Sans Variable', 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+  /* Le bleu de la toque, et ses nuances. */
+  --toque: #1b2a8f;
+  --toque-deep: #111c66;
+  --toque-bright: #3448d1;
+  --toque-pale: #e9ecfc;
+  --toque-line: #b9c1f2;
+
+  /* L'orange du bec : l'action. Le foncé sert d'ombre aux boutons et de texte sur fond clair. */
+  --beak: #f57c03;
+  --beak-deep: #c45f00;
+  --beak-ink: #b45309;
+  --beak-pale: #fff1e2;
+
+  /* Juste et faux. */
+  --success: #1c9a5f;
+  --success-deep: #137347;
+  --success-ink: #116b42;
+  --success-pale: #e3f6ec;
+  --alert: #e0352b;
+  --alert-deep: #b3241b;
+  --alert-ink: #b3241b;
+  --alert-pale: #fde8e6;
+
+  /* Le surligneur, pour les indices choisis dans un document. */
+  --caption: #ffd84a;
+  --caption-pale: #fff6cc;
+
+  /* Les couleurs des thèmes (voir api/simulation/units.js). */
+  --unit-toque: #1b2a8f;
+  --unit-toque-deep: #111c66;
+  --unit-bec: #f57c03;
+  --unit-bec-deep: #c45f00;
+  --unit-mer: #0a7ea4;
+  --unit-mer-deep: #075c78;
+  --unit-corail: #dd4b39;
+  --unit-corail-deep: #ad3526;
+  --unit-algue: #1c9a5f;
+  --unit-algue-deep: #137347;
+  --unit-glace: #4f63d2;
+  --unit-glace-deep: #3646a6;
+
+  --font-title: 'Nunito Variable', 'Nunito', ui-rounded, 'Segoe UI', system-ui, sans-serif;
+  --font-hand: var(--font-title);
   --font-object: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-  --line: 3px;
-  --gutter: clamp(10px, 2.6vw, 18px);
-  --header-height: 60px;
-  --tabbar-height: 66px;
-  --column: 760px;
+  --radius: 16px;
+  --radius-small: 12px;
+  --line: 2px;
+  --gutter: clamp(16px, 3vw, 24px);
+  --sidebar: 256px;
+  --aside: 368px;
+  --tabbar-height: 72px;
+  --topbar-height: 60px;
 
   color-scheme: light;
 }
@@ -49,14 +83,12 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: var(--font-hand);
+  font-family: var(--font-title);
   font-size: 1.0625rem;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1.5;
   color: var(--ink);
-  background-color: var(--page);
-  background-image: radial-gradient(var(--dots) 1.7px, transparent 2px);
-  background-size: 9px 9px;
+  background: var(--page);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -84,13 +116,15 @@ button {
 }
 
 a {
-  color: var(--toque);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
+  color: var(--toque-bright);
+  font-weight: 700;
+  text-decoration: none;
 }
 
 a:hover {
-  text-decoration-thickness: 3px;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 h1,
@@ -100,7 +134,7 @@ h4 {
   margin: 0;
   font-family: var(--font-title);
   font-weight: 800;
-  line-height: 1.05;
+  line-height: 1.15;
   text-wrap: balance;
 }
 
@@ -119,7 +153,7 @@ p {
 }
 
 :focus-visible {
-  outline: 3px solid var(--toque);
+  outline: 3px solid var(--toque-bright);
   outline-offset: 3px;
 }
 
@@ -128,7 +162,7 @@ main:focus {
 }
 
 ::selection {
-  background: var(--caption);
+  background: var(--toque-pale);
   color: var(--ink);
 }
 
@@ -144,128 +178,95 @@ main:focus {
   border: 0;
 }
 
-/* --------------------------------------------------------------------------------------
-   Mise en page */
-
-.page {
-  width: min(100% - 2 * var(--gutter), var(--column));
-  margin-inline: auto;
-  padding-block: var(--gutter) calc(var(--gutter) * 3);
-  display: grid;
-  gap: var(--gutter);
-}
-
-.page--wide {
-  width: min(100% - 2 * var(--gutter), 1120px);
-}
-
-.page-title {
-  font-size: clamp(2rem, 7vw, 3.4rem);
-  font-weight: 900;
-  font-stretch: 112%;
-  letter-spacing: -0.01em;
-}
-
-.lead {
-  font-size: 1.08rem;
-  max-width: 62ch;
-}
-
 .muted {
   color: var(--muted);
 }
 
-/* Une case de BD : papier blanc, trait d'encre. */
-.panel {
-  position: relative;
-  background: var(--paper);
-  border: var(--line) solid var(--ink);
-}
-
-.panel--pad {
-  padding: clamp(14px, 3.5vw, 26px);
-}
-
-/* Le récitatif : l'encadré jaune du narrateur. */
-.caption {
-  display: block;
-  background: var(--caption);
-  border: 2px solid var(--ink);
-  padding: 0.45em 0.75em;
-  font-family: var(--font-hand);
-  font-weight: 500;
-  line-height: 1.4;
-}
-
 /* --------------------------------------------------------------------------------------
-   Boutons et liens d'action : à plat, trait d'encre, aucun relief. */
+   Boutons : ronds, en majuscules, posés sur leur ombre ; ils s'y enfoncent quand on appuie. */
 
 .button {
+  --face: var(--beak);
+  --edge: var(--beak-deep);
+  --text: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5em;
-  min-height: 48px;
-  padding: 0.5em 1.15em;
+  gap: 0.55em;
+  min-height: 50px;
+  padding: 0.6em 1.4em;
   font-family: var(--font-title);
-  font-size: 1.06rem;
-  font-weight: 760;
-  font-stretch: 104%;
-  line-height: 1.1;
+  font-size: 0.97rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   text-align: center;
   text-decoration: none;
-  color: var(--ink);
-  background: var(--caption);
-  border: var(--line) solid var(--ink);
-  border-radius: 0;
+  color: var(--text);
+  background: var(--face);
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 0 var(--edge);
   transition:
-    background-color 0.12s,
-    color 0.12s,
-    transform 0.08s;
+    filter 0.12s,
+    transform 0.08s,
+    box-shadow 0.08s;
 }
 
 .button:hover {
-  background: var(--ink);
-  color: var(--caption);
+  filter: brightness(1.06);
+  text-decoration: none;
 }
 
-.button:active {
-  transform: translateY(1px);
+.button:active:not([disabled]) {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--edge);
 }
 
 .button[disabled],
 .button[aria-disabled='true'] {
+  --face: #e6e8ef;
+  --edge: #d3d7e2;
+  --text: #9aa0b4;
   cursor: not-allowed;
-  background: var(--paper);
-  color: var(--muted);
-  border-color: var(--muted);
+  filter: none;
 }
 
-.button--paper {
-  background: var(--paper);
+.button--blue {
+  --face: var(--toque-bright);
+  --edge: var(--toque);
 }
 
-.button--paper:hover {
-  background: var(--ink);
-  color: var(--paper);
+.button--success {
+  --face: var(--success);
+  --edge: var(--success-deep);
 }
 
 .button--danger {
-  background: var(--paper);
-  color: var(--alert);
-  border-color: var(--alert);
+  --face: var(--alert);
+  --edge: var(--alert-deep);
 }
 
-.button--danger:hover {
-  background: var(--alert);
-  color: var(--paper);
+/* Le bouton blanc à bord gris, pour l'action secondaire. */
+.button--ghost {
+  --face: var(--paper);
+  --edge: var(--rule-strong);
+  --text: var(--toque-bright);
+  border: 2px solid var(--rule-strong);
+  box-shadow: 0 4px 0 var(--rule-strong);
+}
+
+.button--ghost:hover {
+  filter: none;
+  background: var(--wash);
 }
 
 .button--small {
   min-height: 40px;
-  padding: 0.35em 0.85em;
-  font-size: 0.95rem;
-  border-width: 2px;
+  padding: 0.45em 1em;
+  font-size: 0.85rem;
+  border-radius: var(--radius-small);
 }
 
 .button--wide {
@@ -276,16 +277,72 @@ main:focus {
   padding: 0.2em 0;
   background: none;
   border: 0;
-  font-family: var(--font-hand);
-  font-weight: 600;
-  color: var(--toque);
+  font-weight: 800;
+  color: var(--toque-bright);
+}
+
+.text-button:hover {
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
 }
 
-.text-button:hover {
-  text-decoration-thickness: 3px;
+/* --------------------------------------------------------------------------------------
+   Cartes et titres de section */
+
+.card {
+  background: var(--paper);
+  border: var(--line) solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.card--pad {
+  padding: 20px;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.kicker {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* La barre de progression ronde des quêtes et des leçons. */
+.meter {
+  position: relative;
+  height: 16px;
+  overflow: hidden;
+  background: var(--rule);
+  border-radius: 999px;
+}
+
+.meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 16px;
+  background: var(--meter, var(--beak));
+  border-radius: inherit;
+  transition: width 0.4s ease;
+}
+
+.meter-fill::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  right: 8px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+}
+
+.meter-fill[data-empty='true'] {
+  display: none;
 }
 
 /* --------------------------------------------------------------------------------------
@@ -298,26 +355,26 @@ main:focus {
 
 .field label,
 .field .label {
-  font-family: var(--font-title);
-  font-weight: 700;
-  font-size: 1.02rem;
+  font-weight: 800;
+  font-size: 0.98rem;
 }
 
 .input {
   width: 100%;
-  min-height: 50px;
-  padding: 0.55em 0.75em;
-  font-family: var(--font-object);
+  min-height: 52px;
+  padding: 0.6em 0.9em;
+  font-family: var(--font-title);
   font-size: 1.05rem;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  border-radius: 0;
+  font-weight: 600;
+  background: var(--wash);
+  border: 2px solid var(--rule);
+  border-radius: var(--radius-small);
 }
 
 .input:focus-visible {
-  outline-offset: 0;
-  box-shadow: inset 0 0 0 2px var(--toque);
-  border-color: var(--toque);
+  outline: none;
+  border-color: var(--toque-bright);
+  background: var(--paper);
 }
 
 .input[aria-invalid='true'] {
@@ -332,12 +389,20 @@ main:focus {
 
 .field-error {
   font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--alert);
+  font-weight: 700;
+  color: var(--alert-ink);
+}
+
+.form-problem {
+  padding: 0.7em 0.9em;
+  font-weight: 700;
+  color: var(--alert-ink);
+  background: var(--alert-pale);
+  border-radius: var(--radius-small);
 }
 
 /* --------------------------------------------------------------------------------------
-   Mouvement : supprimé quand le système le demande ou quand on le coupe dans le pied de page. */
+   Mouvement : supprimé quand le système le demande ou quand on le coupe dans les préférences. */
 
 html[data-motion='reduced'] *,
 html[data-motion='reduced'] *::before,

@@ -28,6 +28,21 @@ const SIZES = {
   'tux/scenes/prof-magnifier': [611, 900],
   'tux/scenes/prof-reading': [839, 900],
   'tux/scenes/prof-unplugged': [900, 866],
+  'tux/scenes/heros': [900, 649],
+  'tux/scenes/mission': [603, 900],
+  'tux/scenes/quetes': [573, 900],
+  'icons/igloo': [256, 222],
+  'icons/podium': [256, 210],
+  'icons/coffre': [256, 226],
+  'icons/coffre-ouvert': [252, 256],
+  'icons/etal': [252, 256],
+  'icons/sardine': [256, 74],
+  'icons/bouee': [255, 256],
+  'icons/glacon': [245, 256],
+  'icons/flamme': [189, 256],
+  'icons/haltere': [256, 127],
+  'icons/trophee': [256, 244],
+  'icons/cible': [253, 256],
   'tux/stages/stage-0': [655, 900],
   'tux/stages/stage-1': [900, 847],
   'tux/stages/stage-2': [863, 900],
@@ -75,8 +90,9 @@ export function gangImage(id) {
   return image(`tux/gang/${id}`)
 }
 
-// Tux le professeur en situation : loupe, main sur le front, débranché, perdu, en lecture ;
-// et l'œuf du joueur qui n'a pas encore de compte.
+// Tux le professeur en situation : loupe, main sur le front, débranché, perdu, en lecture,
+// devant le téléphone piégé (« heros »), avec le calendrier de la mission du jour (« mission »),
+// musclé sous son coffre (« quetes ») ; et l'œuf du joueur qui n'a pas encore de compte.
 export function sceneImage(name) {
   return image(`tux/scenes/${name}`)
 }
@@ -84,4 +100,10 @@ export function sceneImage(name) {
 // Léopold, l'escroc : sans déguisement (« leopold »), démasqué (« unmasked ») ou déguisé.
 export function villainImage(id) {
   return image(`villain/${id}`)
+}
+
+// Les petites illustrations de l'interface : igloo, podium, coffre, étal, sardine, bouée,
+// glaçon, flamme, haltère, trophée, cible.
+export function iconImage(name) {
+  return image(`icons/${name}`)
 }

@@ -3,7 +3,7 @@
 // lui-même : l'interface ne reçoit jamais la solution d'une question avant d'y avoir répondu.
 
 import { load, save } from './store.js'
-import { demoWorld, DEMO_ACCOUNTS, DEMO_PASSWORD } from './players.js'
+import { demoWorld, demoPath, DEMO_ACCOUNTS, DEMO_PASSWORD } from './players.js'
 import { missionForDate, isPublished, publishedDates, launchDate } from './calendar.js'
 import { today as currentDate, addDays, daysBetween, dayNumber } from './dates.js'
 import {
@@ -14,7 +14,15 @@ import {
   PERFECT_BONUS,
   STREAK_BONUS_PER_DAY,
   STREAK_BONUS_MAX_DAYS,
+  lessonPoints,
+  STARTING_SARDINES,
+  MAX_BUOYS,
+  MAX_FREEZES,
+  SARDINES,
+  SHOP,
 } from './rules.js'
+import { NODES, nodeById, unitById, lessonContent } from './path.js'
+import { UNITS } from './units.js'
 import { GANG, VILLAIN, DISGUISES } from './cast.js'
 import { sha256 } from './sha256.js'
 
@@ -93,6 +101,7 @@ export async function handle(method, url, body) {
   const db = load()
   const context = { db, today: currentDate(), params, query: searchParams, body: body ?? {} }
   seedDemoAccounts(db, context.today)
+  applyFreezes(context)
   try {
     const result = found.handler(context)
     save(db)
@@ -132,11 +141,18 @@ function seedDemoAccounts(db, today) {
       seed: demo.username,
       results: {},
       practice: {},
+      progress: demoProgress(demo, today),
     }
   }
   // Un compte de démonstration renommé hier n'existe plus : sa session non plus.
   if (db.session.username && !db.accounts[db.session.username.toLowerCase()]) db.session.username = null
   db.seeded = today
+}
+
+// Le parcours et la réserve d'un compte de démonstration, recalés sur la date du jour.
+function demoProgress(demo, today) {
+  const { history, chests } = demoPath(demo, today)
+  return { ...newProgress(), history, chests, sardines: demo.sardines, freezes: demo.freezes, buoys: { count: MAX_BUOYS, day: today } }
 }
 
 function randomSalt() {
@@ -172,9 +188,9 @@ function publicUser(account, today) {
 // Ce que la session dit du joueur connecté : de quoi afficher son Tux et ses points partout.
 function sessionUser(ctx, account) {
   const results = resultsOf(account, ctx.today)
-  const points = sumPoints(results)
+  const points = accountPoints(account, ctx.today)
   const stage = stageFor(points)
-  const streak = streakOf(results, ctx.today)
+  const streak = streakOf(results, ctx.today, frozenOf(account))
   return {
     ...publicUser(account, ctx.today),
     points,
@@ -297,7 +313,10 @@ route('POST', '/auth/signup', (ctx) => {
     seed: null,
     results: {},
     practice: {},
+    // Ce que le visiteur a fait sans compte (leçons, sardines…) devient à lui.
+    progress: ctx.db.session.progress || newProgress(),
   }
+  ctx.db.session.progress = null
   ctx.db.accounts[username.toLowerCase()] = account
   ctx.db.session.username = username
   const claimed = claimGuestAttempts(ctx, account)
@@ -334,7 +353,7 @@ route('POST', '/auth/login', (ctx) => {
 })
 
 route('POST', '/auth/logout', (ctx) => {
-  ctx.db.session = { username: null, guest: {} }
+  ctx.db.session = { username: null, guest: {}, progress: null }
 })
 
 // ---------------------------------------------------------------------------------------
@@ -371,6 +390,8 @@ function playersOf(ctx) {
   const accounts = Object.values(ctx.db.accounts).map((account) => ({
     username: account.username,
     results: resultsOf(account, ctx.today),
+    extra: lessonPointsByDate(account.progress),
+    frozen: frozenOf(account),
     account,
   }))
   return [...bots, ...accounts]
@@ -382,9 +403,22 @@ function sumPoints(results, fromDate = null) {
   return total
 }
 
-// Série en cours : elle reste vivante tant que la journée n'est pas finie.
-function streakOf(results, today) {
-  const dates = new Set(Object.keys(results))
+// Tous les points d'un joueur depuis une date : missions du jour et leçons du parcours.
+function pointsOf(player, fromDate = null) {
+  let total = sumPoints(player.results, fromDate)
+  for (const [date, points] of Object.entries(player.extra || {})) if (!fromDate || date >= fromDate) total += points
+  return total
+}
+
+function accountPoints(account, today, fromDate = null) {
+  return pointsOf({ results: resultsOf(account, today), extra: lessonPointsByDate(account.progress) }, fromDate)
+}
+
+// Série en cours : elle reste vivante tant que la journée n'est pas finie. Les jours gelés par
+// un glaçon (`frozen`) la prolongent sans rapporter de points.
+function streakOf(results, today, frozen = []) {
+  const played = Object.keys(results)
+  const dates = new Set([...played, ...frozen])
   let current = 0
   let cursor = dates.has(today) ? today : addDays(today, -1)
   while (dates.has(cursor)) {
@@ -399,15 +433,15 @@ function streakOf(results, today) {
     best = Math.max(best, run)
     previous = date
   }
-  const lastPlayed = [...dates].sort().at(-1) || null
-  return { current, best, playedToday: dates.has(today), lastPlayed }
+  const lastPlayed = played.sort().at(-1) || null
+  return { current, best, playedToday: Boolean(results[today]), lastPlayed }
 }
 
 // Série au soir d'une date donnée (sert au bonus de série de cette date-là).
-function streakAt(results, date) {
+function streakAt(results, date, frozen = []) {
   let streak = 0
   let cursor = date
-  while (results[cursor]) {
+  while (results[cursor] || frozen.includes(cursor)) {
     streak++
     cursor = addDays(cursor, -1)
   }
@@ -424,9 +458,9 @@ function ranking(players, period, today) {
   const rows = players
     .map((p) => ({
       username: p.username,
-      points: sumPoints(p.results, from),
-      level: stageFor(sumPoints(p.results)).level,
-      streak: streakOf(p.results, today).current,
+      points: pointsOf(p, from),
+      level: stageFor(pointsOf(p)).level,
+      streak: streakOf(p.results, today, p.frozen).current,
       account: p.account || null,
     }))
     .filter((row) => row.points > 0)
@@ -449,8 +483,8 @@ function aheadOf(rows, mine) {
 
 // Le prochain épisode qui peut rapporter des points au joueur (celui du jour s'il ne l'a pas
 // encore joué, sinon celui de demain) et ce qu'il rapporte au plus, série comprise.
-function nextChance(ctx, results) {
-  const streak = streakOf(results, ctx.today)
+function nextChance(ctx, results, frozen = []) {
+  const streak = streakOf(results, ctx.today, frozen)
   const date = streak.playedToday ? addDays(ctx.today, 1) : ctx.today
   const count = missionForDate(date).questions.length
   return { date, maxPoints: missionPoints(count, count, streak.current + 1).total }
@@ -470,7 +504,7 @@ route('GET', '/leaderboard', (ctx) => {
     players: rows.length,
     top: rows.slice(0, 10).map((row) => publicRow(row, me)),
     around: mine && index >= 10 ? rows.slice(Math.max(10, index - 2), index + 3).map((row) => publicRow(row, me)) : [],
-    me: mine ? { ...publicRow(mine, me), ahead: aheadOf(rows, mine), next: nextChance(ctx, resultsOf(me, ctx.today)) } : null,
+    me: mine ? { ...publicRow(mine, me), ahead: aheadOf(rows, mine), next: nextChance(ctx, resultsOf(me, ctx.today), frozenOf(me)) } : null,
   }
 })
 
@@ -649,7 +683,7 @@ function completeIfFinished(ctx, account, date) {
   if (!attempt || attempt.completedAt || Object.keys(attempt.answers).length < mission.questions.length) return
   const previous = resultsOf(account, ctx.today)
   delete previous[date]
-  const streak = streakAt(previous, addDays(date, -1)) + 1
+  const streak = streakAt(previous, addDays(date, -1), frozenOf(account)) + 1
   const correct = flagsOf(mission, attempt).filter(Boolean).length
   attempt.points = missionPoints(correct, mission.questions.length, streak).total
   attempt.completedAt = new Date().toISOString()
@@ -737,6 +771,7 @@ route('POST', '/missions/:date/answers', (ctx) => {
   if (resolved.mode === 'counted') completeIfFinished(ctx, resolved.account, date)
 
   const progress = progressOf(ctx, date, mission, resolved)
+  if (progress.completed && date === ctx.today) settleQuests(ctx)
   return { ...progress.answers[question.id], progress: { ...progress, answers: undefined } }
 })
 
@@ -773,12 +808,12 @@ route('GET', '/missions/:date/result', (ctx) => {
   if (resolved.mode === 'counted') {
     const { account } = resolved
     const results = resultsOf(account, ctx.today)
-    result.points = missionPoints(correct, total, streakAt(results, date))
+    result.points = missionPoints(correct, total, streakAt(results, date, frozenOf(account)))
     // Le joueur avant et après l'épisode du jour : de quoi montrer son Tux grandir.
     if (date === ctx.today) {
-      const after = sumPoints(results)
+      const after = accountPoints(account, ctx.today)
       const before = after - results[date].points
-      const streak = streakOf(results, ctx.today)
+      const streak = streakOf(results, ctx.today, frozenOf(account))
       result.player = {
         before: { points: before, stage: stageFor(before) },
         after: { points: after, stage: stageFor(after) },
@@ -800,7 +835,7 @@ route('GET', '/missions/:date/result', (ctx) => {
         previous: previous ? previous.rank : null,
         players: rowsAfter.length,
         ahead: aheadOf(rowsAfter, mine),
-        next: nextChance(ctx, results),
+        next: nextChance(ctx, results, frozenOf(account)),
       }
     }
   }
@@ -813,7 +848,7 @@ route('GET', '/missions/:date/result', (ctx) => {
 route('GET', '/me', (ctx) => {
   const account = requireAccount(ctx)
   const results = resultsOf(account, ctx.today)
-  const points = sumPoints(results)
+  const points = accountPoints(account, ctx.today)
   const stage = stageFor(points)
   const players = playersOf(ctx)
   const rankIn = (period) => {
@@ -834,13 +869,20 @@ route('GET', '/me', (ctx) => {
     user,
     points,
     stage: { ...stage, motto: STAGES[stage.level].motto },
-    streak: streakOf(results, ctx.today),
+    streak: streakOf(results, ctx.today, frozenOf(account)),
     rank: { week: rankIn('week'), all: rankIn('all') },
     totals: {
       episodes: played.length,
       correct: played.reduce((sum, r) => sum + r.correct, 0),
       questions: played.reduce((sum, r) => sum + r.total, 0),
+      lessons: (account.progress?.history || []).filter((entry) => entry.points > 0).length,
     },
+    // Les points des sept derniers jours, pour le graphique de la semaine.
+    week: Array.from({ length: 7 }, (_, i) => {
+      const date = addDays(ctx.today, i - 6)
+      return { date, points: accountPoints(account, ctx.today, date) - accountPoints(account, ctx.today, addDays(date, 1)) }
+    }),
+    achievements: achievementsOf(ctx, account),
     days,
   }
 })
@@ -881,8 +923,515 @@ route('DELETE', '/me', (ctx) => {
     throw new HttpError(403, 'wrong_password', 'Le formulaire contient des erreurs.', { password: 'Ce n’est pas ton mot de passe.' })
   }
   delete ctx.db.accounts[account.username.toLowerCase()]
-  ctx.db.session = { username: null, guest: {} }
+  ctx.db.session = { username: null, guest: {}, progress: null }
 })
+
+// ---------------------------------------------------------------------------------------
+// Le parcours, la réserve et les quêtes
+//
+// Chaque joueur, avec ou sans compte, a sa progression dans le parcours :
+//   history  leçons et bilans terminés : [{ id, date, correct, total, points }]
+//            (une leçon refaite s'y ajoute avec 0 point)
+//   attempt  la leçon en cours : { id, answers, result? } (une seule à la fois)
+//   chests   coffres ouverts : [id]
+//   sardines, buoys { count, day }, freezes, frozen [dates gelées]
+//   quests   quêtes déjà récompensées : { [date ou mois]: [id] }
+// Le visiteur sans compte la garde dans sa session ; elle rejoint le compte qu'il crée.
+
+function newProgress() {
+  return {
+    history: [],
+    attempt: null,
+    chests: [],
+    sardines: STARTING_SARDINES,
+    buoys: { count: MAX_BUOYS, day: null },
+    freezes: 0,
+    frozen: [],
+    quests: {},
+  }
+}
+
+// La progression du joueur de la requête, créée au besoin.
+function ownProgress(ctx) {
+  const account = currentAccount(ctx)
+  if (account) return (account.progress ||= newProgress())
+  return (ctx.db.session.progress ||= newProgress())
+}
+
+function frozenOf(account) {
+  return account.progress?.frozen || []
+}
+
+function lessonPointsByDate(progress) {
+  const byDate = {}
+  for (const entry of progress?.history || []) byDate[entry.date] = (byDate[entry.date] || 0) + entry.points
+  return byDate
+}
+
+// Les bouées se regonflent chaque nuit.
+function buoysOf(progress, today) {
+  if (progress.buoys.day !== today) progress.buoys = { count: MAX_BUOYS, day: today }
+  return progress.buoys.count
+}
+
+// Les glaçons gèlent les jours manqués depuis la dernière mission du jour, s'il y en a assez pour
+// tous les couvrir. Sinon la série est perdue, et les glaçons restent en réserve.
+function applyFreezes(ctx) {
+  const account = currentAccount(ctx)
+  if (!account?.progress?.freezes) return
+  const progress = account.progress
+  const played = Object.keys(resultsOf(account, ctx.today))
+  const last = [...played, ...progress.frozen].sort().at(-1)
+  if (!last) return
+  const missed = daysBetween(last, ctx.today) - 1
+  if (missed < 1 || missed > progress.freezes) return
+  for (let i = 1; i <= missed; i++) progress.frozen.push(addDays(last, i))
+  progress.freezes -= missed
+}
+
+function doneIds(progress) {
+  return new Set([...progress.history.map((entry) => entry.id), ...progress.chests])
+}
+
+// La première étape pas encore franchie : tout ce qui la précède est fait, tout ce qui la suit
+// est verrouillé.
+function currentNode(progress) {
+  const done = doneIds(progress)
+  return NODES.find((node) => !done.has(node.id)) || null
+}
+
+function nodeStatus(node, progress) {
+  if (doneIds(progress).has(node.id)) return 'done'
+  return currentNode(progress)?.id === node.id ? 'current' : 'locked'
+}
+
+function guestCard(id) {
+  const guest = GANG[id]
+  return guest ? { id: guest.id, name: guest.name, tagline: guest.tagline, look: guest.look } : null
+}
+
+function inventory(ctx) {
+  const account = currentAccount(ctx)
+  const progress = ownProgress(ctx)
+  const results = account ? resultsOf(account, ctx.today) : {}
+  const points = account
+    ? accountPoints(account, ctx.today)
+    : progress.history.reduce((total, entry) => total + entry.points, 0)
+  const stage = stageFor(points)
+  const streak = account ? streakOf(results, ctx.today, frozenOf(account)) : { current: 0, playedToday: false }
+  return {
+    points,
+    stage: { level: stage.level, name: stage.name },
+    streak: { current: streak.current, playedToday: streak.playedToday },
+    sardines: progress.sardines,
+    buoys: { count: buoysOf(progress, ctx.today), max: MAX_BUOYS },
+    freezes: { count: progress.freezes, max: MAX_FREEZES },
+  }
+}
+
+route('GET', '/inventory', (ctx) => inventory(ctx))
+
+// La mission du jour, en tête du chemin.
+function dailyCard(ctx) {
+  const mission = missionForDate(ctx.today)
+  const resolved = attemptFor(ctx, ctx.today)
+  const answered = Object.keys(resolved.attempt?.answers || {}).length
+  const total = mission.questions.length
+  const account = resolved.account
+  const results = account ? resultsOf(account, ctx.today) : {}
+  const played = results[ctx.today]
+  const streak = account ? streakOf(results, ctx.today, frozenOf(account)) : { current: 0 }
+  return {
+    date: ctx.today,
+    number: episodeNumber(ctx.today, ctx.today),
+    title: mission.title,
+    theme: mission.theme,
+    hook: mission.hook,
+    guest: guestOf(mission),
+    status: played || answered === total ? 'done' : answered ? 'started' : 'todo',
+    answered,
+    total,
+    points: played ? played.points : null,
+    maxPoints: missionPoints(total, total, played ? streak.current : streak.current + 1).total,
+    players: stats(ctx, ctx.today).players,
+  }
+}
+
+route('GET', '/path', (ctx) => {
+  const progress = ownProgress(ctx)
+  const current = currentNode(progress)
+  const bestOf = (id) => {
+    const entry = progress.history.find((e) => e.id === id)
+    return entry ? { correct: entry.correct, total: entry.total } : null
+  }
+  const units = UNITS.map((unit, i) => {
+    const nodes = NODES.filter((node) => node.unit === unit.id).map((node) => {
+      const lesson = node.type === 'chest' ? null : lessonContent(node.id)
+      return {
+        type: node.type,
+        id: node.id,
+        title: node.type === 'chest' ? 'Coffre' : lesson.title,
+        guest: node.type === 'lesson' ? guestCard(lesson.guest) : null,
+        status: nodeStatus(node, progress),
+        score: node.type === 'chest' ? null : bestOf(node.id),
+        maxPoints: lesson ? lessonPoints(lesson.questions.length, lesson.questions.length, { review: node.type === 'review' }).total : null,
+      }
+    })
+    return {
+      id: unit.id,
+      number: i + 1,
+      title: unit.title,
+      description: unit.description,
+      color: unit.color,
+      villain: unit.villain,
+      status: nodes.every((n) => n.status === 'done') ? 'done' : nodes.some((n) => n.status !== 'locked') ? 'current' : 'locked',
+      nodes,
+    }
+  })
+  const lessons = NODES.filter((node) => node.type !== 'chest')
+  return {
+    daily: dailyCard(ctx),
+    units,
+    current: current ? { type: current.type, id: current.id, unit: current.unit } : null,
+    lessons: { done: lessons.filter((node) => doneIds(progress).has(node.id)).length, total: lessons.length },
+  }
+})
+
+// Le guide d'un thème : le réflexe à retenir de chaque leçon, et les sources officielles.
+route('GET', '/units/:id/guide', (ctx) => {
+  const unit = unitById(ctx.params.id)
+  if (!unit) throw new HttpError(404, 'unit_not_found', 'Ce thème n’existe pas.')
+  const review = lessonContent(`bilan-${unit.id}`)
+  return {
+    unit: { id: unit.id, number: UNITS.indexOf(unit) + 1, title: unit.title, description: unit.description, color: unit.color, villain: unit.villain },
+    reflexes: review.reflexes,
+    sources: unit.missions.flatMap((id) => lessonContent(id).sources || []).filter((s, i, all) => all.findIndex((o) => o.url === s.url) === i),
+  }
+})
+
+function lessonOrThrow(id) {
+  const lesson = lessonContent(id)
+  if (!lesson) throw new HttpError(404, 'lesson_not_found', 'Cette leçon n’existe pas.')
+  return lesson
+}
+
+function publicLesson(lesson) {
+  return {
+    id: lesson.id,
+    kind: lesson.kind,
+    title: lesson.title,
+    theme: lesson.theme,
+    hook: lesson.hook,
+    unit: { id: lesson.unit.id, title: lesson.unit.title, color: lesson.unit.color },
+    guest: lesson.guest ? guestCard(lesson.guest) : null,
+    questions: lesson.questions.map((question) => ({ ...publicQuestion(question), guest: guestCard(question.guest) })),
+  }
+}
+
+function lessonProgress(lesson, attempt) {
+  const answers = {}
+  for (const question of lesson.questions) {
+    const entry = attempt?.answers[question.id]
+    if (entry) answers[question.id] = revealed(question, entry, Math.round(question.success * 100))
+  }
+  const answered = Object.keys(answers).length
+  return { answers, answered, total: lesson.questions.length, completed: answered === lesson.questions.length }
+}
+
+// Commencer une leçon, ou reprendre celle qui est en cours. Une leçon déjà faite se refait :
+// elle ne rapporte plus rien, mais entraîne.
+route('POST', '/lessons/:id/start', (ctx) => {
+  const lesson = lessonOrThrow(ctx.params.id)
+  const progress = ownProgress(ctx)
+  const status = nodeStatus(nodeById(lesson.id), progress)
+  if (status === 'locked') throw new HttpError(403, 'lesson_locked', 'Termine d’abord les étapes précédentes du parcours.')
+  const resume = progress.attempt?.id === lesson.id && !progress.attempt.result
+  if (!resume) {
+    if (buoysOf(progress, ctx.today) < 1) throw new HttpError(409, 'no_buoys', 'Tu n’as plus de bouée. Elles se regonflent cette nuit, ou à la boutique.')
+    progress.attempt = { id: lesson.id, answers: {}, replay: status === 'done' }
+  }
+  return {
+    lesson: publicLesson(lesson),
+    progress: lessonProgress(lesson, progress.attempt),
+    replay: progress.attempt.replay,
+    buoys: { count: buoysOf(progress, ctx.today), max: MAX_BUOYS },
+  }
+})
+
+route('POST', '/lessons/:id/answers', (ctx) => {
+  const lesson = lessonOrThrow(ctx.params.id)
+  const progress = ownProgress(ctx)
+  const attempt = progress.attempt
+  if (attempt?.id !== lesson.id || attempt.result) {
+    throw new HttpError(409, 'lesson_not_started', 'Cette leçon n’est pas commencée.')
+  }
+  const question = lesson.questions.find((q) => q.id === ctx.body.questionId)
+  if (!question) throw new HttpError(404, 'question_not_found', 'Cette question ne fait pas partie de la leçon.')
+  if (attempt.answers[question.id]) throw new HttpError(409, 'already_answered', 'Tu as déjà répondu à cette question.')
+  if (buoysOf(progress, ctx.today) < 1) throw new HttpError(409, 'no_buoys', 'Tu n’as plus de bouée. Elles se regonflent cette nuit, ou à la boutique.')
+
+  const correct = checkAnswer(question, ctx.body.answer)
+  attempt.answers[question.id] = { answer: ctx.body.answer, correct }
+  // Une erreur coûte une bouée.
+  if (!correct) progress.buoys.count--
+  const state = lessonProgress(lesson, attempt)
+  if (state.completed) finishLesson(ctx, lesson, progress)
+  return {
+    ...state.answers[question.id],
+    progress: { ...state, answers: undefined },
+    buoys: { count: buoysOf(progress, ctx.today), max: MAX_BUOYS },
+  }
+})
+
+// Fin d'une leçon : points et sardines la première fois, quêtes, et l'étape suivante. Le bilan
+// est gardé tel quel avec la tentative, pour être relu.
+function finishLesson(ctx, lesson, progress) {
+  const attempt = progress.attempt
+  const account = currentAccount(ctx)
+  const correct = lesson.questions.filter((q) => attempt.answers[q.id].correct).length
+  const total = lesson.questions.length
+  const firstTime = !attempt.replay
+  const review = lesson.kind === 'review'
+  const points = firstTime ? lessonPoints(correct, total, { review }) : null
+  const perfect = correct === total
+  const sardines = firstTime ? (review ? SARDINES.review : SARDINES.lesson) + (perfect ? SARDINES.perfect : 0) : 0
+  const before = inventory(ctx)
+  progress.history.push({ id: lesson.id, date: ctx.today, correct, total, points: points ? points.total : 0 })
+  progress.sardines += sardines
+  const quests = settleQuests(ctx)
+  const after = inventory(ctx)
+  const next = currentNode(progress)
+  attempt.result = {
+    id: lesson.id,
+    kind: lesson.kind,
+    title: lesson.title,
+    unit: { id: lesson.unit.id, title: lesson.unit.title, color: lesson.unit.color },
+    correct,
+    total,
+    firstTime,
+    points,
+    sardines,
+    moral: lesson.moral,
+    reflexes: lesson.reflexes,
+    sources: lesson.sources || [],
+    player: account || firstTime
+      ? { before: { points: before.points, stage: stageFor(before.points) }, after: { points: after.points, stage: stageFor(after.points) } }
+      : null,
+    quests,
+    next: next ? { type: next.type, id: next.id, title: next.type === 'chest' ? 'Coffre' : lessonContent(next.id).title } : null,
+  }
+}
+
+route('GET', '/lessons/:id/result', (ctx) => {
+  lessonOrThrow(ctx.params.id)
+  const attempt = ownProgress(ctx).attempt
+  if (attempt?.id !== ctx.params.id || !attempt.result) {
+    throw new HttpError(409, 'not_finished', 'Réponds à toutes les questions pour voir le bilan de la leçon.')
+  }
+  return attempt.result
+})
+
+route('POST', '/path/chests/:id', (ctx) => {
+  const node = nodeById(ctx.params.id)
+  if (!node || node.type !== 'chest') throw new HttpError(404, 'chest_not_found', 'Ce coffre n’existe pas.')
+  const progress = ownProgress(ctx)
+  const status = nodeStatus(node, progress)
+  if (status === 'done') throw new HttpError(409, 'already_claimed', 'Tu as déjà ouvert ce coffre.')
+  if (status === 'locked') throw new HttpError(403, 'chest_locked', 'Termine d’abord les leçons qui mènent à ce coffre.')
+  progress.chests.push(node.id)
+  progress.sardines += SARDINES.chest
+  return { sardines: SARDINES.chest, inventory: inventory(ctx) }
+})
+
+// --- La boutique
+
+const SHOP_ITEMS = [
+  {
+    id: 'bouees',
+    title: 'Bouées regonflées',
+    description: 'Retrouve tes cinq bouées tout de suite, sans attendre cette nuit.',
+  },
+  {
+    id: 'glacon',
+    title: 'Glaçon',
+    description: 'Il gèle ta série un jour où tu ne fais pas la mission du jour. Tu peux en garder deux.',
+  },
+]
+
+function shopItems(ctx) {
+  const progress = ownProgress(ctx)
+  const buoys = buoysOf(progress, ctx.today)
+  return SHOP_ITEMS.map((item) => {
+    const price = SHOP[item.id].price
+    let blocked = null
+    if (item.id === 'bouees' && buoys >= MAX_BUOYS) blocked = 'Tes bouées sont déjà toutes gonflées.'
+    if (item.id === 'glacon' && progress.freezes >= MAX_FREEZES) blocked = `Tu as déjà ${MAX_FREEZES} glaçons en réserve.`
+    if (!blocked && progress.sardines < price) blocked = 'Pas assez de sardines.'
+    return {
+      ...item,
+      price,
+      owned: item.id === 'glacon' ? { count: progress.freezes, max: MAX_FREEZES } : { count: buoys, max: MAX_BUOYS },
+      available: !blocked,
+      reason: blocked,
+    }
+  })
+}
+
+route('GET', '/shop', (ctx) => {
+  requireAccount(ctx)
+  return { sardines: ownProgress(ctx).sardines, items: shopItems(ctx) }
+})
+
+route('POST', '/shop/:id', (ctx) => {
+  requireAccount(ctx)
+  const item = shopItems(ctx).find((i) => i.id === ctx.params.id)
+  if (!item) throw new HttpError(404, 'item_not_found', 'Cet article n’existe pas.')
+  const progress = ownProgress(ctx)
+  if (item.id === 'bouees' && item.owned.count >= MAX_BUOYS) throw new HttpError(409, 'already_full', item.reason)
+  if (item.id === 'glacon' && item.owned.count >= MAX_FREEZES) throw new HttpError(409, 'max_reached', item.reason)
+  if (progress.sardines < item.price) throw new HttpError(409, 'not_enough_sardines', 'Pas assez de sardines pour cet article.')
+  progress.sardines -= item.price
+  if (item.id === 'bouees') progress.buoys = { count: MAX_BUOYS, day: ctx.today }
+  else progress.freezes++
+  return { inventory: inventory(ctx) }
+})
+
+// --- Les quêtes
+
+// Trois quêtes par jour : la mission du jour, et deux autres qui tournent selon la date.
+const DAILY_QUESTS = {
+  daily: { title: 'Fais la mission du jour', goal: 1, reward: 15 },
+  points: { title: 'Gagne 40 points', goal: 40, reward: 10 },
+  lessons: { title: 'Termine 2 leçons du parcours', goal: 2, reward: 15 },
+  correct: { title: 'Donne 12 bonnes réponses', goal: 12, reward: 10 },
+  perfect: { title: 'Fais un sans-faute', goal: 1, reward: 20 },
+}
+const ROTATING = ['points', 'lessons', 'correct', 'perfect']
+const MONTHLY_GOAL = 120
+const MONTHLY_REWARD = 50
+const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+
+function questIds(today) {
+  const n = dayNumber(today)
+  return ['daily', ROTATING[n % ROTATING.length], ROTATING[(n + 1) % ROTATING.length]]
+}
+
+// Ce que le joueur a fait à une date (ou depuis une date, pour le défi du mois).
+function activity(ctx, fromDate, toDate = fromDate) {
+  const account = currentAccount(ctx)
+  const progress = ownProgress(ctx)
+  const inRange = (date) => date >= fromDate && date <= toDate
+  const lessons = progress.history.filter((entry) => inRange(entry.date))
+  const total = { points: 0, lessons: lessons.length, correct: 0, perfect: 0, daily: 0 }
+  for (const entry of lessons) {
+    total.points += entry.points
+    total.correct += entry.correct
+    if (entry.correct === entry.total) total.perfect++
+  }
+  if (account) {
+    for (const [date, result] of Object.entries(resultsOf(account, ctx.today))) {
+      if (!inRange(date)) continue
+      total.points += result.points
+      total.correct += result.correct
+      if (result.correct === result.total) total.perfect++
+      if (date === ctx.today) total.daily = 1
+    }
+  } else {
+    const attempt = ctx.db.session.guest[ctx.today]
+    const mission = missionForDate(ctx.today)
+    if (attempt && inRange(ctx.today) && Object.keys(attempt.answers).length === mission.questions.length) {
+      const flags = flagsOf(mission, attempt)
+      total.daily = 1
+      total.correct += flags.filter(Boolean).length
+      if (flags.every(Boolean)) total.perfect++
+    }
+  }
+  return total
+}
+
+function questsOf(ctx) {
+  const progress = ownProgress(ctx)
+  const today = activity(ctx, ctx.today)
+  const credited = progress.quests[ctx.today] || []
+  const daily = questIds(ctx.today).map((id) => {
+    const quest = DAILY_QUESTS[id]
+    const value = Math.min(quest.goal, today[id])
+    return { id, title: quest.title, value, goal: quest.goal, reward: quest.reward, done: value >= quest.goal, credited: credited.includes(id) }
+  })
+  const month = ctx.today.slice(0, 7)
+  const value = Math.min(MONTHLY_GOAL, activity(ctx, `${month}-01`, ctx.today).correct)
+  const [y, m] = month.split('-').map(Number)
+  const lastDay = new Date(y, m, 0).getDate()
+  return {
+    daily,
+    monthly: {
+      id: month,
+      title: /^[aeiou]/.test(MONTHS[m - 1]) ? `Le défi d’${MONTHS[m - 1]}` : `Le défi de ${MONTHS[m - 1]}`,
+      description: `Donne ${MONTHLY_GOAL} bonnes réponses avant la fin du mois.`,
+      value,
+      goal: MONTHLY_GOAL,
+      reward: MONTHLY_REWARD,
+      done: value >= MONTHLY_GOAL,
+      daysLeft: lastDay - Number(ctx.today.slice(8)),
+    },
+  }
+}
+
+// Les quêtes terminées rapportent leurs sardines une fois, dès qu'elles sont remplies.
+function settleQuests(ctx) {
+  const progress = ownProgress(ctx)
+  const quests = questsOf(ctx)
+  const earned = []
+  const credit = (key, id, title, reward) => {
+    progress.quests[key] ||= []
+    if (progress.quests[key].includes(id)) return
+    progress.quests[key].push(id)
+    progress.sardines += reward
+    earned.push({ id, title, reward })
+  }
+  for (const quest of quests.daily) if (quest.done) credit(ctx.today, quest.id, quest.title, quest.reward)
+  if (quests.monthly.done) credit(quests.monthly.id, 'monthly', quests.monthly.title, quests.monthly.reward)
+  return earned
+}
+
+route('GET', '/quests', (ctx) => {
+  settleQuests(ctx)
+  const quests = questsOf(ctx)
+  return {
+    date: ctx.today,
+    daily: quests.daily.map(({ credited, ...quest }) => quest),
+    monthly: quests.monthly,
+  }
+})
+
+// --- Les succès, pour la page « Mon Tux »
+
+const ACHIEVEMENTS = [
+  { id: 'serie', title: 'Fidèle au poste', unit: 'jours de série', icon: 'flamme', tiers: [3, 7, 14, 30], metric: (s) => s.bestStreak },
+  { id: 'sans-faute', title: 'Sans-faute', unit: 'sans-fautes', icon: 'cible', tiers: [1, 5, 15, 40], metric: (s) => s.perfect },
+  { id: 'themes', title: 'Tour de la banquise', unit: 'thèmes terminés', icon: 'igloo', tiers: [1, 2, 4, UNITS.length], metric: (s) => s.units },
+  { id: 'muscles', title: 'Gonflé à bloc', unit: 'stade du Tux', icon: 'haltere', tiers: [2, 4, 6, 7], metric: (s) => s.level },
+  { id: 'missions', title: 'Mission accomplie', unit: 'missions du jour', icon: 'trophee', tiers: [1, 10, 25, 50], metric: (s) => s.missions },
+]
+
+function achievementsOf(ctx, account) {
+  const progress = account.progress || newProgress()
+  const results = Object.values(resultsOf(account, ctx.today))
+  const done = doneIds(progress)
+  const stats = {
+    bestStreak: streakOf(resultsOf(account, ctx.today), ctx.today, frozenOf(account)).best,
+    perfect: results.filter((r) => r.correct === r.total).length + progress.history.filter((e) => e.correct === e.total).length,
+    units: UNITS.filter((unit) => done.has(`bilan-${unit.id}`)).length,
+    level: stageFor(accountPoints(account, ctx.today)).level,
+    missions: results.length,
+  }
+  return ACHIEVEMENTS.map((a) => {
+    const value = a.metric(stats)
+    const level = a.tiers.filter((tier) => value >= tier).length
+    const goal = a.tiers[Math.min(level, a.tiers.length - 1)]
+    return { id: a.id, title: a.title, icon: a.icon, level, maxLevel: a.tiers.length, value, goal, unit: a.unit }
+  })
+}
 
 // ---------------------------------------------------------------------------------------
 // Contenus fixes

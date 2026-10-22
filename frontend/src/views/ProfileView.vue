@@ -1,20 +1,15 @@
 <script setup>
-// Mon Tux : le personnage du joueur, sa fiche, son carnet des quatre dernières semaines et les
-// stades qui l'attendent. Sans compte, l'œuf attend d'éclore.
+// Mon Tux : le personnage du joueur à son stade, ce qui lui manque pour le suivant, ses chiffres,
+// sa semaine, ses succès et le carnet des missions du jour. Sans compte, l'œuf attend d'éclore.
 import { computed } from 'vue'
-import Balloon from '../components/comic/Balloon.vue'
-import ErrorPanel from '../components/comic/ErrorPanel.vue'
-import LoadingPanel from '../components/comic/LoadingPanel.vue'
-import Picture from '../components/comic/Picture.vue'
-import MuscleName from '../components/tux/MuscleName.vue'
-import Ordinal from '../components/Ordinal.vue'
-import StageLadder from '../components/tux/StageLadder.vue'
-import TapeGauge from '../components/tux/TapeGauge.vue'
+import AppShell from '../components/app/AppShell.vue'
+import Icon from '../components/app/Icon.vue'
+import StatePanel from '../components/app/StatePanel.vue'
 import { getGame, getMe } from '../api/index.js'
 import { loadSession, session } from '../lib/session.js'
 import { useResource } from '../lib/resource.js'
 import { sceneImage, stageImage } from '../lib/images.js'
-import { formatDay, formatFullDate, formatNumber, parseDate, plural, typo } from '../lib/format.js'
+import { formatDay, formatFullDate, formatNumber, formatWeekday, parseDate, plural, typo } from '../lib/format.js'
 
 const { data, error, reload } = useResource(async () => {
   const user = await loadSession()
@@ -35,23 +30,48 @@ const me = computed(() => data.value?.me || null)
 const stages = computed(() => data.value?.game.stages || [])
 const lastLevel = computed(() => stages.value.length - 1)
 
-const remaining = computed(() => (me.value?.stage.next ? me.value.stage.next.minPoints - me.value.points : 0))
+// La jauge jusqu'au stade suivant.
+const next = computed(() => me.value?.stage.next || null)
+const remaining = computed(() => (next.value ? next.value.minPoints - me.value.points : 0))
+const progress = computed(() => {
+  if (!next.value) return 100
+  const span = next.value.minPoints - me.value.stage.minPoints
+  return Math.max(0, Math.min(100, ((me.value.points - me.value.stage.minPoints) / span) * 100))
+})
+
+const tiles = computed(() => {
+  const m = me.value
+  const rate = m.totals.questions ? Math.round((m.totals.correct / m.totals.questions) * 100) : null
+  return [
+    { id: 'streak', icon: 'flamme', value: m.streak.current, label: m.streak.current > 1 ? 'jours de série' : 'jour de série', off: !m.streak.playedToday },
+    { id: 'points', icon: 'haltere', value: formatNumber(m.points), label: 'points au total' },
+    { id: 'lessons', icon: 'igloo', value: m.totals.lessons, label: m.totals.lessons > 1 ? 'leçons réussies' : 'leçon réussie' },
+    { id: 'missions', icon: 'trophee', value: m.totals.episodes, label: m.totals.episodes > 1 ? 'missions du jour' : 'mission du jour' },
+    { id: 'rate', icon: 'cible', value: rate === null ? '–' : `${rate} %`, label: 'de bonnes réponses' },
+    { id: 'rank', icon: 'podium', value: m.rank.week ? `${m.rank.week.position}${m.rank.week.position === 1 ? 're' : 'e'}` : '–', label: 'cette semaine' },
+  ]
+})
 
 const streakLine = computed(() => {
   const streak = me.value.streak
-  if (streak.current === 0) {
-    return streak.lastPlayed ? 'Pas de série en cours. Un épisode aujourd’hui en relance une.' : 'Pas encore de série : elle commence avec ton premier épisode.'
-  }
-  if (streak.playedToday) return 'Épisode du jour joué : ta série est à l’abri jusqu’à demain.'
-  return 'Pas encore joué aujourd’hui : ta série tient jusqu’à minuit.'
+  if (streak.current === 0) return 'Pas de série en cours : la mission du jour en relance une.'
+  if (streak.playedToday) return 'Mission du jour faite : ta série est à l’abri jusqu’à demain.'
+  return 'Pas encore de mission aujourd’hui : ta série tient jusqu’à minuit.'
 })
 
-const successRate = computed(() => {
-  const totals = me.value?.totals
-  return totals && totals.questions ? Math.round((totals.correct / totals.questions) * 100) : null
+// La semaine en barres : la plus haute prend toute la hauteur.
+const week = computed(() => {
+  const days = me.value?.week || []
+  const top = Math.max(1, ...days.map((day) => day.points))
+  return days.map((day, i) => ({
+    ...day,
+    height: (day.points / top) * 100,
+    short: i === days.length - 1 ? 'Auj.' : formatWeekday(day.date).slice(0, 3),
+  }))
 })
+const weekTotal = computed(() => week.value.reduce((sum, day) => sum + day.points, 0))
 
-// Le carnet : les quatre dernières semaines, du lundi au dimanche.
+// Le carnet des missions du jour : les dernières semaines, du lundi au dimanche.
 const WEEKDAYS = [
   ['L', 'lundi'],
   ['M', 'mardi'],
@@ -71,165 +91,585 @@ const calendar = computed(() => {
 
 function dayLabel(day) {
   const when = formatDay(day.date)
-  if (day.status === 'played') return `${when} : joué, ${day.correct} sur ${day.total}, ${plural(day.points, 'point')}`
-  if (day.status === 'missed') return `${when} : manqué, à rattraper`
-  if (day.status === 'today') return `${when} : épisode du jour, à jouer`
-  return `${when} : avant ton arrivée`
-}
-
-function dayLink(day) {
-  return day.date === me.value.days.at(-1).date ? '/' : `/episode/${day.date}`
+  if (day.status === 'played') return `${when} : faite, ${day.correct} sur ${day.total}, ${plural(day.points, 'point')}`
+  if (day.status === 'missed') return `${when} : manquée`
+  if (day.status === 'today') return `${when} : mission du jour, à faire`
+  return `${when} : avant ton arrivée`
 }
 </script>
 
 <template>
-  <div class="page profile">
-    <!-- Le titre de la page tant que le Tux n'est pas arrivé. -->
+  <AppShell width="wide">
     <h1 v-if="!data" class="visually-hidden">Mon Tux</h1>
-    <ErrorPanel v-if="error && !data" :error="error" :retry="reload" />
-    <LoadingPanel v-else-if="!data" label="Chargement de ton Tux" />
+    <StatePanel v-if="error && !data" state="error" :error="error" :retry="reload" />
+    <StatePanel v-else-if="!data" label="Ton Tux arrive…" />
 
     <!-- Sans compte : l'œuf. -->
-    <template v-else-if="!me">
-      <section class="egg panel">
-        <Picture class="egg-image" :image="sceneImage('egg')" alt="Un œuf coiffé d’une toque, qui commence à se fendre." eager />
+    <div v-else-if="!me" class="profile">
+      <section class="card card--pad egg">
+        <img :src="sceneImage('egg').src" alt="Un œuf coiffé d’une toque, qui commence à se fendre." class="egg-image" />
         <div class="egg-text">
-          <h1 class="page-title">Ton Tux n’a pas encore éclos</h1>
-          <p class="lead">
-            Crée ton compte : il éclot à ton premier épisode, puis chaque bonne réponse lui donne du muscle. Ta série, tes
-            points et ta place au classement sont gardés.
-          </p>
+          <h1 class="section-title">Ton Tux n’a pas encore éclos</h1>
+          <p class="muted">Crée un profil : il éclot à ta première leçon, puis chaque bonne réponse lui donne du muscle. Ta série, tes points et ta place au classement sont gardés.</p>
           <div class="egg-actions">
-            <RouterLink class="button" :to="{ path: '/inscription', query: { redirect: '/mon-tux' } }">Créer mon compte</RouterLink>
-            <RouterLink class="button button--paper" :to="{ path: '/connexion', query: { redirect: '/mon-tux' } }">Se connecter</RouterLink>
+            <RouterLink class="button" :to="{ path: '/inscription', query: { redirect: '/mon-tux' } }">Créer un profil</RouterLink>
+            <RouterLink class="button button--ghost" :to="{ path: '/connexion', query: { redirect: '/mon-tux' } }">Se connecter</RouterLink>
           </div>
         </div>
       </section>
+
       <section class="block" aria-labelledby="ladder-title">
-        <h2 id="ladder-title" class="block-title">Ce qu’il peut devenir</h2>
-        <StageLadder class="panel ladder-panel" :stages="stages" />
+        <h2 id="ladder-title" class="section-title">Ce qu’il peut devenir</h2>
+        <ol class="card card--pad ladder">
+          <li v-for="stage in stages" :key="stage.level" class="rung" :style="{ '--grow': stage.level }">
+            <img :src="stageImage(stage.level, { mini: true }).src" :alt="stage.name" class="rung-tux" />
+            <span class="rung-name">{{ stage.name }}</span>
+            <span class="rung-points">{{ stage.minPoints ? `${formatNumber(stage.minPoints)} pts` : 'au départ' }}</span>
+          </li>
+        </ol>
       </section>
-    </template>
+
+      <RouterLink to="/preferences" class="mobile-link">Préférences</RouterLink>
+    </div>
 
     <!-- Avec compte : la fiche du personnage. -->
-    <template v-else>
-      <section class="hero panel" aria-labelledby="profile-name">
+    <div v-else class="profile">
+      <section class="hero" aria-labelledby="profile-name">
         <div class="hero-art">
-          <div class="hero-burst" aria-hidden="true"></div>
-          <Picture class="hero-tux" :image="stageImage(me.stage.level)" :alt="`Le Tux de ${me.user.username}, au stade ${me.stage.name}.`" eager />
+          <img :src="stageImage(me.stage.level).src" :alt="`Le Tux de ${me.user.username}, au stade ${me.stage.name}.`" class="hero-tux" />
         </div>
         <div class="hero-text">
-          <h1 id="profile-name" class="hero-name">
-            <MuscleName :name="me.user.username" :level="me.stage.level" />
-          </h1>
+          <h1 id="profile-name" class="hero-name">{{ me.user.username }}</h1>
+          <p class="hero-since">Sur la banquise depuis le {{ formatFullDate(me.user.createdAt) }}</p>
           <p class="hero-stage">
-            Stade {{ me.stage.level }} sur {{ lastLevel }} : <strong>{{ me.stage.name }}</strong>
+            <span class="stage-badge">Stade {{ me.stage.level }} / {{ lastLevel }}</span>
+            <strong>{{ me.stage.name }}</strong>
           </p>
-          <Balloon class="hero-motto" tail="left">{{ typo(me.stage.motto) }}</Balloon>
-          <TapeGauge
-            v-if="me.stage.next"
-            :from="me.stage.minPoints"
-            :to="me.stage.next.minPoints"
-            :after="me.points"
-            :label="`${plural(remaining, 'point')} avant le stade ${me.stage.next.name}`"
-          />
+          <p class="hero-motto">« {{ typo(me.stage.motto) }} »</p>
+          <div v-if="next" class="gauge">
+            <div class="gauge-labels">
+              <span>{{ plural(remaining, 'point') }} avant <strong>{{ next.name }}</strong></span>
+              <span class="muted">{{ formatNumber(me.points) }} / {{ formatNumber(next.minPoints) }}</span>
+            </div>
+            <div class="meter" role="progressbar" :aria-valuenow="me.points" :aria-valuemin="me.stage.minPoints" :aria-valuemax="next.minPoints" :aria-label="`Points jusqu’au stade ${next.name}`">
+              <div class="meter-fill" :style="{ width: `${progress}%` }"></div>
+            </div>
+          </div>
           <p v-else class="hero-max">Dernier stade atteint. Les arnaques n’ont qu’à bien se tenir.</p>
-          <p class="hero-points">{{ plural(me.points, 'point') }} depuis le {{ formatFullDate(me.user.createdAt) }}.</p>
         </div>
       </section>
 
-      <section class="sheet panel panel--pad" aria-labelledby="sheet-title">
-        <h2 id="sheet-title" class="block-title">Sa fiche</h2>
-        <dl class="facts">
-          <div class="fact">
-            <dt>Série</dt>
-            <dd>
-              <strong>{{ plural(me.streak.current, 'jour') }}</strong>, record {{ plural(me.streak.best, 'jour') }}.
-              <span class="fact-more">{{ streakLine }}</span>
-              <RouterLink v-if="!me.streak.playedToday" to="/" class="fact-link">Jouer l’épisode du jour</RouterLink>
-            </dd>
-          </div>
-          <div class="fact">
-            <dt>Classement</dt>
-            <dd>
-              <strong v-if="me.rank.week"><Ordinal :rank="me.rank.week.position" /> sur {{ formatNumber(me.rank.week.players) }}</strong>
-              <strong v-else>Pas classé</strong>
-              ces 7 derniers jours<template v-if="me.rank.all">, <Ordinal :rank="me.rank.all.position" /> sur {{ formatNumber(me.rank.all.players) }} depuis le début.</template>
-              <template v-else>, ni depuis le début.</template>
-              <RouterLink to="/classement" class="fact-link">Voir le classement</RouterLink>
-            </dd>
-          </div>
-          <div class="fact">
-            <dt>Épisodes</dt>
-            <dd>
-              <strong>{{ formatNumber(me.totals.episodes) }}</strong> {{ me.totals.episodes >= 2 ? 'joués' : 'joué' }} le jour même<template v-if="successRate !== null">,
-                {{ plural(me.totals.correct, 'bonne réponse', 'bonnes réponses') }} sur {{ formatNumber(me.totals.questions) }}
-                ({{ successRate }} %)</template>.
-            </dd>
-          </div>
-        </dl>
+      <section class="block" aria-labelledby="stats-title">
+        <h2 id="stats-title" class="section-title">Statistiques</h2>
+        <ul class="tiles">
+          <li v-for="tile in tiles" :key="tile.id" class="tile" :class="{ 'is-off': tile.off }">
+            <Icon :name="tile.icon" :size="34" />
+            <div>
+              <p class="tile-value">{{ tile.value }}</p>
+              <p class="tile-label">{{ tile.label }}</p>
+            </div>
+          </li>
+        </ul>
+        <p class="streak-line muted">{{ streakLine }}<template v-if="me.streak.best > 1"> Record : {{ plural(me.streak.best, 'jour') }}.</template></p>
       </section>
 
-      <section class="block" aria-labelledby="diary-title">
-        <h2 id="diary-title" class="block-title">Ses quatre dernières semaines</h2>
-        <div class="diary panel">
-          <div class="diary-head" aria-hidden="true">
-            <span v-for="([letter, name]) in WEEKDAYS" :key="name">{{ letter }}</span>
-          </div>
-          <ol class="diary-grid">
-            <li v-for="day in calendar" :key="day.key" class="diary-cell" :class="day.blank ? 'is-blank' : `is-${day.status}`">
-              <template v-if="!day.blank">
-                <span v-if="day.status === 'before'" class="diary-day" :aria-label="dayLabel(day)">
-                  {{ parseDate(day.date).getDate() }}
-                </span>
-                <RouterLink v-else :to="dayLink(day)" class="diary-day" :aria-label="dayLabel(day)">
-                  <span class="diary-number">{{ parseDate(day.date).getDate() }}</span>
-                  <span v-if="day.status === 'played'" class="diary-mark">{{ day.correct }}/{{ day.total }}</span>
-                  <span v-else-if="day.status === 'missed'" class="diary-mark">manqué</span>
-                  <span v-else class="diary-mark">à jouer</span>
-                </RouterLink>
-              </template>
+      <section class="block" aria-labelledby="week-title">
+        <div class="block-head">
+          <h2 id="week-title" class="section-title">Ta semaine</h2>
+          <p class="muted">{{ plural(weekTotal, 'point') }} en 7 jours</p>
+        </div>
+        <div class="card card--pad chart">
+          <ol class="bars">
+            <li v-for="day in week" :key="day.date" class="bar" :class="{ 'is-today': day === week.at(-1) }">
+              <span class="bar-value">{{ day.points || '' }}</span>
+              <span class="bar-track"><span class="bar-fill" :style="{ height: `${day.height}%` }"></span></span>
+              <span class="bar-day" :title="formatDay(day.date)">{{ day.short }}</span>
+              <span class="visually-hidden">{{ formatDay(day.date) }} : {{ plural(day.points, 'point') }}</span>
             </li>
           </ol>
-          <p class="diary-legend">Touche un jour pour relire l’épisode, ou le rattraper sans points.</p>
+        </div>
+      </section>
+
+      <section class="block" aria-labelledby="achievements-title">
+        <h2 id="achievements-title" class="section-title">Succès</h2>
+        <ul class="card achievements">
+          <li v-for="item in me.achievements" :key="item.id" class="achievement" :class="{ 'is-locked': item.level === 0 }">
+            <span class="achievement-badge">
+              <Icon :name="item.icon" :size="46" />
+              <span class="achievement-level">Niv. {{ item.level }}</span>
+            </span>
+            <div class="achievement-body">
+              <div class="achievement-head">
+                <p class="achievement-title">{{ item.title }}</p>
+                <p class="muted achievement-count">{{ item.level }} / {{ item.maxLevel }}</p>
+              </div>
+              <div class="meter" role="progressbar" :aria-valuenow="Math.min(item.value, item.goal)" aria-valuemin="0" :aria-valuemax="item.goal" :aria-label="item.title">
+                <div class="meter-fill" :data-empty="item.value === 0" :style="{ width: `${Math.min(100, (item.value / item.goal) * 100)}%` }"></div>
+              </div>
+              <p class="achievement-goal muted">
+                <template v-if="item.level === item.maxLevel">Niveau maximum : {{ item.value }} {{ item.unit }}.</template>
+                <template v-else>{{ item.value }} / {{ item.goal }} {{ item.unit }}</template>
+              </p>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="block" aria-labelledby="calendar-title">
+        <h2 id="calendar-title" class="section-title">Le carnet des missions du jour</h2>
+        <div class="card card--pad">
+          <div class="calendar" role="list">
+            <span v-for="[letter, name] in WEEKDAYS" :key="name" class="calendar-head" aria-hidden="true">{{ letter }}</span>
+            <span v-for="day in calendar" :key="day.key" role="listitem" class="calendar-day" :class="day.blank ? 'is-blank' : `is-${day.status}`" :title="day.blank ? undefined : dayLabel(day)">
+              <template v-if="!day.blank">
+                <span aria-hidden="true">{{ parseDate(day.date).getDate() }}</span>
+                <span class="visually-hidden">{{ dayLabel(day) }}</span>
+              </template>
+            </span>
+          </div>
+          <ul class="legend">
+            <li><span class="dot is-played"></span>Faite</li>
+            <li><span class="dot is-missed"></span>Manquée</li>
+            <li><span class="dot is-today"></span>Aujourd’hui</li>
+          </ul>
         </div>
       </section>
 
       <section class="block" aria-labelledby="ladder-title">
-        <h2 id="ladder-title" class="block-title">Ses stades</h2>
-        <StageLadder class="panel ladder-panel" :stages="stages" :level="me.stage.level" />
+        <h2 id="ladder-title" class="section-title">Les stades du Tux</h2>
+        <ol class="card card--pad ladder">
+          <li
+            v-for="stage in stages"
+            :key="stage.level"
+            class="rung"
+            :class="{ 'is-current': stage.level === me.stage.level, 'is-locked': stage.level > me.stage.level }"
+            :style="{ '--grow': stage.level }"
+          >
+            <img :src="stageImage(stage.level, { mini: true }).src" :alt="stage.level > me.stage.level ? 'Stade pas encore atteint' : stage.name" class="rung-tux" />
+            <span class="rung-name">{{ stage.level > me.stage.level ? '?' : stage.name }}</span>
+            <span class="rung-points">{{ stage.minPoints ? `${formatNumber(stage.minPoints)} pts` : 'au départ' }}</span>
+          </li>
+        </ol>
       </section>
 
-      <p class="account-link">
-        <RouterLink to="/mon-compte">Gérer mon compte</RouterLink> : changer de pseudo ou de mot de passe, se déconnecter.
-      </p>
-    </template>
-  </div>
+      <nav class="mobile-links" aria-label="Réglages">
+        <RouterLink to="/preferences" class="mobile-link">Préférences</RouterLink>
+        <RouterLink to="/mon-compte" class="mobile-link">Mon compte</RouterLink>
+      </nav>
+    </div>
+  </AppShell>
 </template>
 
 <style scoped>
 .profile {
-  gap: calc(var(--gutter) * 1.3);
+  display: grid;
+  gap: 36px;
 }
 
 .block {
   display: grid;
-  gap: 10px;
+  gap: 14px;
 }
 
-.block-title {
-  font-size: clamp(1.35rem, 4vw, 1.75rem);
-  font-weight: 850;
-  font-stretch: 106%;
+.block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-/* L'œuf du visiteur */
-.egg {
+/* --- L'en-tête */
+
+.hero {
   display: grid;
-  grid-template-columns: minmax(110px, 200px) 1fr;
-  gap: 20px;
+  grid-template-columns: 200px minmax(0, 1fr);
   align-items: center;
-  padding: clamp(14px, 3.5vw, 26px);
+  gap: 28px;
+  padding-bottom: 28px;
+  border-bottom: 2px solid var(--rule);
+}
+
+.hero-art {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  background: var(--toque-pale);
+  border-radius: 50%;
+}
+
+.hero-tux {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+}
+
+.hero-text {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hero-name {
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  overflow-wrap: anywhere;
+}
+
+.hero-since {
+  color: var(--muted);
+}
+
+.hero-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.15rem;
+  color: var(--toque);
+}
+
+.stage-badge {
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--toque-bright);
+  border-radius: 999px;
+}
+
+.hero-motto {
+  font-style: italic;
+  color: var(--muted);
+}
+
+.gauge {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.gauge-labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 0.95rem;
+}
+
+.hero-max {
+  font-weight: 700;
+  color: var(--success-ink);
+}
+
+/* --- Les statistiques */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 2px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.tile.is-off :deep(.icon) {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.tile-value {
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.tile-label {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.streak-line {
+  font-size: 0.95rem;
+}
+
+/* --- La semaine */
+
+.bars {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.bar {
+  display: grid;
+  grid-template-rows: auto 140px auto;
+  justify-items: center;
+  gap: 6px;
+}
+
+.bar-value {
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--toque);
+}
+
+.bar-track {
+  position: relative;
+  width: 100%;
+  max-width: 40px;
+  background: var(--wash);
+  border-radius: 10px;
+}
+
+.bar-fill {
+  position: absolute;
+  inset: auto 0 0 0;
+  min-height: 4px;
+  background: var(--toque-bright);
+  border-radius: 10px;
+  box-shadow: inset 0 -4px 0 var(--toque);
+}
+
+.bar.is-today .bar-fill {
+  background: var(--beak);
+  box-shadow: inset 0 -4px 0 var(--beak-deep);
+}
+
+.bar-day {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: capitalize;
+  color: var(--muted);
+}
+
+.bar.is-today .bar-day {
+  color: var(--beak-ink);
+}
+
+/* --- Les succès */
+
+.achievements {
+  display: grid;
+  padding: 0;
+  list-style: none;
+}
+
+.achievement {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+}
+
+.achievement + .achievement {
+  border-top: 2px solid var(--rule);
+}
+
+.achievement-badge {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 76px;
+  height: 84px;
+  padding-bottom: 10px;
+  background: var(--beak-pale);
+  border: 2px solid #ffd0a3;
+  border-radius: var(--radius);
+}
+
+.achievement-level {
+  position: absolute;
+  bottom: 4px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--beak-ink);
+}
+
+.achievement.is-locked .achievement-badge {
+  background: var(--wash);
+  border-color: var(--rule);
+}
+
+.achievement.is-locked .achievement-badge :deep(.icon) {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.achievement.is-locked .achievement-level {
+  color: var(--muted);
+}
+
+.achievement-body {
+  display: grid;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+}
+
+.achievement-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.achievement-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.achievement-count,
+.achievement-goal {
+  font-size: 0.9rem;
+}
+
+/* --- Le carnet */
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.calendar-head {
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-align: center;
+  color: var(--muted);
+}
+
+.calendar-day {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #9aa0b4;
+  border-radius: 50%;
+}
+
+.calendar-day.is-played {
+  color: #fff;
+  background: var(--beak);
+}
+
+.calendar-day.is-missed {
+  color: var(--alert-ink);
+  background: var(--alert-pale);
+}
+
+.calendar-day.is-today {
+  color: var(--toque-bright);
+  box-shadow: inset 0 0 0 2px var(--toque-bright);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  margin-top: 14px;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  list-style: none;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.dot.is-played {
+  background: var(--beak);
+}
+
+.dot.is-missed {
+  background: var(--alert-pale);
+  box-shadow: inset 0 0 0 1px var(--alert);
+}
+
+.dot.is-today {
+  box-shadow: inset 0 0 0 2px var(--toque-bright);
+}
+
+/* --- L'échelle des stades */
+
+.ladder {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  align-items: end;
+  gap: 6px;
+  margin: 0;
+  list-style: none;
+}
+
+.rung {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+  text-align: center;
+  border-radius: var(--radius-small);
+}
+
+.rung-tux {
+  width: calc(50% + var(--grow) * 7%);
+  max-width: 100%;
+}
+
+.rung.is-locked .rung-tux {
+  filter: brightness(0) opacity(0.18);
+}
+
+.rung.is-current {
+  background: var(--toque-pale);
+  box-shadow: inset 0 0 0 2px var(--toque-line);
+}
+
+.rung-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.rung-points {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* --- Sans compte */
+
+.egg {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.egg-image {
+  flex-shrink: 0;
+  width: 150px;
 }
 
 .egg-text {
@@ -240,266 +680,88 @@ function dayLink(day) {
 .egg-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-}
-
-.ladder-panel {
-  padding: 14px 10px 6px;
-}
-
-/* La fiche du personnage */
-.hero {
-  display: grid;
-  grid-template-columns: minmax(150px, 0.8fr) 1.2fr;
-  gap: clamp(12px, 3vw, 28px);
-  align-items: center;
-  padding: clamp(14px, 3.5vw, 26px);
-  border-width: 4px;
-  overflow: hidden;
-}
-
-.hero-art {
-  position: relative;
-  display: grid;
-  place-items: center;
-}
-
-.hero-burst {
-  position: absolute;
-  inset: -12%;
-  background-image: radial-gradient(var(--caption) 3.4px, transparent 3.8px);
-  background-size: 11px 11px;
-  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
-  mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
-}
-
-.hero-tux {
-  position: relative;
-  max-height: 320px;
-  width: auto;
-}
-
-.hero-text {
-  display: grid;
-  gap: 12px;
-  min-width: 0;
-}
-
-.hero-name {
-  font-size: clamp(1.9rem, 7vw, 3.2rem);
-  line-height: 1;
-  overflow-wrap: anywhere;
-}
-
-.hero-stage {
-  font-family: var(--font-title);
-  font-size: 1.15rem;
-  font-weight: 600;
-}
-
-.hero-stage strong {
-  font-weight: 900;
-}
-
-.hero-motto {
-  justify-self: start;
-  max-width: 36ch;
-}
-
-.hero-max {
-  font-weight: 600;
-}
-
-.hero-points {
-  color: var(--muted);
-}
-
-/* Les faits : une liste de définitions, pas des cartes. */
-.sheet {
-  display: grid;
   gap: 12px;
 }
 
-.facts {
-  display: grid;
-  gap: 0;
+/* Le menu « Plus » n'existe pas sur téléphone : les réglages sont ici. */
+.mobile-links {
+  display: none;
+  gap: 12px;
 }
 
-.fact {
-  display: grid;
-  grid-template-columns: 8.5rem 1fr;
-  gap: 4px 16px;
-  padding: 10px 0;
-  border-top: 2px solid var(--rule);
-}
-
-.fact dt {
-  font-family: var(--font-title);
-  font-weight: 800;
-}
-
-.fact-more {
-  display: block;
-  color: var(--muted);
-}
-
-.fact-link {
-  display: inline-block;
-  margin-top: 4px;
-  font-weight: 600;
-}
-
-/* Le carnet */
-.diary {
-  padding: 12px;
-  display: grid;
-  gap: 8px;
-}
-
-.diary-head,
-.diary-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.diary-head {
-  font-family: var(--font-title);
-  font-weight: 800;
-  text-align: center;
+.mobile-link {
+  display: none;
+  padding: 14px 18px;
   font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 2px solid var(--rule);
+  border-radius: var(--radius);
 }
 
-.diary-grid {
-  list-style: none;
-  padding: 0;
-}
-
-.diary-cell {
-  aspect-ratio: 1;
-  min-height: 0;
-}
-
-.diary-day {
-  display: grid;
-  align-content: space-between;
-  height: 100%;
-  padding: 4px 5px;
-  font-family: var(--font-title);
-  color: var(--ink);
-  text-decoration: none;
-  border: 2px solid var(--ink);
-  background: var(--paper);
-}
-
-.diary-number {
-  font-weight: 800;
-  font-size: 0.95rem;
-  line-height: 1;
-}
-
-/* « manqué » et « à jouer » tiennent sur une ligne, même dans les cases d'un petit téléphone. */
-.diary-mark {
-  font-size: 0.72rem;
-  font-weight: 700;
-  font-stretch: 82%;
-  line-height: 1.05;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.is-played .diary-day {
-  background: var(--toque);
-  color: var(--paper);
-}
-
-.is-missed .diary-day {
-  background: var(--paper);
-  color: var(--alert);
-  border-color: var(--alert);
-  border-style: dashed;
-}
-
-.is-today .diary-day {
-  background: var(--caption);
-  border-width: 3px;
-}
-
-.is-before .diary-day {
-  border-color: var(--rule);
-  color: var(--muted);
-  background: transparent;
-}
-
-a.diary-day:hover {
-  outline: 3px solid var(--ink);
-  outline-offset: 1px;
-}
-
-.diary-legend {
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-
-/* Sur grand écran, des cases plus larges que hautes : le mois tient sans faire défiler. */
-@media (min-width: 700px) {
-  .diary-cell {
-    aspect-ratio: 1.6;
+@media (max-width: 699px) {
+  .mobile-links {
+    display: grid;
   }
 
-  .diary-number {
-    font-size: 1.1rem;
-  }
-
-  .diary-mark {
-    font-size: 0.86rem;
+  .mobile-link {
+    display: block;
   }
 }
 
-.account-link {
-  padding-top: 6px;
-  border-top: 2px solid var(--rule);
-}
-
-.account-link a {
-  font-weight: 700;
-}
-
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .hero {
     grid-template-columns: 1fr;
-    justify-items: start;
+    justify-items: center;
+    text-align: center;
   }
 
   .hero-art {
-    justify-self: center;
+    width: 170px;
   }
 
-  .hero-tux {
-    max-height: 220px;
+  .hero-stage {
+    justify-content: center;
+  }
+
+  .gauge {
+    width: 100%;
+    text-align: left;
+  }
+
+  .tiles {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tile {
+    padding: 12px;
+  }
+
+  .bars {
+    gap: 6px;
+  }
+
+  .bar {
+    grid-template-rows: auto 110px auto;
+  }
+
+  .ladder {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    row-gap: 14px;
   }
 
   .egg {
-    grid-template-columns: 90px 1fr;
-    align-items: start;
+    flex-direction: column;
+    text-align: center;
   }
 
-  .fact {
-    grid-template-columns: 1fr;
+  .egg-actions {
+    justify-content: center;
   }
 
-  .diary-head,
-  .diary-grid {
-    gap: 4px;
-  }
-
-  .diary-day {
-    padding: 3px;
-  }
-
-  .diary-mark {
-    font-size: 0.62rem;
-    font-stretch: 68%;
+  .achievement {
+    padding: 14px;
+    gap: 12px;
   }
 }
 </style>

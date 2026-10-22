@@ -3,6 +3,7 @@
 // La page n'est atteignable que connecté (voir le routeur).
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import AppShell from '../components/app/AppShell.vue'
 import PasswordInput from '../components/account/PasswordInput.vue'
 import PasswordMeter from '../components/account/PasswordMeter.vue'
 import { changePassword, deleteAccount, getAccountRules, renameMe } from '../api/index.js'
@@ -82,7 +83,7 @@ async function leave() {
   leaveProblem.value = ''
   try {
     await logout()
-    showFlash('Tu es déconnecté. Le prochain épisode sort à minuit.')
+    showFlash('Tu es déconnecté. À demain pour la mission du jour !')
     router.push('/')
   } catch (error) {
     leaveProblem.value = error.unreachable ? UNREACHABLE : error.message
@@ -98,20 +99,21 @@ function submitRemoval() {
   return run(removal, async () => {
     await deleteAccount(removal.values.password)
     setSessionUser(null)
-    showFlash('Ton compte est supprimé, avec ton Tux, tes points et tes réponses.')
+    showFlash('Ton profil est supprimé, avec ton Tux, tes points et tes réponses.')
     router.push('/')
   })
 }
 </script>
 
 <template>
-  <div class="page account">
-    <h1 class="page-title">Mon compte</h1>
-    <p v-if="user" class="lead">
+  <AppShell width="text">
+  <div class="account">
+    <h1 class="section-title">Mon compte</h1>
+    <p v-if="user" class="account-lead">
       Connecté en tant que <strong>{{ user.username }}</strong>. <RouterLink to="/mon-tux">Revenir à mon Tux</RouterLink>
     </p>
 
-    <form class="panel panel--pad account-form" novalidate @submit.prevent="submitRename">
+    <form class="card card--pad account-form" novalidate @submit.prevent="submitRename">
       <h2 class="account-title">Changer de pseudo</h2>
       <div class="field">
         <label for="account-username">Nouveau pseudo</label>
@@ -141,7 +143,7 @@ function submitRemoval() {
       </button>
     </form>
 
-    <form class="panel panel--pad account-form" novalidate @submit.prevent="submitPassword">
+    <form class="card card--pad account-form" novalidate @submit.prevent="submitPassword">
       <h2 class="account-title">Changer de mot de passe</h2>
       <!-- Le pseudo, invisible, aide les gestionnaires de mots de passe à ranger le nouveau. -->
       <input class="visually-hidden" type="text" name="username" autocomplete="username" :value="user?.username" tabindex="-1" aria-hidden="true" readonly />
@@ -175,16 +177,16 @@ function submitRemoval() {
       </button>
     </form>
 
-    <section class="panel panel--pad account-form" aria-labelledby="account-logout">
+    <section class="card card--pad account-form" aria-labelledby="account-logout">
       <h2 id="account-logout" class="account-title">Se déconnecter</h2>
       <p>Sur un ordinateur partagé, déconnecte-toi en partant : la session reste ouverte sinon.</p>
       <p v-if="leaveProblem" class="form-problem" role="alert">{{ leaveProblem }}</p>
-      <button class="button button--paper" type="button" :disabled="leaving" @click="leave">
+      <button class="button button--ghost" type="button" :disabled="leaving" @click="leave">
         {{ leaving ? 'Déconnexion…' : 'Me déconnecter' }}
       </button>
     </section>
 
-    <section class="panel panel--pad account-form danger" aria-labelledby="account-delete">
+    <section class="card card--pad account-form danger" aria-labelledby="account-delete">
       <h2 id="account-delete" class="account-title">Supprimer mon compte</h2>
       <p>
         Ton pseudo, ton mot de passe, tes réponses, tes points et ton Tux sont effacés pour de bon. Personne ne pourra les
@@ -214,9 +216,20 @@ function submitRemoval() {
       </form>
     </section>
   </div>
+  </AppShell>
 </template>
 
 <style scoped>
+.account {
+  display: grid;
+  gap: 20px;
+}
+
+.account-lead {
+  margin-top: -8px;
+  color: var(--muted);
+}
+
 .account-form {
   display: grid;
   gap: 14px;
@@ -229,27 +242,23 @@ function submitRemoval() {
 }
 
 .account-title {
-  font-size: clamp(1.3rem, 4vw, 1.6rem);
-  font-weight: 850;
-}
-
-.form-problem {
-  padding: 0.5em 0.75em;
-  font-weight: 600;
-  color: var(--alert-ink);
-  background: var(--alert-pale);
-  border: 2px solid var(--alert);
+  font-size: 1.2rem;
 }
 
 .form-done {
-  padding: 0.5em 0.75em;
-  font-weight: 600;
-  background: var(--toque-pale);
-  border: 2px solid var(--toque);
+  padding: 0.7em 0.9em;
+  font-weight: 700;
+  color: var(--success-ink);
+  background: var(--success-pale);
+  border-radius: var(--radius-small);
 }
 
 .danger {
-  border-color: var(--alert);
+  border-color: #f2aaa4;
+}
+
+.danger .account-title {
+  color: var(--alert-ink);
 }
 
 .danger-confirm {

@@ -4,6 +4,7 @@
 
 import { reactive } from 'vue'
 import { getSession, login as apiLogin, signup as apiSignup, logout as apiLogout } from '../api/index.js'
+import { refreshInventory } from './inventory.js'
 
 export const session = reactive({
   user: null,
@@ -39,11 +40,13 @@ export function refreshSession() {
   return loadSession({ force: true })
 }
 
+// Changer de joueur change aussi la réserve affichée.
 function connected(user) {
   session.user = user
   session.status = 'ready'
   session.error = null
   pending = Promise.resolve(user)
+  refreshInventory()
 }
 
 export async function login(username, password) {

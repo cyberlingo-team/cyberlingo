@@ -2,8 +2,7 @@
 // Une adresse qui ne mène nulle part : Tux le prof s'est perdu avec nous.
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import Balloon from '../components/comic/Balloon.vue'
-import Picture from '../components/comic/Picture.vue'
+import AppShell from '../components/app/AppShell.vue'
 import { sceneImage } from '../lib/images.js'
 
 const props = defineProps({
@@ -13,66 +12,91 @@ const props = defineProps({
 
 const route = useRoute()
 const address = computed(() => route.fullPath)
+const picture = sceneImage('prof-lost')
 </script>
 
 <template>
-  <div class="page lost">
-    <div class="lost-scene panel">
-      <Picture class="lost-image" :image="sceneImage('prof-lost')" alt="Tux le prof, perdu, une carte dépliée entre les ailes." eager />
-      <Balloon class="lost-balloon" tail="left">
-        Je cherche « <span class="lost-address">{{ address }}</span> » depuis tout à l’heure. Rien. Pas même un
-        panneau.
-      </Balloon>
+  <AppShell>
+    <div class="lost">
+      <div class="lost-talk">
+        <img :src="picture.src" alt="Tux le prof, perdu, une carte dépliée entre les ailes." class="lost-image" />
+        <p class="lost-bubble">
+          Je cherche « <span class="lost-address">{{ address }}</span> » depuis tout à l’heure. Rien. Pas même un panneau.
+        </p>
+      </div>
+      <h1 class="section-title">{{ props.title }}</h1>
+      <p class="lost-text">
+        {{
+          props.text ||
+          'L’adresse est peut-être mal recopiée, ou la page a déménagé. Une adresse bizarre, c’est aussi le premier indice d’un piège : bon réflexe de vérifier.'
+        }}
+      </p>
+      <div class="lost-actions">
+        <RouterLink class="button" to="/apprendre">Retour au chemin</RouterLink>
+        <RouterLink class="button button--ghost" to="/mission-du-jour">Mission du jour</RouterLink>
+      </div>
     </div>
-    <h1 class="page-title">{{ props.title }}</h1>
-    <p class="lead">
-      {{
-        props.text ||
-        'L’adresse est peut-être mal recopiée, ou la page a déménagé. Une adresse bizarre, c’est aussi le premier indice d’un piège : bon réflexe de vérifier.'
-      }}
-    </p>
-    <div class="lost-actions">
-      <RouterLink class="button" to="/">Voir l’épisode du jour</RouterLink>
-      <RouterLink class="button button--paper" to="/episodes">Tous les épisodes</RouterLink>
-    </div>
-  </div>
+  </AppShell>
 </template>
 
 <style scoped>
-.lost-scene {
+.lost {
   display: grid;
-  grid-template-columns: minmax(120px, 220px) 1fr;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 16px 0;
-  background: var(--toque-pale);
-  overflow: hidden;
+  justify-items: center;
+  gap: 16px;
+  padding-top: 24px;
+  text-align: center;
+}
+
+.lost-talk {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
 }
 
 .lost-image {
-  align-self: end;
-  margin-bottom: -4px;
+  width: auto;
+  height: 220px;
 }
 
-.lost-balloon {
+.lost-bubble {
+  position: relative;
+  order: -1;
   max-width: 34ch;
+  margin-bottom: 8px;
+  padding: 12px 16px;
+  font-weight: 700;
+  border: 2px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.lost-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 14px;
+  height: 14px;
+  background: var(--paper);
+  border-right: 2px solid var(--rule);
+  border-bottom: 2px solid var(--rule);
+  transform: translate(-50%, -7px) rotate(45deg);
 }
 
 .lost-address {
-  font-family: var(--font-object);
-  font-size: 0.92em;
   overflow-wrap: anywhere;
+  color: var(--alert-ink);
+}
+
+.lost-text {
+  max-width: 46ch;
+  color: var(--muted);
 }
 
 .lost-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-}
-
-@media (max-width: 520px) {
-  .lost-scene {
-    grid-template-columns: 110px 1fr;
-  }
+  justify-content: center;
+  gap: 12px;
 }
 </style>

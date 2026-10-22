@@ -57,15 +57,17 @@ async function submit() {
 </script>
 
 <template>
-  <div class="page page--wide auth">
-    <AuthScene :image="sceneImage('egg')" class="auth-scene">
-      Un pseudo, un mot de passe, et ton Tux éclot. Pas d’adresse e-mail, pas de nom.
-    </AuthScene>
+  <AuthScene :image="sceneImage('egg')">
+    <template #top>
+      <RouterLink :to="loginLink" class="button button--ghost button--small">Se connecter</RouterLink>
+    </template>
+    <template #line>Un pseudo, un mot de passe, et ton Tux éclot. Pas d’adresse e-mail, pas de nom.</template>
 
-    <form class="auth-form panel panel--pad" novalidate @submit.prevent="submit">
-      <h1 class="auth-title">Créer mon compte</h1>
+    <form class="auth-form" novalidate @submit.prevent="submit">
+      <h1 class="auth-title">Créer ton profil</h1>
+      <p class="auth-kept">Ce que tu as déjà fait sans profil (leçons, mission du jour, sardines) est gardé et passe sur ton profil.</p>
 
-      <p v-if="problem" class="auth-problem" role="alert">{{ problem }}</p>
+      <p v-if="problem" class="form-problem" role="alert">{{ problem }}</p>
 
       <div class="field">
         <label for="signup-username">Pseudo</label>
@@ -84,7 +86,7 @@ async function submit() {
         />
         <p v-if="fields.username" class="field-error" role="alert">{{ fields.username }}</p>
         <p id="signup-username-hint" class="field-hint">
-          {{ usernameRules.minLength }} à {{ usernameRules.maxLength }} caractères : lettres, chiffres, point, tiret et
+          {{ usernameRules.minLength }} à {{ usernameRules.maxLength }} caractères : lettres, chiffres, point, tiret et
           tiret bas. Il s’affiche au classement, alors évite ton nom complet.
         </p>
       </div>
@@ -102,79 +104,57 @@ async function submit() {
         <p v-if="fields.password" class="field-error" role="alert">{{ fields.password }}</p>
         <PasswordMeter id="signup-password-meter" :password="form.password" :rules="rules?.password" />
         <p id="signup-password-hint" class="field-hint">
-          Le plus simple : une phrase de passe d’au moins 7 mots, que toi seul comprends. Sinon, 12 caractères qui
+          Le plus simple : une phrase de passe d’au moins 7 mots, que toi seul comprends. Sinon, 12 caractères qui
           mêlent majuscules, minuscules, chiffres et signes. Et un mot de passe différent pour chaque site.
         </p>
       </div>
 
       <button class="button button--wide" type="submit" :disabled="sending">
-        {{ sending ? 'Création…' : 'Créer mon compte' }}
+        {{ sending ? 'Création…' : 'Créer mon profil' }}
       </button>
 
       <p class="auth-switch">
-        Déjà un compte ?
+        Déjà un profil ?
         <RouterLink :to="loginLink">Se connecter</RouterLink>
       </p>
 
       <p class="auth-privacy">
-        Ton mot de passe est haché et salé avant d’être enregistré : même nous, on ne peut pas le lire. Le site ne
+        Ton mot de passe est haché et salé avant d’être enregistré : même nous, on ne peut pas le lire. Le site ne
         dépose qu’un cookie, celui de ta session.
       </p>
     </form>
-  </div>
+  </AuthScene>
 </template>
 
 <style scoped>
-.auth {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  align-items: start;
-  max-width: 920px;
-}
-
-.auth-scene {
-  position: sticky;
-  top: 16px;
-  min-height: 360px;
-}
-
 .auth-form {
   display: grid;
   gap: 18px;
 }
 
 .auth-title {
-  font-size: clamp(2rem, 6vw, 2.8rem);
-  font-weight: 900;
-  font-stretch: 110%;
+  font-size: 1.8rem;
+  text-align: center;
 }
 
-.auth-problem {
-  padding: 0.6em 0.8em;
-  font-weight: 600;
-  color: var(--alert-ink);
-  background: var(--alert-pale);
-  border: 2px solid var(--alert);
+.auth-kept {
+  margin-top: -8px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  color: var(--toque);
+  background: var(--toque-pale);
+  border-radius: var(--radius-small);
 }
 
 .auth-switch {
   text-align: center;
+  color: var(--muted);
 }
 
 .auth-privacy {
-  font-size: 0.92rem;
+  padding-top: 14px;
+  font-size: 0.9rem;
   color: var(--muted);
   border-top: 2px solid var(--rule);
-  padding-top: 12px;
-}
-
-@media (max-width: 760px) {
-  .auth {
-    grid-template-columns: 1fr;
-  }
-
-  .auth-scene {
-    position: static;
-    min-height: 0;
-  }
 }
 </style>

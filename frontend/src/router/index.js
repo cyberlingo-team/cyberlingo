@@ -2,28 +2,91 @@
 
 import { createRouter, createWebHistory } from 'vue-router'
 import { loadSession, session } from '../lib/session.js'
-import { todayIso } from '../lib/format.js'
 
 const routes = [
-  { path: '/', name: 'today', component: () => import('../views/TodayView.vue'), meta: { title: 'L’épisode du jour' } },
   {
-    path: '/episode/:date',
-    name: 'episode',
-    component: () => import('../views/EpisodeView.vue'),
-    meta: { title: 'Épisode' },
-    // L'épisode du jour a sa propre page : celle d'accueil.
-    beforeEnter: (to) => (to.params.date === todayIso() ? { name: 'today' } : true),
+    path: '/',
+    name: 'home',
+    component: () => import('../views/HomeView.vue'),
+    meta: { title: 'Apprends à déjouer les arnaques en ligne' },
+    // Un joueur connecté va directement à son chemin.
+    beforeEnter: async () => {
+      await loadSession()
+      return session.user ? { name: 'learn' } : true
+    },
   },
-  { path: '/episodes', name: 'episodes', component: () => import('../views/EpisodesView.vue'), meta: { title: 'Les épisodes' } },
-  { path: '/classement', name: 'leaderboard', component: () => import('../views/LeaderboardView.vue'), meta: { title: 'Classement' } },
-  { path: '/mon-tux', name: 'profile', component: () => import('../views/ProfileView.vue'), meta: { title: 'Mon Tux' } },
+  {
+    path: '/bienvenue',
+    name: 'welcome',
+    component: () => import('../views/WelcomeView.vue'),
+    meta: { title: 'Bienvenue' },
+  },
+  {
+    path: '/apprendre',
+    name: 'learn',
+    component: () => import('../views/LearnView.vue'),
+    meta: { title: 'Apprendre' },
+  },
+  {
+    path: '/apprendre/:unit/guide',
+    name: 'guide',
+    component: () => import('../views/GuideView.vue'),
+    meta: { title: 'Guide du thème' },
+  },
+  {
+    path: '/lecon/:id',
+    name: 'lesson',
+    component: () => import('../views/LessonView.vue'),
+    meta: { title: 'Leçon' },
+  },
+  {
+    path: '/mission-du-jour',
+    name: 'daily',
+    component: () => import('../views/LessonView.vue'),
+    meta: { title: 'Mission du jour' },
+  },
+  {
+    path: '/classement',
+    name: 'leaderboard',
+    component: () => import('../views/LeaderboardView.vue'),
+    meta: { title: 'Classement' },
+  },
+  {
+    path: '/quetes',
+    name: 'quests',
+    component: () => import('../views/QuestsView.vue'),
+    meta: { title: 'Quêtes' },
+  },
+  {
+    path: '/boutique',
+    name: 'shop',
+    component: () => import('../views/ShopView.vue'),
+    meta: { title: 'Boutique' },
+  },
+  {
+    path: '/mon-tux',
+    name: 'profile',
+    component: () => import('../views/ProfileView.vue'),
+    meta: { title: 'Mon Tux' },
+  },
+  {
+    path: '/preferences',
+    name: 'preferences',
+    component: () => import('../views/PreferencesView.vue'),
+    meta: { title: 'Préférences' },
+  },
   {
     path: '/mon-compte',
     name: 'account',
     component: () => import('../views/AccountView.vue'),
     meta: { title: 'Mon compte', requiresAccount: true },
   },
-  { path: '/la-bande', name: 'gang', component: () => import('../views/GangView.vue'), meta: { title: 'La bande à Tux' } },
+  {
+    path: '/aide',
+    name: 'help',
+    component: () => import('../views/HelpView.vue'),
+    meta: { title: 'Aide' },
+  },
   {
     path: '/connexion',
     name: 'login',
@@ -34,9 +97,14 @@ const routes = [
     path: '/inscription',
     name: 'signup',
     component: () => import('../views/SignupView.vue'),
-    meta: { title: 'Créer mon compte', guestOnly: true },
+    meta: { title: 'Créer un profil', guestOnly: true },
   },
-  { path: '/credits', name: 'credits', component: () => import('../views/CreditsView.vue'), meta: { title: 'Crédits' } },
+  {
+    path: '/credits',
+    name: 'credits',
+    component: () => import('../views/CreditsView.vue'),
+    meta: { title: 'Crédits' },
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
@@ -64,7 +132,7 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAccount && !session.user && session.status === 'ready') {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
-  if (to.meta.guestOnly && session.user) return { name: 'profile' }
+  if (to.meta.guestOnly && session.user) return { name: 'learn' }
   return true
 })
 

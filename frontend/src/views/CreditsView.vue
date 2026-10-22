@@ -1,6 +1,6 @@
 <script setup>
 // Les crédits : qui a dessiné quoi, sous quelle licence, et ce que nous avons modifié.
-import Picture from '../components/comic/Picture.vue'
+import AppShell from '../components/app/AppShell.vue'
 import { CREATED_IMAGES, FONTS, GANG_CREDITS, LICENSES, SOURCES, TEAM } from '../content/credits.js'
 import { gangImage, stageImage } from '../lib/images.js'
 import logo from '../assets/brand/tux-prof.svg'
@@ -12,14 +12,15 @@ function slashParts(text) {
 </script>
 
 <template>
-  <div class="page credits">
-    <h1 class="page-title">Crédits</h1>
-    <p class="lead">
+  <AppShell width="text">
+  <div class="credits">
+    <h1 class="section-title">Crédits</h1>
+    <p class="credits-lead">
       Tux, le manchot de Linux, a été dessiné par Larry Ewing en 1996. Tous les Tux de CyberLingo descendent du
       sien. Voici d’où vient chacun, et ce que nous avons changé.
     </p>
 
-    <section class="panel panel--pad credit-block" aria-labelledby="credits-logo">
+    <section class="card card--pad credit-block" aria-labelledby="credits-logo">
       <img :src="logo" class="credit-logo" width="120" height="120" alt="" />
       <div class="credit-text">
         <h2 id="credits-logo">Le logo : Tux en professeur</h2>
@@ -30,9 +31,9 @@ function slashParts(text) {
       </div>
     </section>
 
-    <section class="panel panel--pad credit-block" aria-labelledby="credits-stages">
+    <section class="card card--pad credit-block" aria-labelledby="credits-stages">
       <div class="credit-stages" aria-hidden="true">
-        <Picture v-for="level in [0, 2, 4, 7]" :key="level" :image="stageImage(level, { mini: true })" />
+        <img v-for="level in [0, 2, 4, 7]" :key="level" :src="stageImage(level, { mini: true }).src" alt="" />
       </div>
       <div class="credit-text">
         <h2 id="credits-stages">Les huit stades du Tux</h2>
@@ -51,8 +52,8 @@ function slashParts(text) {
         licence de son original.
       </p>
       <ul class="gang-list">
-        <li v-for="item in GANG_CREDITS" :key="item.id" class="gang-item panel">
-          <Picture class="gang-image" :image="gangImage(item.id)" />
+        <li v-for="item in GANG_CREDITS" :key="item.id" class="gang-item card">
+          <img class="gang-image" :src="gangImage(item.id).src" alt="" />
           <div class="gang-text">
             <p class="gang-title">« {{ item.title }} »</p>
             <p>
@@ -70,22 +71,22 @@ function slashParts(text) {
       </ul>
     </section>
 
-    <section class="panel panel--pad credit-section" aria-labelledby="credits-created">
+    <section class="card card--pad credit-section" aria-labelledby="credits-created">
       <h2 id="credits-created" class="credit-heading">Créées pour CyberLingo</h2>
       <p>
-        Dix-neuf images dessinées pour le site avec l’outil de génération d’images de Codex (OpenAI), dans le style du
+        Trente-quatre images dessinées pour le site avec l’outil de génération d’images de Codex (OpenAI), dans le style du
         logo et d’après <strong>Tux</strong> de Larry Ewing, puis détourées, recadrées et converties en WebP :
       </p>
       <ul class="plain-list">
         <li v-for="line in CREATED_IMAGES" :key="line">{{ line }}.</li>
       </ul>
       <p>
-        Léopold, le léopard de mer escroc, et tous les personnages des épisodes sont inventés. Les bruitages sont
+        Léopold, le léopard de mer escroc, et tous les personnages des leçons sont inventés. Les bruitages sont
         synthétisés par le navigateur pendant le jeu : aucun son enregistré.
       </p>
     </section>
 
-    <section class="panel panel--pad credit-section" aria-labelledby="credits-fonts">
+    <section class="card card--pad credit-section" aria-labelledby="credits-fonts">
       <h2 id="credits-fonts" class="credit-heading">Polices</h2>
       <ul class="plain-list">
         <li v-for="font in FONTS" :key="font.name">
@@ -100,19 +101,19 @@ function slashParts(text) {
       </p>
     </section>
 
-    <section class="panel panel--pad credit-section" aria-labelledby="credits-content">
-      <h2 id="credits-content" class="credit-heading">Le contenu des épisodes</h2>
+    <section class="card card--pad credit-section" aria-labelledby="credits-content">
+      <h2 id="credits-content" class="credit-heading">Le contenu des leçons</h2>
       <p>
         Les conseils suivent les recommandations
         <template v-for="(source, index) in SOURCES" :key="source.name">
           {{ index === 0 ? '' : index === SOURCES.length - 1 ? ' et ' : ', ' }}{{ source.of }}<a :href="source.url" rel="noopener" target="_blank">{{ source.name }}</a>
         </template>.
-        Chaque épisode cite ses sources à la fin. Les banques, boutiques, numéros, adresses et messages des épisodes sont
+        Chaque leçon cite ses sources à la fin. Les banques, boutiques, numéros, adresses et messages des leçons sont
         inventés : toute ressemblance avec une vraie arnaque est voulue, avec une vraie marque, non.
       </p>
     </section>
 
-    <section class="panel panel--pad credit-section" aria-labelledby="credits-privacy">
+    <section class="card card--pad credit-section" aria-labelledby="credits-privacy">
       <h2 id="credits-privacy" class="credit-heading">Tes données</h2>
       <p>
         CyberLingo garde ton pseudo, ton mot de passe haché et salé, tes réponses et tes points. Ni e-mail, ni nom, ni
@@ -122,7 +123,7 @@ function slashParts(text) {
       </p>
     </section>
 
-    <section class="panel panel--pad credit-section" aria-labelledby="credits-team">
+    <section class="card card--pad credit-section" aria-labelledby="credits-team">
       <h2 id="credits-team" class="credit-heading">L’équipe</h2>
       <p>
         CyberLingo est un projet du cours Développement d’applications web et mobiles (N7, 2A FISA), par
@@ -130,11 +131,18 @@ function slashParts(text) {
       </p>
     </section>
   </div>
+  </AppShell>
 </template>
 
 <style scoped>
 .credits {
-  gap: calc(var(--gutter) * 1.2);
+  display: grid;
+  gap: 20px;
+}
+
+.credits-lead {
+  margin-top: -8px;
+  color: var(--muted);
 }
 
 .credit-block {
@@ -170,9 +178,8 @@ function slashParts(text) {
 
 .credit-text h2,
 .credit-heading {
-  font-size: clamp(1.3rem, 4vw, 1.7rem);
-  font-weight: 850;
-  font-stretch: 106%;
+  font-size: 1.2rem;
+  color: var(--toque);
 }
 
 .credit-section {
@@ -194,7 +201,6 @@ function slashParts(text) {
   gap: 12px;
   align-items: start;
   padding: 12px;
-  border-width: 2px;
   font-size: 0.95rem;
 }
 
@@ -212,8 +218,7 @@ function slashParts(text) {
 }
 
 .gang-title {
-  font-family: var(--font-title);
-  font-weight: 750;
+  font-weight: 800;
 }
 
 .gang-changes {
