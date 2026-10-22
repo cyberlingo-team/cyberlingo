@@ -53,15 +53,16 @@ async function submit() {
 </script>
 
 <template>
-  <div class="page page--wide auth">
-    <AuthScene :image="sceneImage('prof-magnifier')" class="auth-scene">
-      Avant d’entrer, je vérifie : ton pseudo et ton mot de passe, s’il te plaît.
-    </AuthScene>
+  <AuthScene :image="sceneImage('prof-magnifier')">
+    <template #top>
+      <RouterLink :to="signupLink" class="button button--ghost button--small">Créer un profil</RouterLink>
+    </template>
+    <template #line>Avant d’entrer, je vérifie : ton pseudo et ton mot de passe, s’il te plaît.</template>
 
-    <form class="auth-form panel panel--pad" novalidate @submit.prevent="submit">
+    <form class="auth-form" novalidate @submit.prevent="submit">
       <h1 class="auth-title">Se connecter</h1>
 
-      <p v-if="problem" class="auth-problem" role="alert">{{ problem }}</p>
+      <p v-if="problem" class="form-problem" role="alert">{{ problem }}</p>
 
       <div class="field">
         <label for="login-username">Pseudo</label>
@@ -93,88 +94,57 @@ async function submit() {
         <p v-if="fields.password" id="login-password-error" class="field-error">{{ fields.password }}</p>
       </div>
 
-      <button class="button button--wide" type="submit" :disabled="sending">
+      <button class="button button--blue button--wide" type="submit" :disabled="sending">
         {{ sending ? 'Vérification…' : 'Me connecter' }}
       </button>
 
       <p class="auth-switch">
-        Pas encore de compte ?
-        <RouterLink :to="signupLink">Créer mon compte</RouterLink>
+        Pas encore de profil ?
+        <RouterLink :to="signupLink">Créer un profil</RouterLink>
       </p>
 
       <details class="auth-forgot">
-        <summary>Mot de passe oublié ?</summary>
+        <summary>Mot de passe oublié ?</summary>
         <p>
-          CyberLingo ne te demande pas d’adresse e-mail : on ne peut donc pas t’envoyer de lien pour le changer.
-          Il te faudra créer un nouveau compte, avec un autre pseudo. Pour la prochaine fois, un gestionnaire de mots
+          CyberLingo ne te demande pas d’adresse e-mail : on ne peut donc pas t’envoyer de lien pour le changer.
+          Il te faudra créer un nouveau profil, avec un autre pseudo. Pour la prochaine fois, un gestionnaire de mots
           de passe s’en souvient à ta place.
         </p>
       </details>
     </form>
-  </div>
+  </AuthScene>
 </template>
 
 <style scoped>
-.auth {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  align-items: start;
-  max-width: 920px;
-}
-
-.auth-scene {
-  position: sticky;
-  top: 16px;
-  min-height: 360px;
-}
-
 .auth-form {
   display: grid;
   gap: 18px;
 }
 
 .auth-title {
-  font-size: clamp(2rem, 6vw, 2.8rem);
-  font-weight: 900;
-  font-stretch: 110%;
-}
-
-.auth-problem {
-  padding: 0.6em 0.8em;
-  font-weight: 600;
-  color: var(--alert-ink);
-  background: var(--alert-pale);
-  border: 2px solid var(--alert);
+  font-size: 1.8rem;
+  text-align: center;
 }
 
 .auth-switch {
   text-align: center;
+  color: var(--muted);
 }
 
 .auth-forgot {
+  padding-top: 14px;
   font-size: 0.95rem;
   border-top: 2px solid var(--rule);
-  padding-top: 12px;
 }
 
 .auth-forgot summary {
   cursor: pointer;
-  font-weight: 600;
-  color: var(--toque);
+  font-weight: 800;
+  color: var(--toque-bright);
 }
 
 .auth-forgot p {
   margin-top: 8px;
   color: var(--muted);
-}
-
-@media (max-width: 760px) {
-  .auth {
-    grid-template-columns: 1fr;
-  }
-
-  .auth-scene {
-    position: static;
-    min-height: 0;
-  }
 }
 </style>

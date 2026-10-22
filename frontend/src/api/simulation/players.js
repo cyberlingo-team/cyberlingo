@@ -4,7 +4,8 @@
 
 import { createRandom, between } from './random.js'
 import { addDays } from './dates.js'
-import { missionPoints } from './rules.js'
+import { missionPoints, lessonPoints } from './rules.js'
+import { NODES, lessonContent } from './path.js'
 import { USERNAMES, LONGEST_USERNAME } from './usernames.js'
 import { LAUNCH_DAYS_AGO, missionForDate } from './calendar.js'
 
@@ -12,16 +13,73 @@ import { LAUNCH_DAYS_AGO, missionForDate } from './calendar.js'
 export const DEMO_PASSWORD = 'banquise-sardine-parapluie'
 
 // Comptes de démonstration dans lesquels on peut se connecter. Chacun montre un état de
-// l'interface.
+// l'interface. `pathDone` : nombre d'étapes du parcours déjà franchies (voir path.js) ;
+// `sardines` et `freezes` : leur réserve de sardines et de glaçons.
 export const DEMO_ACCOUNTS = [
   // L'habitué : une série en cours, la mission du jour pas encore faite. Il arrive juste sous
-  // le stade Balèze (1 050 points) : l'épisode du jour, même raté, fait grandir son Tux.
-  { username: 'sacha_31', joinedDaysAgo: 24, skill: 0.74, missedDaysAgo: [21, 17, 12], playsToday: false, targetPoints: 1039 },
-  // La série perdue : neuf jours d'affilée, puis plus rien hier.
-  { username: 'malo.dlt', joinedDaysAgo: 19, skill: 0.68, missedDaysAgo: [18, 16, 15, 13, 12, 11, 1], playsToday: false },
-  // Le colosse au pseudo de trente caractères, qui a déjà fait la mission du jour.
-  { username: LONGEST_USERNAME, joinedDaysAgo: LAUNCH_DAYS_AGO, skill: 0.97, missedDaysAgo: [], playsToday: true },
+  // le stade Balèze (1 050 points) : l'épisode du jour, même raté, fait grandir son Tux. Il a
+  // fini deux thèmes et ouvert le coffre du troisième.
+  {
+    username: 'sacha_31',
+    joinedDaysAgo: 24,
+    skill: 0.74,
+    missedDaysAgo: [21, 17, 12],
+    playsToday: false,
+    targetPoints: 1039,
+    pathDone: 17,
+    sardines: 340,
+    freezes: 1,
+  },
+  // La série perdue : neuf jours d'affilée, puis plus rien hier. Le coffre du deuxième thème
+  // l'attend.
+  {
+    username: 'malo.dlt',
+    joinedDaysAgo: 19,
+    skill: 0.68,
+    missedDaysAgo: [18, 16, 15, 13, 12, 11, 1],
+    playsToday: false,
+    pathDone: 9,
+    sardines: 120,
+    freezes: 0,
+  },
+  // Le colosse au pseudo de trente caractères, qui a déjà fait la mission du jour et fini tout
+  // le parcours.
+  {
+    username: LONGEST_USERNAME,
+    joinedDaysAgo: LAUNCH_DAYS_AGO,
+    skill: 0.97,
+    missedDaysAgo: [],
+    playsToday: true,
+    pathDone: NODES.length,
+    sardines: 1265,
+    freezes: 2,
+  },
 ]
+
+// Le parcours déjà fait par un compte de démonstration : ses leçons terminées, réparties sur les
+// jours depuis son inscription, et les coffres ouverts.
+export function demoPath(account, today) {
+  const random = createRandom(`demo-path:${account.username}`)
+  const done = NODES.slice(0, account.pathDone)
+  const playable = done.filter((node) => node.type !== 'chest')
+  // Qui n'a pas joué hier n'a pas non plus fait de leçon ce jour-là.
+  const last = account.missedDaysAgo.includes(1) ? 2 : 1
+  const span = Math.max(1, account.joinedDaysAgo - last)
+  const history = playable.map((node, k) => {
+    const ago = Math.max(last, Math.round(account.joinedDaysAgo - ((k + 1) * span) / playable.length))
+    const lesson = lessonContent(node.id)
+    const flags = lesson.questions.map((q) => random() < Math.min(0.99, account.skill * (0.6 + q.success * 0.55)))
+    const correct = flags.filter(Boolean).length
+    return {
+      id: node.id,
+      date: addDays(today, -ago),
+      correct,
+      total: flags.length,
+      points: lessonPoints(correct, flags.length, { review: node.type === 'review' }).total,
+    }
+  })
+  return { history, chests: done.filter((node) => node.type === 'chest').map((node) => node.id) }
+}
 
 // Une partie simulée : pour chaque question, juste (true) ou faux (false).
 function playMission(random, date, skill) {
@@ -93,7 +151,9 @@ function demoPlayer(account, today) {
     const date = addDays(today, -ago)
     days.push({ date, ...playMission(random, date, account.skill) })
   }
-  if (account.targetPoints) calibrate(days, account.targetPoints)
+  // Les leçons du parcours comptent aussi : la mission du jour vise le reste.
+  const lessons = demoPath(account, today).history.reduce((total, entry) => total + entry.points, 0)
+  if (account.targetPoints) calibrate(days, account.targetPoints - lessons)
   return {
     username: account.username,
     createdAt: addDays(today, -account.joinedDaysAgo),

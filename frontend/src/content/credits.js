@@ -119,22 +119,18 @@ export const GANG_CREDITS = [
 // Les images créées pour CyberLingo pendant la construction du site.
 export const CREATED_IMAGES = [
   'Tux le prof à la loupe, la main sur le front, en pleine lecture, perdu, et débranché',
+  'Tux le prof devant un téléphone géant qui mord à l’hameçon, avec le calendrier de la mission du jour, et musclé sous un coffre',
   'L’œuf du joueur qui n’a pas encore de compte',
-  'Léopold sans déguisement, Léopold démasqué, et ses onze déguisements : pêcheur, livreur, conseiller bancaire, technicien, séducteur, grand patron, vendeur, faux agent officiel, faux proche, serveur de café, colleur d’autocollants',
+  'Léopold sans déguisement, Léopold démasqué, et ses onze déguisements : pêcheur, livreur, conseiller bancaire, technicien, séducteur, grand patron, vendeur, faux agent officiel, faux proche, serveur de café, colleur d’autocollants',
+  'Les douze illustrations de l’interface : igloo, podium, coffre fermé et ouvert, étal de poissonnier, sardine, bouée, glaçon, flamme, haltère, trophée et cible',
 ]
 
 export const FONTS = [
   {
-    name: 'Anybody',
-    use: 'les titres, le logo et les pseudos musclés',
-    copyright: 'Copyright 2020 The Anybody Project Authors',
-    source: 'https://github.com/Etcetera-Type-Co/Anybody',
-  },
-  {
-    name: 'Playpen Sans',
-    use: 'les bulles, les récitatifs et le texte courant',
-    copyright: 'Copyright 2023 The Playpen Sans Project Authors',
-    source: 'https://github.com/TypeTogether/Playpen-Sans',
+    name: 'Nunito',
+    use: 'tous les textes du site',
+    copyright: 'Copyright 2014 The Nunito Project Authors',
+    source: 'https://github.com/googlefonts/nunito',
   },
 ]
 

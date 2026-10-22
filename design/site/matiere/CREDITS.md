@@ -45,3 +45,23 @@ Licences : CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/deed.fr ;
 CC BY-SA 3.0 https://creativecommons.org/licenses/by-sa/3.0/deed.fr ;
 Licence Art Libre https://artlibre.org/licence/lal/ ; WTFPL http://www.wtfpl.net/ ;
 CC0 https://creativecommons.org/publicdomain/zero/1.0/deed.fr
+
+## Images créées pour l'interface (`frontend/src/assets/`)
+
+Images générées pour CyberLingo avec l'outil de génération d'images de Codex (OpenAI), dans le
+style du logo et d'après **Tux** de Larry Ewing, puis détourées, recadrées et converties en WebP :
+
+- `tux/scenes/` : Tux le prof à la loupe (`prof-magnifier`), la main sur le front
+  (`prof-facepalm`), en pleine lecture (`prof-reading`), perdu (`prof-lost`), débranché
+  (`prof-unplugged`) ; l'œuf du joueur sans compte (`egg`) ; Tux le prof devant un téléphone géant
+  qui mord à l'hameçon (`heros`), avec le calendrier de la mission du jour (`mission`), musclé sous
+  un coffre (`quetes`).
+- `villain/` : Léopold, le léopard de mer escroc, sans déguisement, démasqué, et ses onze
+  déguisements.
+- `icons/` : igloo, podium, coffre, coffre ouvert, étal, sardine, bouée, glaçon, flamme, haltère,
+  trophée, cible.
+
+## Police
+
+Nunito, Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito), sous
+SIL Open Font License 1.1.

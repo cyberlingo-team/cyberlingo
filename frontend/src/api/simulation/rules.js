@@ -35,3 +35,27 @@ export function missionPoints(correctCount, questionCount, streak) {
   const streakBonus = Math.min(streak, STREAK_BONUS_MAX_DAYS) * STREAK_BONUS_PER_DAY
   return { answers, perfect, streak: streakBonus, total: answers + perfect + streakBonus }
 }
+
+// Les leçons du parcours, à son rythme : elles rapportent moins que la mission du jour, et
+// seulement la première fois. Le bilan d'un thème rapporte un peu plus.
+export const LESSON_POINTS_PER_CORRECT_ANSWER = 5
+export const LESSON_PERFECT_BONUS = 5
+export const REVIEW_BONUS = 10
+
+export function lessonPoints(correctCount, questionCount, { review = false } = {}) {
+  const answers = correctCount * LESSON_POINTS_PER_CORRECT_ANSWER
+  const perfect = correctCount === questionCount ? LESSON_PERFECT_BONUS : 0
+  const bonus = review ? REVIEW_BONUS : 0
+  return { answers, perfect, review: bonus, total: answers + perfect + bonus }
+}
+
+// L'économie de la banquise : les sardines (la monnaie), les bouées (les vies) et les glaçons
+// (qui gèlent la série un jour où l'on n'a pas joué).
+export const STARTING_SARDINES = 100
+export const MAX_BUOYS = 5
+export const MAX_FREEZES = 2
+export const SARDINES = { lesson: 5, perfect: 5, review: 20, chest: 20 }
+export const SHOP = {
+  bouees: { price: 150 },
+  glacon: { price: 200 },
+}

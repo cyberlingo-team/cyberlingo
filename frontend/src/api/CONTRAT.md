@@ -30,6 +30,16 @@ une par route :
 | `sendAnswer(date, questionId, answer)` | `POST /api/missions/:date/answers` |
 | `getResult(date)` | `GET /api/missions/:date/result` |
 | `getLeaderboard(period)` | `GET /api/leaderboard?period=week\|all` |
+| `getPath()` | `GET /api/path` |
+| `getUnitGuide(unitId)` | `GET /api/units/:id/guide` |
+| `startLesson(lessonId)` | `POST /api/lessons/:id/start` |
+| `sendLessonAnswer(lessonId, questionId, answer)` | `POST /api/lessons/:id/answers` |
+| `getLessonResult(lessonId)` | `GET /api/lessons/:id/result` |
+| `openChest(chestId)` | `POST /api/path/chests/:id` |
+| `getInventory()` | `GET /api/inventory` |
+| `getShop()` | `GET /api/shop` |
+| `buy(itemId)` | `POST /api/shop/:id` |
+| `getQuests()` | `GET /api/quests` |
 
 ## Règles communes
 
@@ -277,10 +287,18 @@ Tout ce que montre la page « Mon Tux ».
   "stage": { "level": 4, "name": "Costaud", "minPoints": 700, "motto": "…", "next": { "level": 5, "name": "Balèze", "minPoints": 1050 } },
   "streak": { "current": 11, "best": 11, "playedToday": false, "lastPlayed": "2026-10-12" },
   "rank": { "week": { "position": 12, "players": 195 }, "all": { "position": 30, "players": 214 } },
-  "totals": { "episodes": 21, "correct": 84, "questions": 103 },
+  "totals": { "episodes": 21, "correct": 84, "questions": 103, "lessons": 17 },
+  "week": [{ "date": "2026-10-07", "points": 62 }, "… 7 jours, aujourd'hui en dernier"],
+  "achievements": [{ "id": "serie", "title": "Fidèle au poste", "icon": "flamme", "level": 2, "maxLevel": 4, "value": 11, "goal": 14, "unit": "jours de série" }, "…"],
   "days": [{ "date": "2026-09-16", "number": 1, "title": "…", "status": "before" }, "… 28 jours, du plus ancien à aujourd'hui"]
 }
 ```
+
+- `points` : les points des missions du jour et ceux des leçons du parcours ; `totals.lessons` :
+  les leçons du parcours qui ont rapporté des points (premières parties) ;
+- `week` : les points gagnés chaque jour, pour le graphique de la semaine ;
+- `achievements` : les succès, chacun en paliers (`level` paliers atteints sur `maxLevel`,
+  `goal` le prochain palier, ou le dernier une fois tout atteint).
 
 - `stage.next` vaut `null` au dernier stade ; `rank.week` ou `rank.all` vaut `null` sans points
   sur la période.
@@ -500,6 +518,247 @@ La fin de l'épisode, une fois toutes les questions répondues.
 |---|---|---|
 | 400 | `invalid_period` | période autre que `week` ou `all` |
 
+## Le parcours, la réserve et les quêtes
+
+En plus de la mission du jour, commune à tous, chaque joueur avance à son rythme sur un
+**chemin** : six thèmes, et dans chaque thème des leçons dans l'ordre, un coffre après la
+deuxième leçon et un bilan à la fin. Une leçon reprend une mission de `simulation/missions/`
+(même identifiant, mêmes questions) ; le bilan d'un thème pose une question de chacune de ses
+leçons. Le contenu du chemin est dans `simulation/units.js` et `simulation/path.js`.
+
+Les règles (`simulation/rules.js`) :
+
+- une leçon rapporte 5 points par bonne réponse, plus 5 sans faute ; un bilan, 10 de plus ;
+  seulement la première fois (rejouer ne rapporte rien) ;
+- les points des leçons comptent pour le stade du Tux et pour le classement, comme ceux de la
+  mission du jour ; seule la mission du jour fait avancer la **série** ;
+- les **sardines** sont la monnaie de la boutique : 100 au départ, 5 par leçon (+5 sans faute),
+  20 par bilan, 20 par coffre, et les récompenses des quêtes ;
+- les **bouées** : 5 au maximum, une erreur dans une leçon en coûte une, elles se regonflent
+  chaque nuit ; sans bouée, on ne peut plus commencer ni répondre dans une leçon. La mission du
+  jour n'en coûte jamais ;
+- un **glaçon** (2 au maximum) gèle la série un jour où l'on n'a pas fait la mission du jour :
+  le serveur l'utilise tout seul à la visite suivante, si les glaçons suffisent à combler le trou.
+
+Un visiteur sans compte a son propre chemin, gardé dans sa session anonyme ; il rejoint le compte
+à l'inscription.
+
+### `Lesson` : une leçon ou un bilan, sans ses réponses
+
+```json
+{
+  "id": "adresse-piegee",
+  "kind": "lesson",
+  "title": "L’adresse à la loupe",
+  "theme": "Lire une adresse web",
+  "hook": "…",
+  "unit": { "id": "hameconnage", "title": "L’hameçonnage", "color": "toque" },
+  "guest": Guest,
+  "questions": [Question]
+}
+```
+
+- `kind` : `lesson` ou `review` (le bilan d'un thème, d'identifiant `bilan-<thème>`) ;
+- chaque question porte en plus son `guest` : dans un bilan, les questions viennent de leçons
+  différentes, avec leur personnage ; les identifiants y sont de la forme `<leçon>~<question>`.
+
+### `Inventory` : la réserve du joueur
+
+```json
+{
+  "points": 1034,
+  "stage": { "level": 4, "name": "Costaud" },
+  "streak": { "current": 11, "playedToday": false },
+  "sardines": 340,
+  "buoys": { "count": 5, "max": 5 },
+  "freezes": { "count": 1, "max": 2 }
+}
+```
+
+### `GET /api/inventory`
+
+Les compteurs affichés en haut de chaque écran, avec ou sans compte.
+
+- Réponse `200` : `Inventory`
+
+### `GET /api/path`
+
+Le chemin du joueur, avec la mission du jour en tête.
+
+- Réponse `200` :
+
+```json
+{
+  "daily": { "date": "2026-10-22", "number": 28, "title": "…", "theme": "…", "hook": "…", "guest": Guest, "status": "todo", "answered": 0, "total": 5, "points": null, "maxPoints": 62, "players": 82 },
+  "units": [
+    {
+      "id": "hameconnage", "number": 1, "title": "L’hameçonnage", "description": "…", "color": "toque", "villain": "fisher", "status": "current",
+      "nodes": [{ "type": "lesson", "id": "adresse-piegee", "title": "…", "guest": Guest, "status": "done", "score": { "correct": 4, "total": 5 }, "maxPoints": 30 }, "…"]
+    }
+  ],
+  "current": { "type": "lesson", "id": "colis-fantome", "unit": "hameconnage" },
+  "lessons": { "done": 1, "total": 35 }
+}
+```
+
+- `daily.status` : `todo`, `started` ou `done` ; `daily.points` : ce qu'elle a rapporté, une
+  fois faite ; `daily.maxPoints` : le maximum possible aujourd'hui, bonus de série compris ;
+- `units[].color` : couleur du thème dans l'interface (`--unit-<color>` dans `styles/base.css`) ;
+  `villain` : le déguisement de Léopold qui illustre le thème ;
+- `units[].status` et `nodes[].status` : `done`, `current` (l'étape à faire) ou `locked` ;
+- `nodes[].type` : `lesson`, `chest` (titre « Coffre », sans `guest`, `score` ni `maxPoints`)
+  ou `review` ; `score` : le meilleur résultat, ou `null` ;
+- `current` vaut `null` quand tout le chemin est fait.
+
+### `GET /api/units/:id/guide`
+
+Le guide d'un thème : ce qu'il faut en retenir, et où en lire plus.
+
+- Réponse `200` :
+
+```json
+{
+  "unit": { "id": "hameconnage", "number": 1, "title": "…", "description": "…", "color": "toque", "villain": "fisher" },
+  "reflexes": [{ "title": "L’adresse à la loupe", "moral": "…" }, "… un par leçon"],
+  "sources": [{ "label": "…", "url": "https://…" }]
+}
+```
+
+| Statut | `code` | Quand |
+|---|---|---|
+| 404 | `unit_not_found` | ce thème n'existe pas |
+
+### `POST /api/lessons/:id/start`
+
+Commence une leçon (ou la reprend, si elle a été laissée en cours).
+
+- Réponse `200` :
+
+```json
+{
+  "lesson": Lesson,
+  "progress": { "answers": { "sms": Revealed }, "answered": 1, "total": 5, "completed": false },
+  "replay": false,
+  "buoys": { "count": 5, "max": 5 }
+}
+```
+
+`replay` vaut `true` quand la leçon était déjà faite : on la rejoue sans gagner de points.
+
+| Statut | `code` | Quand |
+|---|---|---|
+| 404 | `lesson_not_found` | cette leçon n'existe pas |
+| 403 | `lesson_locked` | les étapes d'avant ne sont pas faites |
+| 409 | `no_buoys` | plus aucune bouée |
+
+### `POST /api/lessons/:id/answers`
+
+- Envoi : `{ "questionId": "sms", "answer": Answer }`
+- Réponse `200` : `Revealed`, plus `progress` (sans `answers`) et `buoys`. Une mauvaise réponse
+  coûte une bouée. À la dernière réponse, le serveur compte les points et les sardines.
+
+| Statut | `code` | Quand |
+|---|---|---|
+| 400 | `invalid_answer` | la réponse ne correspond pas au type de question |
+| 404 | `lesson_not_found` | cette leçon n'existe pas |
+| 404 | `question_not_found` | la question n'est pas dans la leçon |
+| 409 | `lesson_not_started` | la leçon n'a pas été commencée |
+| 409 | `already_answered` | déjà répondu à cette question |
+| 409 | `no_buoys` | plus aucune bouée |
+
+### `GET /api/lessons/:id/result`
+
+Le bilan de la leçon qui vient d'être finie.
+
+- Réponse `200` :
+
+```json
+{
+  "id": "adresse-piegee",
+  "kind": "lesson",
+  "title": "…",
+  "unit": { "id": "hameconnage", "title": "…", "color": "toque" },
+  "correct": 4,
+  "total": 5,
+  "firstTime": true,
+  "points": { "answers": 20, "perfect": 0, "review": 0, "total": 20 },
+  "sardines": 5,
+  "moral": "…",
+  "reflexes": null,
+  "sources": [{ "label": "…", "url": "https://…" }],
+  "player": { "before": { "points": 1014, "stage": Stage }, "after": { "points": 1034, "stage": Stage } },
+  "quests": [{ "id": "lessons", "title": "Termine 2 leçons du parcours", "reward": 15 }],
+  "next": { "type": "lesson", "id": "colis-fantome", "title": "…" }
+}
+```
+
+- `points` vaut `null` quand la leçon était rejouée (`firstTime: false`) ;
+- un bilan (`kind: "review"`) a `moral: null` et `reflexes: [{ title, moral }]` ;
+- `quests` : les quêtes que cette leçon vient de remplir (leurs sardines sont déjà comptées) ;
+- `next` : l'étape suivante du chemin, ou `null`.
+
+| Statut | `code` | Quand |
+|---|---|---|
+| 404 | `lesson_not_found` | cette leçon n'existe pas |
+| 409 | `not_finished` | la leçon n'est pas finie |
+
+### `POST /api/path/chests/:id`
+
+Ouvre un coffre du chemin (`coffre-<thème>`).
+
+- Réponse `200` : `{ "sardines": 20, "inventory": Inventory }`
+
+| Statut | `code` | Quand |
+|---|---|---|
+| 404 | `chest_not_found` | ce coffre n'existe pas |
+| 403 | `chest_locked` | les leçons d'avant ne sont pas faites |
+| 409 | `already_claimed` | coffre déjà ouvert |
+
+### `GET /api/shop` (connecté)
+
+- Réponse `200` :
+
+```json
+{
+  "sardines": 340,
+  "items": [
+    { "id": "bouees", "title": "Bouées regonflées", "description": "…", "price": 150, "owned": { "count": 3, "max": 5 }, "available": true, "reason": null },
+    { "id": "glacon", "title": "Glaçon", "description": "…", "price": 200, "owned": { "count": 2, "max": 2 }, "available": false, "reason": "Tu as déjà 2 glaçons en réserve." }
+  ]
+}
+```
+
+### `POST /api/shop/:id` (connecté)
+
+Achète un article : les bouées sont regonflées tout de suite, un glaçon rejoint la réserve.
+
+- Réponse `200` : `{ "inventory": Inventory }`
+
+| Statut | `code` | Quand |
+|---|---|---|
+| 404 | `item_not_found` | cet article n'existe pas |
+| 409 | `already_full` | bouées déjà toutes gonflées |
+| 409 | `max_reached` | déjà 2 glaçons |
+| 409 | `not_enough_sardines` | pas assez de sardines |
+
+### `GET /api/quests`
+
+Les quêtes du jour et le défi du mois, avec ou sans compte. Une quête remplie rapporte ses
+sardines aussitôt, une seule fois.
+
+- Réponse `200` :
+
+```json
+{
+  "date": "2026-10-22",
+  "daily": [{ "id": "daily", "title": "Fais la mission du jour", "value": 0, "goal": 1, "reward": 15, "done": false }, "… 3 quêtes"],
+  "monthly": { "id": "2026-10", "title": "Le défi d’octobre", "description": "…", "value": 64, "goal": 120, "reward": 50, "done": false, "daysLeft": 9 }
+}
+```
+
+`daily[].id` : `daily` (toujours là), puis deux quêtes parmi `points`, `lessons`, `correct` et
+`perfect`, qui changent chaque jour.
+
 ## Le serveur simulé
 
 Il garde ses données dans le `localStorage` du navigateur et se cale sur la date du jour : le
@@ -511,9 +770,9 @@ quel que soit le jour où l'on tourne la vidéo. Le contenu des épisodes
 
 | Pseudo | Ce qu'il montre |
 |---|---|
-| `sacha_31` | l'habitué : une série en cours, l'épisode du jour pas encore joué |
-| `malo.dlt` | la série perdue : il n'a pas joué hier |
-| `Capitaine_des_mots_de_passe_42` | le pseudo de 30 caractères, au dernier stade, épisode du jour déjà joué |
+| `sacha_31` | l'habitué : une série en cours, l'épisode du jour pas encore joué, 17 étapes du chemin faites, un glaçon |
+| `malo.dlt` | la série perdue : il n'a pas joué hier ; le coffre du thème 2 attend d'être ouvert |
+| `Capitaine_des_mots_de_passe_42` | le pseudo de 30 caractères, au dernier stade, épisode du jour déjà joué, tout le chemin fait |
 
 Ils repartent chaque jour de cet état : leur passé se recale sur la date, et ce qu'on a joué avec
 eux les jours précédents est effacé. Les comptes créés dans le navigateur, eux, gardent tout.

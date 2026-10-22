@@ -42,25 +42,28 @@ const visible = ref(false)
 }
 
 .password-input {
-  padding-right: 6.4em;
+  padding-right: 6.6em;
 }
 
 .password-toggle {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  bottom: 5px;
+  top: 8px;
+  right: 8px;
+  bottom: 8px;
   min-width: 5.6em;
   padding: 0 0.7em;
-  font-family: var(--font-title);
-  font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--toque-bright);
   background: var(--paper);
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule);
+  border-radius: 10px;
 }
 
 .password-toggle:hover {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--toque-pale);
+  border-color: var(--toque-line);
 }
 </style>
