@@ -1,6 +1,7 @@
 <script setup>
-// Le classement, sur les sept derniers jours ou depuis le début. Chaque joueur avec le Tux de
-// son stade ; le joueur connecté voit sa place et qui il peut dépasser.
+// Le classement, à la manière des ligues de la copie de référence : sur les sept derniers jours
+// ou depuis le début, chaque joueur avec le Tux de son stade. Le joueur connecté voit sa place
+// et qui il peut dépasser ; à droite, ce qu'est le classement.
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppShell from '../components/app/AppShell.vue'
@@ -49,15 +50,10 @@ const nextToday = computed(() => me.value?.next && board.value && me.value.next.
 
 <template>
   <AppShell>
-    <div class="board-page">
-      <header class="banner">
-        <Icon name="podium" :size="88" />
-        <div class="banner-text">
-          <h1 class="banner-title">Classement</h1>
-          <p v-if="board" class="banner-sub">{{ span }} · {{ plural(board.players, 'joueur classé', 'joueurs classés') }}</p>
-          <p v-else class="banner-sub">Les points de la mission du jour et du chemin.</p>
-        </div>
-      </header>
+    <div class="board">
+      <Icon name="podium" :size="110" class="board-badge" />
+      <h1>Classement</h1>
+      <p v-if="board" class="board-span">{{ span }} · {{ plural(board.players, 'joueur classé', 'joueurs classés') }}</p>
 
       <nav class="periods" aria-label="Période du classement">
         <RouterLink
@@ -65,7 +61,7 @@ const nextToday = computed(() => me.value?.next && board.value && me.value.next.
           :key="item.id"
           :to="{ path: '/classement', query: item.query ? { periode: item.query } : {} }"
           class="period"
-          :class="{ 'is-active': period === item.id }"
+          :class="{ active: period === item.id }"
           :aria-current="period === item.id ? 'page' : undefined"
           replace
         >
@@ -78,356 +74,208 @@ const nextToday = computed(() => me.value?.next && board.value && me.value.next.
 
       <template v-else>
         <!-- Où j'en suis, et qui je peux dépasser. -->
-        <section v-if="me" class="standing card card--pad" aria-label="Ta place">
-          <p class="standing-rank">
-            <span class="standing-number">{{ ordinal(me.rank) }}</span>
-            <span class="standing-of">sur {{ formatNumber(board.players) }}</span>
-          </p>
-          <div class="standing-text">
-            <p>
-              <strong>{{ plural(me.points, 'point') }}</strong>
-              {{ board.period === 'week' ? 'ces 7 derniers jours' : 'depuis ton arrivée' }}.
-            </p>
-            <p v-if="me.ahead" class="muted">
-              Encore {{ plural(me.ahead.gap, 'point') }} pour dépasser <strong class="rival">{{ me.ahead.username }}</strong> ({{ ordinal(me.ahead.rank) }}).
-              <template v-if="nextToday">
-                <RouterLink to="/mission-du-jour">La mission du jour</RouterLink> peut t’en rapporter jusqu’à {{ me.next.maxPoints }}.
-              </template>
-            </p>
-            <p v-else class="muted">Personne devant toi. Reviens demain pour garder ta place !</p>
-          </div>
-        </section>
-
-        <p v-else-if="session.user" class="card card--pad none">
+        <p v-if="me" class="standing">
+          Tu es <strong>{{ ordinal(me.rank) }}</strong> avec {{ plural(me.points, 'point') }}
+          {{ board.period === 'week' ? 'ces 7 derniers jours' : 'depuis ton arrivée' }}.
+          <template v-if="me.ahead">
+            Encore {{ plural(me.ahead.gap, 'point') }} pour dépasser <strong>{{ me.ahead.username }}</strong>.
+            <template v-if="nextToday"><RouterLink to="/mission-du-jour">La mission du jour</RouterLink> peut t’en rapporter jusqu’à {{ me.next.maxPoints }}.</template>
+          </template>
+          <template v-else> Personne devant toi : reviens demain pour garder ta place !</template>
+        </p>
+        <p v-else-if="session.user" class="standing">
           {{ board.period === 'week' ? 'Pas encore de points ces 7 derniers jours.' : 'Pas encore de points.' }}
-          Une leçon suffit pour entrer au classement : <RouterLink to="/apprendre">à toi de jouer</RouterLink>.
+          Une leçon suffit pour entrer au classement.
         </p>
+        <template v-else>
+          <p class="standing">Ton nom n’est pas encore dans la liste : crée un profil, et chaque leçon te fait grimper.</p>
+          <RouterLink class="cl-button blue" :to="{ path: '/inscription', query: { redirect: '/classement' } }">Créer un profil</RouterLink>
+        </template>
+        <RouterLink v-if="session.user && !me" class="cl-button" to="/apprendre">Commencer une leçon</RouterLink>
 
-        <section v-else class="guest card card--pad">
-          <p class="guest-title">Ton nom n’est pas encore dans la liste</p>
-          <p class="muted">Crée un profil : chaque leçon et chaque mission du jour te font grimper au classement.</p>
-          <div class="guest-actions">
-            <RouterLink class="button" :to="{ path: '/inscription', query: { redirect: '/classement' } }">Créer un profil</RouterLink>
-            <RouterLink class="button button--ghost" :to="{ path: '/connexion', query: { redirect: '/classement' } }">Se connecter</RouterLink>
-          </div>
-        </section>
+        <p v-if="!board.players" class="standing">Personne n’a encore marqué de points sur cette période. Le premier qui joue prend la tête !</p>
 
-        <p v-if="!board.players" class="card card--pad none">
-          Personne n’a encore marqué de points sur cette période. Le premier qui joue prend la tête !
-        </p>
-
-        <section v-else class="list card" :aria-label="`Classement : ${span}`">
-          <ol class="rows">
-            <li v-for="row in board.top" :key="`top-${row.rank}-${row.username}`" class="row" :class="{ 'is-me': row.me }">
-              <span class="rank" :class="row.rank <= 3 ? `rank--${row.rank}` : ''">
-                {{ row.rank }}<span class="visually-hidden">{{ row.rank === 1 ? 're' : 'e' }} place</span>
-              </span>
+        <template v-else>
+          <ol class="cl-ranking" :aria-label="`Classement : ${span}`">
+            <li v-for="row in board.top" :key="`top-${row.rank}-${row.username}`" :class="{ self: row.me }">
+              <span :class="row.rank <= 3 ? `medal medal--${row.rank}` : ''">{{ row.rank }}<span class="visually-hidden">{{ row.rank === 1 ? 're' : 'e' }} place</span></span>
               <img :src="stageImage(row.level, { mini: true }).src" alt="" class="row-tux" />
-              <span class="row-name">
-                <span class="row-user">{{ row.username }}<span v-if="row.me" class="row-you"> (toi)</span></span>
-                <span v-if="row.streak" class="row-streak"><Icon name="flamme" :size="16" />{{ plural(row.streak, 'jour') }}</span>
-              </span>
-              <span class="row-points">{{ formatNumber(row.points) }}<span class="row-unit"> pts</span></span>
+              <strong>
+                {{ row.username }}<template v-if="row.me"> (toi)</template>
+                <small v-if="row.streak"><Icon name="flamme" :size="16" />{{ plural(row.streak, 'jour') }}</small>
+              </strong>
+              <em>{{ formatNumber(row.points) }} pts</em>
             </li>
           </ol>
-
           <template v-if="board.around.length">
-            <p class="gap" aria-hidden="true"><span></span><span></span><span></span></p>
-            <ol class="rows" aria-label="Autour de toi">
-              <li v-for="row in board.around" :key="`around-${row.rank}-${row.username}`" class="row" :class="{ 'is-me': row.me }">
-                <span class="rank">{{ row.rank }}<span class="visually-hidden">e place</span></span>
+            <p class="gap" aria-hidden="true">•••</p>
+            <ol class="cl-ranking around" aria-label="Autour de toi">
+              <li v-for="row in board.around" :key="`around-${row.rank}-${row.username}`" :class="{ self: row.me }">
+                <span>{{ row.rank }}<span class="visually-hidden">e place</span></span>
                 <img :src="stageImage(row.level, { mini: true }).src" alt="" class="row-tux" />
-                <span class="row-name">
-                  <span class="row-user">{{ row.username }}<span v-if="row.me" class="row-you"> (toi)</span></span>
-                  <span v-if="row.streak" class="row-streak"><Icon name="flamme" :size="16" />{{ plural(row.streak, 'jour') }}</span>
-                </span>
-                <span class="row-points">{{ formatNumber(row.points) }}<span class="row-unit"> pts</span></span>
+                <strong>
+                  {{ row.username }}<template v-if="row.me"> (toi)</template>
+                  <small v-if="row.streak"><Icon name="flamme" :size="16" />{{ plural(row.streak, 'jour') }}</small>
+                </strong>
+                <em>{{ formatNumber(row.points) }} pts</em>
               </li>
             </ol>
           </template>
-        </section>
+        </template>
       </template>
     </div>
+
+    <template #aside>
+      <section class="cl-panel cl-league-explanation">
+        <h3>Le classement, c’est quoi ?</h3>
+        <h2>Fais la mission du jour. Gagne des points. Grimpe au classement.</h2>
+        <p>Chaque leçon et chaque mission du jour te rapportent des points : ceux des sept derniers jours font le classement de la semaine.</p>
+      </section>
+    </template>
   </AppShell>
 </template>
 
 <style scoped>
-.board-page {
+.board {
   display: grid;
-  gap: 20px;
-}
-
-.banner {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 18px 22px;
-  color: #fff;
-  background: var(--toque);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 0 var(--toque-deep);
-}
-
-.banner-text {
-  display: grid;
-  gap: 4px;
-}
-
-.banner-title {
-  font-size: 1.7rem;
-}
-
-.banner-sub {
-  color: #dfe3ff;
-}
-
-/* Les deux onglets de période. */
-.periods {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 4px;
-  background: var(--wash);
-  border: 2px solid var(--rule);
-  border-radius: var(--radius);
-}
-
-.period {
-  padding: 10px 12px;
-  font-size: 0.88rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  justify-items: center;
   text-align: center;
-  text-transform: uppercase;
+  padding-top: 8px;
+}
+
+.board-badge {
+  margin-bottom: 12px;
+}
+
+.board-span {
+  margin-top: 8px;
   color: var(--muted);
-  border-radius: var(--radius-small);
 }
 
-.period:hover {
-  text-decoration: none;
-  color: var(--ink);
-}
-
-.period.is-active {
-  color: var(--toque-bright);
-  background: var(--paper);
-  box-shadow: 0 2px 0 var(--rule-strong);
-}
-
-/* Ta place. */
-.standing {
+.periods {
   display: flex;
-  align-items: center;
-  gap: 20px;
+  gap: 8px;
+  margin: 24px 0 8px;
+}
+
+.cl-app .period {
+  padding: 8px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #9aa0b4;
+  border: 2px solid var(--rule);
+  border-radius: 12px;
+}
+
+.cl-app .period.active {
+  color: var(--toque-bright);
   background: var(--toque-pale);
   border-color: var(--toque-line);
 }
 
-.standing-rank {
-  display: grid;
-  justify-items: center;
-  flex-shrink: 0;
-  min-width: 84px;
-}
-
-.standing-number {
-  font-size: 2.2rem;
-  font-weight: 900;
-  line-height: 1;
-  color: var(--toque);
-}
-
-.standing-of {
-  font-size: 0.85rem;
+.standing {
+  max-width: 460px;
+  margin: 16px auto 20px;
+  font-size: 17px;
+  line-height: 26px;
   color: var(--muted);
 }
 
-.standing-text {
-  display: grid;
-  gap: 4px;
-}
-
-.rival {
+.standing strong {
   color: var(--ink);
 }
 
-.none {
+.standing a {
+  font-weight: 700;
+  color: var(--toque-bright);
+}
+
+.board > .cl-button {
+  min-width: 260px;
+  margin-bottom: 8px;
+}
+
+.cl-ranking {
+  width: 100%;
+  margin-top: 16px !important;
+}
+
+.cl-ranking li > span {
+  width: 28px;
+  flex-shrink: 0;
+  text-align: center;
   color: var(--muted);
 }
 
-.guest {
-  display: grid;
-  gap: 8px;
-}
-
-.guest-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--toque);
-}
-
-.guest-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 6px;
-}
-
-/* La liste, façon ligue. */
-.list {
-  padding: 8px;
-}
-
-.rows {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 40px 48px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: var(--radius-small);
-}
-
-.row + .row {
-  border-top: 2px solid var(--wash);
-}
-
-.row.is-me {
-  background: var(--toque-pale);
-  border-top-color: transparent;
-}
-
-.row.is-me + .row {
-  border-top-color: transparent;
-}
-
-.rank {
+.cl-ranking .medal {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  font-weight: 900;
-  color: var(--muted);
-}
-
-.rank--1,
-.rank--2,
-.rank--3 {
+  height: 28px;
   color: #fff;
   border-radius: 50%;
 }
 
-.rank--1 {
-  background: #f5b700;
-  box-shadow: 0 3px 0 #c58f00;
+.medal--1 {
+  background: #e9b200;
 }
 
-.rank--2 {
-  background: #a6aec2;
-  box-shadow: 0 3px 0 #7f879c;
+.medal--2 {
+  background: #a3abbd;
 }
 
-.rank--3 {
-  background: #d9823b;
-  box-shadow: 0 3px 0 #a85f22;
+.medal--3 {
+  background: #c97a3d;
 }
 
 .row-tux {
   width: 44px;
-  height: 44px;
+  height: 48px;
+  flex-shrink: 0;
   object-fit: contain;
 }
 
-.row-name {
+.cl-ranking strong {
   display: grid;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.row-user {
-  overflow: hidden;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.is-me .row-user {
-  color: var(--toque-bright);
-}
-
-.row-you {
-  font-weight: 700;
-}
-
-.row-streak {
+.cl-ranking small {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.82rem;
-  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--beak-ink);
 }
 
-.row-points {
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.row-unit {
-  font-size: 0.85rem;
-  color: var(--muted);
+.cl-ranking em {
+  flex-shrink: 0;
+  font-weight: 700;
 }
 
 .gap {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 0;
+  margin: 4px 0;
+  color: #9aa0b4;
+  letter-spacing: 4px;
 }
 
-.gap span {
-  width: 6px;
-  height: 6px;
-  background: var(--rule-strong);
-  border-radius: 50%;
+.around {
+  margin-top: 0 !important;
 }
 
-@media (max-width: 520px) {
-  .banner {
-    gap: 14px;
-    padding: 14px 16px;
-  }
+/* L'explication passe dans la colonne de droite : elle reprend la carte de la copie. */
+.cl-league-explanation {
+  position: static;
+  width: auto;
+}
 
-  .banner :deep(.icon) {
-    width: 60px !important;
-    height: 60px !important;
-  }
-
-  .banner-title {
-    font-size: 1.4rem;
-  }
-
-  .standing {
+@media (max-width: 699px) {
+  .cl-ranking li {
     gap: 12px;
-  }
-
-  .standing-rank {
-    min-width: 64px;
-  }
-
-  .row {
-    grid-template-columns: 34px 40px minmax(0, 1fr) auto;
-    gap: 8px;
-    padding: 8px 6px;
-  }
-
-  .row-tux {
-    width: 38px;
-    height: 38px;
+    padding: 12px 8px;
   }
 }
 </style>

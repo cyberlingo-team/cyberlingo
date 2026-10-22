@@ -38,7 +38,7 @@ async function onRetry() {
     <template v-if="state === 'error'">
       <h2 class="state-title">{{ message.title }}</h2>
       <p class="state-text">{{ message.text }}</p>
-      <button v-if="retry" type="button" class="button button--blue" :disabled="retrying" @click="onRetry">
+      <button v-if="retry" type="button" class="cl-button blue" :disabled="retrying" @click="onRetry">
         {{ retrying ? 'Nouvel essai…' : 'Réessayer' }}
       </button>
     </template>

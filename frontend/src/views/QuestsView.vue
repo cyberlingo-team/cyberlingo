@@ -1,11 +1,11 @@
 <script setup>
-// Les quêtes : trois petits objectifs par jour et un défi pour le mois. Chacune réussie remplit
-// la réserve de sardines, sans rien avoir à réclamer.
-import { computed } from 'vue'
+// Les quêtes, à la manière de la copie de référence : trois petits objectifs par jour au centre,
+// le défi du mois à droite (sur téléphone, un onglet). Chacune réussie remplit la réserve de
+// sardines, sans rien avoir à réclamer.
+import { computed, ref } from 'vue'
 import AppShell from '../components/app/AppShell.vue'
-import AsideCards from '../components/app/AsideCards.vue'
 import Icon from '../components/app/Icon.vue'
-import QuestList from '../components/app/QuestList.vue'
+import QuestCard from '../components/app/QuestCard.vue'
 import StatePanel from '../components/app/StatePanel.vue'
 import { getQuests } from '../api/index.js'
 import { useResource } from '../lib/resource.js'
@@ -16,217 +16,158 @@ const { data, error, reload } = useResource(getQuests)
 
 const banner = sceneImage('quetes')
 const monthly = computed(() => data.value?.monthly || null)
-const doneToday = computed(() => data.value?.daily.filter((quest) => quest.done).length ?? 0)
+const allDone = computed(() => data.value?.daily.every((quest) => quest.done) ?? false)
+
+// Sur téléphone, la colonne de droite disparaît : le défi du mois passe dans un onglet.
+const tab = ref('daily')
 </script>
 
 <template>
   <AppShell>
-    <div class="quests-page">
-      <header class="banner">
-        <div class="banner-text">
-          <h1 class="banner-title">Quêtes</h1>
-          <p class="banner-sub">Remplis tes quêtes pour gagner des sardines, et dépense-les à la boutique.</p>
+    <div class="cl-quests-page">
+      <nav class="cl-quest-tabs" aria-label="Quêtes">
+        <button type="button" :class="{ active: tab === 'daily' }" :aria-pressed="tab === 'daily'" @click="tab = 'daily'">Quêtes</button>
+        <button type="button" :class="{ active: tab === 'monthly' }" :aria-pressed="tab === 'monthly'" @click="tab = 'monthly'">Défi du mois</button>
+      </nav>
+
+      <div :class="{ 'is-mobile-hidden': tab !== 'daily' }">
+        <header class="cl-quest-welcome">
+          <div>
+            <h1>Quêtes</h1>
+            <p>Remplis tes quêtes chaque jour pour gagner des sardines, et dépense-les à la boutique !</p>
+          </div>
+          <img :src="banner.src" alt="" />
+        </header>
+
+        <StatePanel v-if="error && !data" state="error" :error="error" :retry="reload" />
+        <StatePanel v-else-if="!data" label="Chargement des quêtes…" />
+        <template v-else>
+          <div class="cl-section-heading">
+            <h2>Quêtes du jour</h2>
+            <span>
+              <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="2" /><path d="M8 4.5V8l2.5 1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+              <span class="visually-hidden">Nouvelles quêtes dans</span>{{ untilMidnight() }}
+            </span>
+          </div>
+          <div class="cl-panel">
+            <QuestCard v-for="quest in data.daily" :key="quest.id" :quest="quest" />
+          </div>
+          <div class="cl-locked-quest">
+            <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="21" width="30" height="22" rx="6" fill="currentColor" /><path d="M16 21v-5a8 8 0 0 1 16 0v5" fill="none" stroke="currentColor" stroke-width="5" /></svg>
+            <strong>{{ allDone ? 'Bravo ! Trois nouvelles quêtes demain' : 'Nouvelles quêtes demain' }}</strong>
+          </div>
+        </template>
+      </div>
+
+      <!-- Le défi du mois, ici seulement quand la colonne de droite n'est pas affichée. -->
+      <section v-if="monthly" class="cl-panel cl-monthly monthly-main" :class="{ 'is-mobile-hidden': tab !== 'monthly' }" aria-labelledby="monthly-main-title">
+        <Icon name="trophee" :size="96" />
+        <strong id="monthly-main-title">{{ typo(monthly.title) }}</strong>
+        <p>{{ typo(monthly.description) }} {{ monthly.done ? 'Défi réussi !' : `Encore ${plural(monthly.daysLeft, 'jour')}.` }}</p>
+        <div class="cl-quest-progress" role="progressbar" :aria-valuenow="monthly.value" aria-valuemin="0" :aria-valuemax="monthly.goal" :aria-label="typo(monthly.title)">
+          <span :style="{ width: `${Math.min(100, (monthly.value / monthly.goal) * 100)}%` }"></span><b>{{ monthly.value }} / {{ monthly.goal }}</b>
         </div>
-        <img :src="banner.src" alt="" class="banner-image" />
-      </header>
-
-      <StatePanel v-if="error && !data" state="error" :error="error" :retry="reload" />
-      <StatePanel v-else-if="!data" label="Chargement des quêtes…" />
-
-      <template v-else>
-        <section class="block" aria-labelledby="daily-title">
-          <div class="block-head">
-            <h2 id="daily-title" class="section-title">Quêtes du jour</h2>
-            <p class="block-clock"><Icon name="glacon" :size="20" />Nouvelles quêtes dans {{ untilMidnight() }}</p>
-          </div>
-          <div class="card card--pad">
-            <QuestList :quests="data.daily" />
-          </div>
-          <p class="block-note muted">
-            {{ doneToday === data.daily.length ? 'Toutes tes quêtes du jour sont faites. Bravo !' : `Quêtes faites aujourd’hui : ${doneToday} sur ${data.daily.length}.` }}
-          </p>
-        </section>
-
-        <section v-if="monthly" class="block" aria-labelledby="monthly-title">
-          <h2 id="monthly-title" class="section-title">Défi du mois</h2>
-          <div class="monthly" :class="{ 'is-done': monthly.done }">
-            <div class="monthly-band">
-              <p class="kicker">{{ monthly.done ? 'Défi réussi' : `Encore ${plural(monthly.daysLeft, 'jour')}` }}</p>
-              <p class="monthly-title">{{ typo(monthly.title) }}</p>
-            </div>
-            <div class="monthly-body">
-              <p>{{ typo(monthly.description) }}</p>
-              <div class="monthly-progress">
-                <div class="meter" role="progressbar" :aria-valuenow="monthly.value" aria-valuemin="0" :aria-valuemax="monthly.goal" :aria-label="typo(monthly.title)">
-                  <div class="meter-fill" :data-empty="monthly.value === 0" :style="{ width: `${Math.min(100, (monthly.value / monthly.goal) * 100)}%` }"></div>
-                  <span class="meter-text">{{ monthly.value }} / {{ monthly.goal }}</span>
-                </div>
-                <Icon :name="monthly.done ? 'coffre-ouvert' : 'coffre'" :size="48" />
-              </div>
-              <p class="monthly-reward"><Icon name="sardine" :size="34" />Récompense : {{ plural(monthly.reward, 'sardine') }}</p>
-            </div>
-          </div>
-        </section>
-      </template>
+        <p class="monthly-reward"><Icon name="sardine" :size="30" />Récompense : {{ plural(monthly.reward, 'sardine') }}</p>
+        <RouterLink class="cl-button" to="/apprendre">Commencer une leçon</RouterLink>
+      </section>
     </div>
-    <template #aside><AsideCards :show-quests="false" /></template>
+
+    <template #aside>
+      <section v-if="monthly" class="cl-panel cl-monthly" aria-labelledby="monthly-title">
+        <Icon name="trophee" :size="96" />
+        <strong id="monthly-title">{{ typo(monthly.title) }}</strong>
+        <p>{{ typo(monthly.description) }} {{ monthly.done ? 'Défi réussi !' : `Encore ${plural(monthly.daysLeft, 'jour')}.` }}</p>
+        <div class="cl-quest-progress" role="progressbar" :aria-valuenow="monthly.value" aria-valuemin="0" :aria-valuemax="monthly.goal" :aria-label="typo(monthly.title)">
+          <span :style="{ width: `${Math.min(100, (monthly.value / monthly.goal) * 100)}%` }"></span><b>{{ monthly.value }} / {{ monthly.goal }}</b>
+        </div>
+        <p class="monthly-reward"><Icon name="sardine" :size="30" />Récompense : {{ plural(monthly.reward, 'sardine') }}</p>
+        <RouterLink class="cl-button" to="/apprendre">Commencer une leçon</RouterLink>
+      </section>
+    </template>
   </AppShell>
 </template>
 
 <style scoped>
-.quests-page {
-  display: grid;
-  gap: 28px;
+.cl-quest-welcome img {
+  object-fit: contain;
+  object-position: bottom;
+  margin-left: auto;
 }
 
-.banner {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 170px;
-  padding: 22px 0 22px 24px;
-  overflow: hidden;
-  color: #fff;
-  background: var(--beak);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 0 var(--beak-deep);
-}
-
-.banner-text {
-  display: grid;
-  gap: 6px;
-  max-width: 34ch;
-}
-
-.banner-title {
-  font-size: 1.8rem;
-}
-
-.banner-sub {
-  font-weight: 600;
-}
-
-.banner-image {
-  align-self: flex-end;
-  width: auto;
-  height: 190px;
-  margin: -10px 12px -40px 0;
-}
-
-.block {
-  display: grid;
-  gap: 12px;
-}
-
-.block-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.block-clock {
+.cl-section-heading > span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.85rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--toque-bright);
 }
 
-.block-note {
-  font-size: 0.92rem;
+.cl-section-heading svg {
+  width: 16px;
+  height: 16px;
 }
 
-/* Le défi du mois. */
-.monthly {
-  overflow: hidden;
-  border: 2px solid var(--rule);
-  border-radius: var(--radius);
+.cl-quests-page > div > .cl-panel {
+  padding: 0;
 }
 
-.monthly-band {
-  display: grid;
-  gap: 2px;
-  padding: 14px 20px;
-  color: #fff;
-  background: var(--toque);
+.cl-panel .cl-quest-card + .cl-quest-card {
+  border-top: 2px solid var(--rule);
 }
 
-.monthly-band .kicker {
-  color: #ffc58a;
+.cl-locked-quest {
+  margin-top: 16px;
 }
 
-.monthly-title {
-  font-size: 1.3rem;
-  font-weight: 900;
+.cl-locked-quest svg {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  color: #c3c8d6;
 }
 
-.monthly-body {
-  display: grid;
-  gap: 14px;
-  padding: 18px 20px;
+.cl-monthly :deep(.icon:first-child) {
+  float: right;
+  margin: -10px -6px 12px 12px;
 }
 
-.monthly-progress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.monthly-progress .meter {
-  flex: 1;
-  height: 22px;
-}
-
-.meter-text {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 0.8rem;
-  font-weight: 900;
-  color: var(--ink);
-}
-
-.monthly.is-done .meter-fill {
-  --meter: var(--success);
-}
-
-.monthly.is-done .meter-text {
-  color: #fff;
+.cl-monthly .cl-quest-progress {
+  clear: both;
 }
 
 .monthly-reward {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 800;
-  color: var(--toque);
+  gap: 8px;
+  margin: 12px 0 20px !important;
+  font-weight: 700;
 }
 
-@media (max-width: 520px) {
-  .banner {
-    min-height: 140px;
-    padding-left: 18px;
+.cl-monthly .cl-button {
+  width: 100%;
+}
+
+/* Le défi dans la colonne principale : seulement quand la colonne de droite est masquée. */
+.monthly-main {
+  display: none;
+  margin-top: 24px;
+}
+
+@media (max-width: 1079px) {
+  .monthly-main {
+    display: block;
+  }
+}
+
+@media (max-width: 699px) {
+  .cl-quest-tabs {
+    margin-bottom: 16px;
   }
 
-  .banner-title {
-    font-size: 1.45rem;
+  .is-mobile-hidden {
+    display: none !important;
   }
 
-  .banner-sub {
-    font-size: 0.92rem;
-  }
-
-  .banner-image {
-    height: 150px;
-    margin-right: 4px;
+  .monthly-main {
+    margin-top: 0;
   }
 }
 </style>

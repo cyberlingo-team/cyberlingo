@@ -1,0 +1,579 @@
+/* La page d'accueil, reprise de la copie de référence : un en-tête fixe, le héros sur toute la
+   hauteur de l'écran avec le bandeau des thèmes, des sections alternées, un bandeau sombre
+   pour Léopold, l'appel final et le pied de page en colonnes. Seule HomeView l'importe. */
+.home {
+  background: #fff;
+  color: var(--ink);
+  font: 500 17px/20px var(--font-title);
+  overflow: clip;
+  -webkit-font-smoothing: antialiased;
+}
+.home :is(h1, h2, h3, p) {
+  margin: 0;
+  text-wrap: wrap;
+}
+.home :is(h1, h2, h3) {
+  font-weight: 800;
+  letter-spacing: normal;
+}
+.home h1 {
+  line-height: normal;
+}
+.home h2 {
+  font: 800 48px/1.1 var(--font-title);
+  color: var(--beak);
+}
+.home a {
+  text-decoration: none;
+  color: var(--toque-bright);
+}
+.home ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.home button {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+/* Les boutons en relief : le fond et son relief bougent ensemble. */
+.home .home-button {
+  --button-fill: #fff;
+  --button-edge: var(--rule);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 50px;
+  padding: 0 16px;
+  font: 800 15px/21px var(--font-title);
+  letter-spacing: 0.8px;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--toque-bright);
+  background: transparent;
+  border: 2px solid transparent;
+  border-bottom-width: 4px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.home .home-button::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  background: var(--button-fill);
+  border: 2px solid var(--button-edge);
+  border-radius: 12px;
+  box-shadow: 0 2px 0 var(--button-edge);
+}
+.home .home-button:hover {
+  --button-fill: var(--wash);
+}
+.home .home-button:active {
+  transform: translateY(2px);
+}
+.home .home-button:active::before {
+  box-shadow: none;
+}
+.home .home-button--main {
+  --button-fill: var(--beak);
+  --button-edge: var(--beak-deep);
+  color: #fff;
+  border-width: 0 0 4px;
+}
+.home .home-button--white {
+  --button-fill: #fff;
+  --button-edge: var(--toque-line);
+  color: var(--toque);
+  border-width: 0 0 4px;
+}
+.home .home-button--main::before,
+.home .home-button--white::before {
+  inset: 0;
+  border: 0;
+  box-shadow: 0 4px 0 var(--button-edge);
+}
+.home .home-button--main:hover {
+  --button-fill: #ff8c1a;
+}
+.home .home-button--small {
+  height: 44px;
+  padding-inline: 20px;
+}
+
+/* L'en-tête et le héros. */
+.home-masthead {
+  height: 100vh;
+  min-height: 700px;
+  padding-top: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.home-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  height: 72px;
+  background: #fff;
+  border-bottom: 2px solid transparent;
+}
+.home-topbar--scrolled {
+  border-bottom-color: var(--rule);
+}
+.home-topnav {
+  max-width: 988px;
+  height: 70px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.home-logo {
+  display: block;
+}
+.home-logo .logo-name {
+  font-size: 2rem;
+}
+.home-hero {
+  width: 988px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 80px;
+  padding: 48px 0;
+}
+.home-hero__art {
+  width: 424px;
+  height: 424px;
+  flex-shrink: 0;
+  margin-right: -40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-hero__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.home-hero__copy {
+  width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.home-hero h1 {
+  max-width: 480px;
+  font-size: 32px;
+  text-align: center;
+  color: var(--ink);
+}
+.home-hero__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 330px;
+  max-width: 100%;
+  margin-top: 40px;
+}
+
+/* Le bandeau des thèmes, sous le héros. */
+.home-themes {
+  width: 100%;
+  height: 80px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  border-block: 2px solid var(--rule);
+}
+.home-themes nav {
+  width: 1090px;
+  max-width: calc(100% - 80px);
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+.home-themes button {
+  width: 14px;
+  flex-shrink: 0;
+  color: #9aa0b4;
+  cursor: pointer;
+}
+.home-themes button svg {
+  width: 14px;
+  height: 14px;
+}
+.home-themes__clip {
+  overflow: auto;
+  scrollbar-width: none;
+}
+.home-themes ul {
+  display: flex;
+  gap: 28px;
+}
+.home-themes li {
+  flex-shrink: 0;
+}
+.home-themes a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+}
+.home-themes a:hover {
+  color: var(--toque-bright);
+}
+.home-themes img {
+  width: 30px;
+  height: 40px;
+  object-fit: contain;
+}
+.home-themes span {
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Les sections alternées. */
+.home-features {
+  padding: 96px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 96px;
+}
+.home-feature {
+  width: 988px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 101px;
+}
+.home-feature--reverse {
+  flex-direction: row-reverse;
+}
+.home-feature__copy {
+  width: 503px;
+  max-width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+}
+.home-feature h2 {
+  max-width: 503px;
+}
+.home-feature p {
+  max-width: 473px;
+  line-height: 26px;
+  color: var(--muted);
+}
+.home-feature__art {
+  width: 384px;
+  height: 384px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-feature__art > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.home-stages {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: end;
+  gap: 16px;
+}
+.home-stages img {
+  width: 100%;
+  height: 170px;
+  object-fit: contain;
+}
+.home-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.home-items li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* Le bandeau sombre de Léopold. */
+.home-villain {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 64px;
+  padding: 64px 24px;
+  background: var(--toque-deep);
+}
+.home-villain__art {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  height: 420px;
+}
+.home-villain__art img {
+  height: 100%;
+  width: auto;
+}
+.home-villain__art img + img {
+  height: 82%;
+}
+.home-villain__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 32px;
+  width: 480px;
+  max-width: 100%;
+}
+.home .home-villain h2 {
+  font-size: 56px;
+  color: #fff;
+}
+.home-villain p {
+  line-height: 26px;
+  color: var(--toque-line);
+}
+
+/* L'appel final, posé sur la rangée des Tux. */
+.home-ending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 56px;
+  padding-top: 96px;
+}
+.home-ending__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 48px;
+  width: 583px;
+  max-width: 100%;
+  padding-inline: 15px;
+}
+.home .home-ending h2 {
+  font-size: 64px;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+.home-ending .home-button {
+  width: 330px;
+  max-width: 100%;
+}
+.home-ending__row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(4px, 2vw, 28px);
+  width: 100%;
+  padding: 0 16px;
+  border-bottom: 48px solid var(--toque);
+}
+.home-ending__row img {
+  width: auto;
+  height: clamp(48px, 9vw, 130px);
+  margin-bottom: -6px;
+}
+
+/* Le pied de page. */
+.home-footer {
+  background: var(--toque);
+}
+.home-footer__columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 988px;
+  max-width: 100%;
+  margin: auto;
+  padding: 72px 0 64px;
+}
+.home-footer h3 {
+  margin-bottom: 12px;
+  font: 800 19px/26.6px var(--font-title);
+  color: #fff;
+}
+.home-footer li {
+  margin-bottom: 10px;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 700;
+}
+.home-footer a {
+  color: var(--toque-line);
+}
+.home-footer a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+.home .home-footer__note {
+  width: 988px;
+  max-width: 100%;
+  margin: auto;
+  padding: 32px 0 56px;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--toque-line);
+  border-top: 2px solid var(--toque-bright);
+}
+
+@media (max-width: 1079px) {
+  .home-topnav {
+    margin-inline: 40px;
+  }
+  .home-hero {
+    width: 100%;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    gap: 0;
+    padding: 16px 40px 48px;
+  }
+  .home-hero__art {
+    width: 100%;
+    height: 340px;
+    margin: 0;
+  }
+  .home-hero__copy {
+    width: 100%;
+  }
+  .home-hero h1 {
+    margin-top: 16px;
+    max-width: 520px;
+  }
+  .home-feature,
+  .home-feature--reverse {
+    width: 100%;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .home-feature__copy {
+    align-items: center;
+    text-align: center;
+  }
+  .home-items {
+    justify-content: center;
+  }
+  .home-villain {
+    flex-direction: column;
+    gap: 40px;
+  }
+  .home-villain__art {
+    height: 340px;
+  }
+  .home-villain__copy {
+    align-items: center;
+    text-align: center;
+  }
+  .home .home-ending h2 {
+    font-size: 48px;
+  }
+  .home-footer__columns,
+  .home .home-footer__note {
+    padding-inline: 40px;
+  }
+}
+@media (max-width: 699px) {
+  .home-topnav {
+    margin-inline: 15px;
+  }
+  /* Comme la copie de référence : le logo seul, centré, tant qu'on n'a pas défilé. Le bouton de
+     connexion reste dans le héros. */
+  .home-topbar:not(.home-topbar--scrolled) .home-topnav {
+    justify-content: center;
+  }
+  .home-topbar:not(.home-topbar--scrolled) .home-topnav > .home-button {
+    display: none;
+  }
+  .home-logo .logo-name {
+    font-size: 1.6rem;
+  }
+  .home-hero {
+    padding: 10px 15px 20px;
+    justify-content: normal;
+  }
+  .home-hero__art {
+    height: calc((100vh - 145px) / 2);
+    min-height: 220px;
+  }
+  .home-hero__copy {
+    flex: 1;
+  }
+  .home-hero h1 {
+    flex: 1;
+    margin-top: 10px;
+    max-width: 345px;
+    font-size: 26px;
+  }
+  .home-hero__actions {
+    margin-top: 24px;
+  }
+  .home-themes {
+    display: none;
+  }
+  .home-feature {
+    padding-inline: 15px;
+  }
+  .home-feature__copy {
+    width: 340px;
+  }
+  .home .home-feature h2 {
+    max-width: 340px;
+    font-size: 34px;
+  }
+  .home-feature__art {
+    width: min(320px, 100%);
+    height: auto;
+    aspect-ratio: 1;
+  }
+  .home-stages img {
+    height: 130px;
+  }
+  .home-villain {
+    min-height: 0;
+    padding: 64px 15px 80px;
+  }
+  .home-villain__art {
+    height: 260px;
+  }
+  .home .home-villain h2 {
+    font-size: 36px;
+  }
+  .home .home-villain .home-button {
+    width: 330px;
+    max-width: 100%;
+  }
+  .home .home-ending h2 {
+    font-size: 36px;
+  }
+  .home-footer__columns {
+    grid-template-columns: 1fr;
+    padding: 64px 32px 32px;
+  }
+  .home .home-footer__note {
+    padding-inline: 32px;
+  }
+}

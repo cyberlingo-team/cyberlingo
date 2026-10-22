@@ -1,6 +1,6 @@
 <script setup>
 // La mission du jour, en tête du chemin : la même pour tout le monde, elle fait avancer la série
-// et rapporte le plus de points.
+// et rapporte le plus de points. Une carte blanche à bord gris, comme les panneaux de l'appli.
 import { computed } from 'vue'
 import Icon from '../app/Icon.vue'
 import { gangImage, sceneImage } from '../../lib/images.js'
@@ -20,144 +20,134 @@ const cta = computed(() => {
 </script>
 
 <template>
-  <section class="daily" :class="`daily--${daily.status}`" aria-labelledby="daily-title">
-    <div class="daily-text">
-      <p class="kicker daily-kicker">Mission du jour · n° {{ daily.number }}</p>
-      <h2 id="daily-title" class="daily-title">{{ typo(daily.title) }}</h2>
-      <p class="daily-hook">{{ typo(daily.hook) }}</p>
-      <p class="daily-meta">
-        <template v-if="daily.status === 'done'">
-          <Icon name="haltere" :size="26" />
-          <span>Faite : <strong>+{{ plural(daily.points ?? 0, 'point') }}</strong>. La prochaine arrive dans {{ untilMidnight() }}.</span>
-        </template>
-        <template v-else>
-          <Icon name="flamme" :size="20" />
-          <span>Jusqu’à <strong>{{ plural(daily.maxPoints, 'point') }}</strong> · encore {{ untilMidnight() }}</span>
-        </template>
+  <section class="cl-daily" :class="`is-${daily.status}`" aria-labelledby="daily-title">
+    <div class="cl-daily-text">
+      <p class="cl-daily-kicker">
+        <Icon name="flamme" :size="20" />
+        Mission du jour · n° {{ daily.number }}
       </p>
-      <RouterLink class="button daily-cta" :class="{ 'button--ghost': daily.status === 'done' }" to="/mission-du-jour">{{ cta }}</RouterLink>
-      <p v-if="daily.players" class="daily-players">{{ plural(daily.players, 'joueur') }} l’ont déjà faite aujourd’hui.</p>
+      <h2 id="daily-title">{{ typo(daily.title) }}</h2>
+      <p class="cl-daily-hook">{{ typo(daily.hook) }}</p>
+      <p class="cl-daily-meta">
+        <template v-if="daily.status === 'done'">Faite : <b>+{{ plural(daily.points ?? 0, 'point') }}</b>. La prochaine arrive dans {{ untilMidnight() }}.</template>
+        <template v-else>Jusqu’à <b>{{ plural(daily.maxPoints, 'point') }}</b> · encore {{ untilMidnight() }}</template>
+      </p>
+      <RouterLink class="cl-button" :class="{ green: daily.status !== 'done' }" to="/mission-du-jour">{{ cta }}</RouterLink>
+      <p v-if="daily.players" class="cl-daily-players">{{ plural(daily.players, 'joueur') }} l’ont déjà faite aujourd’hui.</p>
     </div>
-    <div class="daily-art" aria-hidden="true">
-      <img :src="mascot.src" alt="" class="daily-mascot" />
-      <img :src="guest.src" alt="" class="daily-guest" />
+    <div class="cl-daily-art" aria-hidden="true">
+      <img :src="mascot.src" alt="" class="cl-daily-mascot" />
+      <img :src="guest.src" alt="" class="cl-daily-guest" />
     </div>
   </section>
 </template>
 
 <style scoped>
-.daily {
-  position: relative;
+.cl-daily {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 180px;
-  gap: 12px;
-  padding: 22px 22px 22px 26px;
-  overflow: hidden;
-  color: #fff;
-  background: var(--toque);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 0 var(--toque-deep);
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 16px;
+  padding: 20px 20px 20px 24px;
+  border: 2px solid var(--rule);
+  border-radius: 16px;
 }
 
-.daily::before {
-  content: '';
-  position: absolute;
-  right: -60px;
-  top: -40px;
-  width: 300px;
-  height: 300px;
-  background: var(--toque-bright);
-  border-radius: 50%;
-  opacity: 0.55;
-}
-
-.daily-text {
-  position: relative;
+.cl-daily-text {
   display: grid;
   justify-items: start;
+  align-content: center;
   gap: 8px;
 }
 
-.daily-kicker {
-  color: #ffc58a;
-}
-
-.daily-title {
-  font-size: 1.6rem;
-}
-
-.daily-hook {
-  max-width: 40ch;
-  color: #dfe3ff;
-}
-
-.daily-meta {
+.cl-daily-kicker {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
-  color: #dfe3ff;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--beak-ink);
 }
 
-.daily-meta strong {
-  color: #fff;
+.cl-app .cl-daily h2 {
+  font-size: 24px;
+  line-height: 30px;
 }
 
-.daily-cta {
+.cl-daily-hook,
+.cl-daily-meta,
+.cl-daily-players {
+  color: var(--muted);
+}
+
+.cl-daily-meta b {
+  color: var(--ink);
+}
+
+.cl-daily .cl-button {
   margin-top: 6px;
 }
 
-.daily--done .daily-cta {
-  --text: var(--toque);
+.cl-daily-players {
+  font-size: 14px;
 }
 
-.daily-players {
-  font-size: 0.85rem;
-  color: #b9c1f2;
-}
-
-.daily-art {
+.cl-daily-art {
   position: relative;
   align-self: end;
-  height: 190px;
+  height: 180px;
 }
 
-.daily-mascot {
+.cl-daily-mascot {
   position: absolute;
   right: 0;
-  bottom: -22px;
-  height: 200px;
+  bottom: 0;
+  height: 100%;
   width: auto;
 }
 
-.daily-guest {
+.cl-daily-guest {
   position: absolute;
-  left: -6px;
-  bottom: -10px;
-  height: 84px;
+  left: 0;
+  bottom: 0;
+  height: 42%;
   width: auto;
 }
 
-@media (max-width: 520px) {
-  .daily {
-    grid-template-columns: minmax(0, 1fr) 96px;
-    padding: 18px;
+.cl-daily.is-done .cl-daily-art {
+  opacity: 0.75;
+}
+
+@media (max-width: 699px) {
+  .cl-daily {
+    grid-template-columns: minmax(0, 1fr) 84px;
+    gap: 8px;
+    padding: 16px;
   }
 
-  .daily-title {
-    font-size: 1.35rem;
+  .cl-daily-kicker {
+    font-size: 13px;
   }
 
-  .daily-art {
-    height: 120px;
+  .cl-daily-hook {
+    display: none;
   }
 
-  .daily-mascot {
-    height: 130px;
-    right: -14px;
+  .cl-daily .cl-button {
+    padding: 0 18px;
   }
 
-  .daily-guest {
+  .cl-app .cl-daily h2 {
+    font-size: 20px;
+    line-height: 26px;
+  }
+
+  .cl-daily-art {
+    height: 110px;
+  }
+
+  .cl-daily-guest {
     display: none;
   }
 }

@@ -166,6 +166,7 @@ révèle qu'après la réponse du joueur.
 | `truefalse` | `true` ou `false` |
 | `choice` | l'`id` d'une option |
 | `clues` | un tableau d'exactement `pick` zones différentes, ex. `["expediteur", "lien"]` |
+| tous | `null` : le joueur passe la question (« Passer »). Elle compte comme une erreur, et la correction est révélée comme pour une mauvaise réponse. |
 
 ### `Revealed` : une réponse corrigée
 

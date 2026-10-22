@@ -22,7 +22,7 @@ La branche `main` garde la version « BD du jour » ; cette note ne vaut que pou
 | `/bienvenue` | Le petit questionnaire d'arrivée, puis la première leçon. |
 | `/apprendre` | La mission du jour, puis le chemin. Toucher une étape ouvre sa bulle : commencer, rejouer, ouvrir le coffre, ou pourquoi elle est verrouillée. |
 | `/apprendre/<thème>/guide` | Le guide d'un thème : ses réflexes et ses sources (ex. `/apprendre/hameconnage/guide`). |
-| `/lecon/<id>` | Une leçon ou un bilan, en plein écran : une question à la fois, « Valider », la correction en bas, puis le bilan (ex. `/lecon/adresse-piegee`). Sans bouée, un écran propose la boutique ou la mission du jour. |
+| `/lecon/<id>` | Une leçon ou un bilan, en plein écran : une question à la fois, « Passer » ou « Valider », la correction en bas, les questions ratées rejouées en fin de leçon, puis le bilan écran par écran (ex. `/lecon/adresse-piegee`). Sans bouée, une fenêtre propose la boutique ou la mission du jour. |
 | `/mission-du-jour` | La mission du jour, même écran ; au bilan, Léopold se démasque et la place au classement s'affiche. |
 | `/classement` | Le classement de la semaine ; `?periode=tout` depuis le lancement. |
 | `/quetes` | Les trois quêtes du jour et le défi du mois. |
@@ -53,4 +53,5 @@ joue une leçon ou la mission du jour jusqu'au bilan. Les captures vont dans
   dans `frontend/src/api/CONTRAT.md` pour le futur back-end.
 - **Les leçons reprennent les missions** : une leçon du chemin et une mission du jour peuvent
   poser les mêmes questions.
-- **Les objets examinés** (SMS, mails, pages) gardent le trait noir de la version BD.
+- **La mise en page vient de la copie de Codex** (branche locale `copie-codex`) : quelques
+  écarts restent, listés dans `PASSATION_CLAUDE.md`.

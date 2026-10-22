@@ -622,6 +622,8 @@ function wrongAnswer(question) {
 
 function checkAnswer(question, answer) {
   const invalid = () => new HttpError(400, 'invalid_answer', 'Cette réponse ne correspond pas à la question.')
+  // null : le joueur passe la question, elle compte comme une erreur.
+  if (answer === null) return false
   switch (question.kind) {
     case 'trap':
       if (answer !== 'trap' && answer !== 'safe') throw invalid()

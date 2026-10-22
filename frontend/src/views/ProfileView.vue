@@ -1,7 +1,8 @@
 <script setup>
-// Mon Tux : le personnage du joueur à son stade, ce qui lui manque pour le suivant, ses chiffres,
-// sa semaine, ses succès et le carnet des missions du jour. Sans compte, l'œuf attend d'éclore.
-import { computed } from 'vue'
+// Mon Tux, à la manière du profil de la copie de référence : le personnage du joueur à son
+// stade, ce qui lui manque pour le suivant, ses statistiques, sa semaine, ses succès et le
+// carnet des missions du jour. Sans compte, l'œuf attend d'éclore.
+import { computed, ref } from 'vue'
 import AppShell from '../components/app/AppShell.vue'
 import Icon from '../components/app/Icon.vue'
 import StatePanel from '../components/app/StatePanel.vue'
@@ -39,16 +40,16 @@ const progress = computed(() => {
   return Math.max(0, Math.min(100, ((me.value.points - me.value.stage.minPoints) / span) * 100))
 })
 
-const tiles = computed(() => {
+const stats = computed(() => {
   const m = me.value
   const rate = m.totals.questions ? Math.round((m.totals.correct / m.totals.questions) * 100) : null
   return [
-    { id: 'streak', icon: 'flamme', value: m.streak.current, label: m.streak.current > 1 ? 'jours de série' : 'jour de série', off: !m.streak.playedToday },
-    { id: 'points', icon: 'haltere', value: formatNumber(m.points), label: 'points au total' },
-    { id: 'lessons', icon: 'igloo', value: m.totals.lessons, label: m.totals.lessons > 1 ? 'leçons réussies' : 'leçon réussie' },
-    { id: 'missions', icon: 'trophee', value: m.totals.episodes, label: m.totals.episodes > 1 ? 'missions du jour' : 'mission du jour' },
-    { id: 'rate', icon: 'cible', value: rate === null ? '–' : `${rate} %`, label: 'de bonnes réponses' },
-    { id: 'rank', icon: 'podium', value: m.rank.week ? `${m.rank.week.position}${m.rank.week.position === 1 ? 're' : 'e'}` : '–', label: 'cette semaine' },
+    { id: 'streak', icon: 'flamme', value: m.streak.current, label: m.streak.current > 1 ? 'Jours de série' : 'Jour de série', off: !m.streak.playedToday },
+    { id: 'points', icon: 'haltere', value: formatNumber(m.points), label: 'Points au total' },
+    { id: 'lessons', icon: 'igloo', value: m.totals.lessons, label: m.totals.lessons > 1 ? 'Leçons réussies' : 'Leçon réussie' },
+    { id: 'missions', icon: 'trophee', value: m.totals.episodes, label: m.totals.episodes > 1 ? 'Missions du jour' : 'Mission du jour' },
+    { id: 'rate', icon: 'cible', value: rate === null ? '–' : `${rate} %`, label: 'De bonnes réponses' },
+    { id: 'rank', icon: 'podium', value: m.rank.week ? `${m.rank.week.position}${m.rank.week.position === 1 ? 're' : 'e'}` : '–', label: 'Place cette semaine' },
   ]
 })
 
@@ -59,17 +60,27 @@ const streakLine = computed(() => {
   return 'Pas encore de mission aujourd’hui : ta série tient jusqu’à minuit.'
 })
 
-// La semaine en barres : la plus haute prend toute la hauteur.
-const week = computed(() => {
-  const days = me.value?.week || []
-  const top = Math.max(1, ...days.map((day) => day.points))
-  return days.map((day, i) => ({
+// La semaine en courbe, comme dans la copie : sept points, le plus haut en haut du cadre.
+const week = computed(() =>
+  (me.value?.week || []).map((day, i, days) => ({
     ...day,
-    height: (day.points / top) * 100,
-    short: i === days.length - 1 ? 'Auj.' : formatWeekday(day.date).slice(0, 3),
-  }))
-})
+    short: i === days.length - 1 ? 'Auj.' : formatWeekday(day.date).slice(0, 1).toUpperCase(),
+  })),
+)
 const weekTotal = computed(() => week.value.reduce((sum, day) => sum + day.points, 0))
+const weekMax = computed(() => Math.max(20, ...week.value.map((day) => day.points)))
+const pointY = (points) => 207 - (points / weekMax.value) * 192
+
+// Les succès : une tuile colorée par succès, comme dans la copie.
+const COLORS = ['var(--alert)', 'var(--success)', 'var(--unit-glace)', 'var(--beak)', 'var(--toque-bright)', 'var(--unit-mer)']
+const achievements = computed(() => (me.value?.achievements || []).map((item, i) => ({ ...item, color: COLORS[i % COLORS.length] })))
+const allAchievements = ref(false)
+const detail = ref(null)
+
+function achievementText(item) {
+  if (item.level === item.maxLevel) return `Niveau maximum atteint : ${item.value} ${item.unit}.`
+  return `Niveau ${item.level} sur ${item.maxLevel}. Prochain palier : ${item.value} / ${item.goal} ${item.unit}.`
+}
 
 // Le carnet des missions du jour : les dernières semaines, du lundi au dimanche.
 const WEEKDAYS = [
@@ -99,125 +110,118 @@ function dayLabel(day) {
 </script>
 
 <template>
-  <AppShell width="wide">
+  <AppShell>
     <h1 v-if="!data" class="visually-hidden">Mon Tux</h1>
     <StatePanel v-if="error && !data" state="error" :error="error" :retry="reload" />
     <StatePanel v-else-if="!data" label="Ton Tux arrive…" />
 
     <!-- Sans compte : l'œuf. -->
-    <div v-else-if="!me" class="profile">
-      <section class="card card--pad egg">
-        <img :src="sceneImage('egg').src" alt="Un œuf coiffé d’une toque, qui commence à se fendre." class="egg-image" />
-        <div class="egg-text">
-          <h1 class="section-title">Ton Tux n’a pas encore éclos</h1>
-          <p class="muted">Crée un profil : il éclot à ta première leçon, puis chaque bonne réponse lui donne du muscle. Ta série, tes points et ta place au classement sont gardés.</p>
-          <div class="egg-actions">
-            <RouterLink class="button" :to="{ path: '/inscription', query: { redirect: '/mon-tux' } }">Créer un profil</RouterLink>
-            <RouterLink class="button button--ghost" :to="{ path: '/connexion', query: { redirect: '/mon-tux' } }">Se connecter</RouterLink>
-          </div>
-        </div>
-      </section>
-
-      <section class="block" aria-labelledby="ladder-title">
-        <h2 id="ladder-title" class="section-title">Ce qu’il peut devenir</h2>
-        <ol class="card card--pad ladder">
-          <li v-for="stage in stages" :key="stage.level" class="rung" :style="{ '--grow': stage.level }">
-            <img :src="stageImage(stage.level, { mini: true }).src" :alt="stage.name" class="rung-tux" />
-            <span class="rung-name">{{ stage.name }}</span>
-            <span class="rung-points">{{ stage.minPoints ? `${formatNumber(stage.minPoints)} pts` : 'au départ' }}</span>
+    <div v-else-if="!me" class="cl-profile-page">
+      <div class="cl-profile-cover">
+        <img :src="sceneImage('egg').src" alt="Un œuf coiffé d’une toque, qui commence à se fendre." />
+      </div>
+      <h1>Ton Tux n’a pas encore éclos</h1>
+      <p>Crée un profil : il éclot à ta première leçon, puis chaque bonne réponse lui donne du muscle. Ta série, tes points et ta place au classement sont gardés.</p>
+      <div class="profile-actions">
+        <RouterLink class="cl-button blue" :to="{ path: '/inscription', query: { redirect: '/mon-tux' } }">Créer un profil</RouterLink>
+        <RouterLink class="cl-button" :to="{ path: '/connexion', query: { redirect: '/mon-tux' } }">Se connecter</RouterLink>
+      </div>
+      <section aria-labelledby="ladder-title">
+        <h2 id="ladder-title">Ce qu’il peut devenir</h2>
+        <ol class="ladder">
+          <li v-for="stage in stages" :key="stage.level" :style="{ '--grow': stage.level }">
+            <img :src="stageImage(stage.level, { mini: true }).src" :alt="stage.name" />
+            <strong>{{ stage.name }}</strong>
+            <small>{{ stage.minPoints ? `${formatNumber(stage.minPoints)} pts` : 'au départ' }}</small>
           </li>
         </ol>
       </section>
+      <RouterLink class="cl-mobile-preferences cl-button" to="/preferences">Préférences</RouterLink>
+    </div>
 
-      <RouterLink to="/preferences" class="mobile-link">Préférences</RouterLink>
+    <!-- Tous les succès, comme la page « Succès » de la copie. -->
+    <div v-else-if="allAchievements" class="cl-achievements-page">
+      <button type="button" class="back" @click="allAchievements = false">← Mon Tux</button>
+      <h1>Succès</h1>
+      <article v-for="item in achievements" :key="item.id" :class="{ locked: item.level === 0 }">
+        <div :style="{ background: item.color }"><Icon :name="item.icon" :size="72" /></div>
+        <section>
+          <h2>{{ item.title }} <small>Niveau {{ item.level }} / {{ item.maxLevel }}</small></h2>
+          <p>{{ achievementText(item) }}</p>
+          <div class="cl-quest-progress" role="progressbar" :aria-valuenow="Math.min(item.value, item.goal)" aria-valuemin="0" :aria-valuemax="item.goal" :aria-label="item.title">
+            <span :style="{ width: `${Math.min(100, (item.value / item.goal) * 100)}%` }"></span><b>{{ Math.min(item.value, item.goal) }} / {{ item.goal }}</b>
+          </div>
+        </section>
+      </article>
     </div>
 
     <!-- Avec compte : la fiche du personnage. -->
-    <div v-else class="profile">
-      <section class="hero" aria-labelledby="profile-name">
-        <div class="hero-art">
-          <img :src="stageImage(me.stage.level).src" :alt="`Le Tux de ${me.user.username}, au stade ${me.stage.name}.`" class="hero-tux" />
+    <div v-else class="cl-profile-page">
+      <div class="cl-profile-cover tux-cover">
+        <img :src="stageImage(me.stage.level).src" :alt="`Le Tux de ${me.user.username}, au stade ${me.stage.name}.`" />
+        <RouterLink class="cl-profile-edit" to="/mon-compte" aria-label="Modifier mon compte">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" /></svg>
+        </RouterLink>
+      </div>
+      <h1>{{ me.user.username }}</h1>
+      <p class="cl-profile-username">Stade {{ me.stage.level }} / {{ lastLevel }} · {{ me.stage.name }}</p>
+      <p>Sur la banquise depuis le {{ formatFullDate(me.user.createdAt) }}</p>
+      <p class="motto">« {{ typo(me.stage.motto) }} »</p>
+
+      <div v-if="next" class="gauge">
+        <p><strong>{{ plural(remaining, 'point') }}</strong> avant <strong>{{ next.name }}</strong></p>
+        <div class="cl-quest-progress" role="progressbar" :aria-valuenow="me.points" :aria-valuemin="me.stage.minPoints" :aria-valuemax="next.minPoints" :aria-label="`Points jusqu’au stade ${next.name}`">
+          <span :style="{ width: `${progress}%` }"></span><b>{{ formatNumber(me.points) }} / {{ formatNumber(next.minPoints) }}</b>
         </div>
-        <div class="hero-text">
-          <h1 id="profile-name" class="hero-name">{{ me.user.username }}</h1>
-          <p class="hero-since">Sur la banquise depuis le {{ formatFullDate(me.user.createdAt) }}</p>
-          <p class="hero-stage">
-            <span class="stage-badge">Stade {{ me.stage.level }} / {{ lastLevel }}</span>
-            <strong>{{ me.stage.name }}</strong>
-          </p>
-          <p class="hero-motto">« {{ typo(me.stage.motto) }} »</p>
-          <div v-if="next" class="gauge">
-            <div class="gauge-labels">
-              <span>{{ plural(remaining, 'point') }} avant <strong>{{ next.name }}</strong></span>
-              <span class="muted">{{ formatNumber(me.points) }} / {{ formatNumber(next.minPoints) }}</span>
-            </div>
-            <div class="meter" role="progressbar" :aria-valuenow="me.points" :aria-valuemin="me.stage.minPoints" :aria-valuemax="next.minPoints" :aria-label="`Points jusqu’au stade ${next.name}`">
-              <div class="meter-fill" :style="{ width: `${progress}%` }"></div>
-            </div>
+      </div>
+      <p v-else class="gauge">Dernier stade atteint. Les arnaques n’ont qu’à bien se tenir.</p>
+
+      <section aria-labelledby="stats-title">
+        <h2 id="stats-title">Statistiques</h2>
+        <div class="cl-profile-stats">
+          <div v-for="stat in stats" :key="stat.id" :class="{ off: stat.off }">
+            <Icon :name="stat.icon" :size="28" />
+            <span><strong>{{ stat.value }}</strong><small>{{ stat.label }}</small></span>
           </div>
-          <p v-else class="hero-max">Dernier stade atteint. Les arnaques n’ont qu’à bien se tenir.</p>
+        </div>
+        <p class="streak-line">{{ streakLine }}<template v-if="me.streak.best > 1"> Record : {{ plural(me.streak.best, 'jour') }}.</template></p>
+      </section>
+
+      <section aria-labelledby="week-title">
+        <h2 id="week-title">Points gagnés cette semaine</h2>
+        <div class="cl-chart">
+          <strong>{{ me.user.username }} <span>{{ plural(weekTotal, 'point') }}</span></strong>
+          <svg viewBox="0 0 548 265" role="img" :aria-label="`Tes points sur sept jours : ${week.map((day) => `${formatDay(day.date)}, ${day.points}`).join(' ; ')}`">
+            <g v-for="i in 5" :key="i">
+              <line x1="42" :y1="15 + (i - 1) * 48" x2="530" :y2="15 + (i - 1) * 48" class="chart-grid" />
+              <text x="16" :y="20 + (i - 1) * 48" class="chart-label">{{ Math.round((weekMax * (5 - i)) / 4) }}</text>
+            </g>
+            <polyline :points="week.map((day, i) => `${42 + i * 80},${pointY(day.points)}`).join(' ')" class="chart-line" />
+            <g v-for="(day, i) in week" :key="day.date">
+              <circle :cx="42 + i * 80" :cy="pointY(day.points)" r="5" class="chart-dot" />
+              <text :x="42 + i * 80" y="244" text-anchor="middle" class="chart-label">{{ day.short }}</text>
+            </g>
+          </svg>
         </div>
       </section>
 
-      <section class="block" aria-labelledby="stats-title">
-        <h2 id="stats-title" class="section-title">Statistiques</h2>
-        <ul class="tiles">
-          <li v-for="tile in tiles" :key="tile.id" class="tile" :class="{ 'is-off': tile.off }">
-            <Icon :name="tile.icon" :size="34" />
-            <div>
-              <p class="tile-value">{{ tile.value }}</p>
-              <p class="tile-label">{{ tile.label }}</p>
-            </div>
-          </li>
-        </ul>
-        <p class="streak-line muted">{{ streakLine }}<template v-if="me.streak.best > 1"> Record : {{ plural(me.streak.best, 'jour') }}.</template></p>
-      </section>
-
-      <section class="block" aria-labelledby="week-title">
-        <div class="block-head">
-          <h2 id="week-title" class="section-title">Ta semaine</h2>
-          <p class="muted">{{ plural(weekTotal, 'point') }} en 7 jours</p>
+      <section aria-labelledby="achievements-title">
+        <div class="cl-panel-heading">
+          <h2 id="achievements-title">Succès</h2>
+          <button type="button" class="see-all" @click="allAchievements = true">Afficher tout</button>
         </div>
-        <div class="card card--pad chart">
-          <ol class="bars">
-            <li v-for="day in week" :key="day.date" class="bar" :class="{ 'is-today': day === week.at(-1) }">
-              <span class="bar-value">{{ day.points || '' }}</span>
-              <span class="bar-track"><span class="bar-fill" :style="{ height: `${day.height}%` }"></span></span>
-              <span class="bar-day" :title="formatDay(day.date)">{{ day.short }}</span>
-              <span class="visually-hidden">{{ formatDay(day.date) }} : {{ plural(day.points, 'point') }}</span>
-            </li>
-          </ol>
+        <div class="cl-achievement-row">
+          <button v-for="item in achievements" :key="item.id" type="button" :class="{ locked: item.level === 0 }" :style="{ background: item.color }" @click="detail = item">
+            <Icon :name="item.icon" :size="56" />
+            <strong>Niveau {{ item.level }}</strong>
+            <span class="visually-hidden">{{ item.title }}</span>
+          </button>
         </div>
       </section>
 
-      <section class="block" aria-labelledby="achievements-title">
-        <h2 id="achievements-title" class="section-title">Succès</h2>
-        <ul class="card achievements">
-          <li v-for="item in me.achievements" :key="item.id" class="achievement" :class="{ 'is-locked': item.level === 0 }">
-            <span class="achievement-badge">
-              <Icon :name="item.icon" :size="46" />
-              <span class="achievement-level">Niv. {{ item.level }}</span>
-            </span>
-            <div class="achievement-body">
-              <div class="achievement-head">
-                <p class="achievement-title">{{ item.title }}</p>
-                <p class="muted achievement-count">{{ item.level }} / {{ item.maxLevel }}</p>
-              </div>
-              <div class="meter" role="progressbar" :aria-valuenow="Math.min(item.value, item.goal)" aria-valuemin="0" :aria-valuemax="item.goal" :aria-label="item.title">
-                <div class="meter-fill" :data-empty="item.value === 0" :style="{ width: `${Math.min(100, (item.value / item.goal) * 100)}%` }"></div>
-              </div>
-              <p class="achievement-goal muted">
-                <template v-if="item.level === item.maxLevel">Niveau maximum : {{ item.value }} {{ item.unit }}.</template>
-                <template v-else>{{ item.value }} / {{ item.goal }} {{ item.unit }}</template>
-              </p>
-            </div>
-          </li>
-        </ul>
-      </section>
-
-      <section class="block" aria-labelledby="calendar-title">
-        <h2 id="calendar-title" class="section-title">Le carnet des missions du jour</h2>
-        <div class="card card--pad">
+      <section aria-labelledby="calendar-title">
+        <h2 id="calendar-title">Le carnet des missions du jour</h2>
+        <div class="cl-chart">
           <div class="calendar" role="list">
             <span v-for="[letter, name] in WEEKDAYS" :key="name" class="calendar-head" aria-hidden="true">{{ letter }}</span>
             <span v-for="day in calendar" :key="day.key" role="listitem" class="calendar-day" :class="day.blank ? 'is-blank' : `is-${day.status}`" :title="day.blank ? undefined : dayLabel(day)">
@@ -235,308 +239,190 @@ function dayLabel(day) {
         </div>
       </section>
 
-      <section class="block" aria-labelledby="ladder-title">
-        <h2 id="ladder-title" class="section-title">Les stades du Tux</h2>
-        <ol class="card card--pad ladder">
-          <li
-            v-for="stage in stages"
-            :key="stage.level"
-            class="rung"
-            :class="{ 'is-current': stage.level === me.stage.level, 'is-locked': stage.level > me.stage.level }"
-            :style="{ '--grow': stage.level }"
-          >
-            <img :src="stageImage(stage.level, { mini: true }).src" :alt="stage.level > me.stage.level ? 'Stade pas encore atteint' : stage.name" class="rung-tux" />
-            <span class="rung-name">{{ stage.level > me.stage.level ? '?' : stage.name }}</span>
-            <span class="rung-points">{{ stage.minPoints ? `${formatNumber(stage.minPoints)} pts` : 'au départ' }}</span>
+      <section aria-labelledby="ladder-title">
+        <h2 id="ladder-title">Les stades du Tux</h2>
+        <ol class="ladder">
+          <li v-for="stage in stages" :key="stage.level" :class="{ current: stage.level === me.stage.level, locked: stage.level > me.stage.level }" :style="{ '--grow': stage.level }">
+            <img :src="stageImage(stage.level, { mini: true }).src" :alt="stage.level > me.stage.level ? 'Stade pas encore atteint' : stage.name" />
+            <strong>{{ stage.level > me.stage.level ? '?' : stage.name }}</strong>
+            <small>{{ stage.minPoints ? `${formatNumber(stage.minPoints)} pts` : 'au départ' }}</small>
           </li>
         </ol>
       </section>
 
-      <nav class="mobile-links" aria-label="Réglages">
-        <RouterLink to="/preferences" class="mobile-link">Préférences</RouterLink>
-        <RouterLink to="/mon-compte" class="mobile-link">Mon compte</RouterLink>
-      </nav>
+      <RouterLink class="cl-mobile-preferences cl-button" to="/preferences">Préférences</RouterLink>
+      <RouterLink class="cl-mobile-preferences cl-button" to="/mon-compte">Mon compte</RouterLink>
+    </div>
+
+    <div v-if="detail" class="cl-modal-backdrop" @click.self="detail = null">
+      <section class="cl-dialog" role="dialog" aria-modal="true" :aria-label="detail.title">
+        <Icon :name="detail.icon" :size="80" class="dialog-icon" />
+        <h2>{{ detail.title }}</h2>
+        <p>{{ achievementText(detail) }}</p>
+        <button type="button" class="cl-button blue" @click="detail = null">Compris</button>
+      </section>
     </div>
   </AppShell>
 </template>
 
 <style scoped>
-.profile {
-  display: grid;
-  gap: 36px;
-}
-
-.block {
-  display: grid;
-  gap: 14px;
-}
-
-.block-head {
+.cl-profile-cover {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: center;
+  background: var(--toque-pale);
 }
 
-/* --- L'en-tête */
-
-.hero {
-  display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
-  align-items: center;
-  gap: 28px;
-  padding-bottom: 28px;
-  border-bottom: 2px solid var(--rule);
+.cl-profile-cover > img {
+  width: auto;
+  height: 100%;
+  padding-top: 16px;
+  object-fit: contain;
+  object-position: bottom;
 }
 
-.hero-art {
+.cl-profile-edit {
   display: grid;
   place-items: center;
-  aspect-ratio: 1;
-  background: var(--toque-pale);
-  border-radius: 50%;
 }
 
-.hero-tux {
-  width: 82%;
-  height: 82%;
-  object-fit: contain;
+.cl-profile-edit svg {
+  width: 24px;
+  height: 24px;
 }
 
-.hero-text {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-
-.hero-name {
-  font-size: clamp(1.6rem, 4vw, 2.1rem);
+.cl-profile-page > h1 {
   overflow-wrap: anywhere;
 }
 
-.hero-since {
-  color: var(--muted);
-}
-
-.hero-stage {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  font-size: 1.15rem;
-  color: var(--toque);
-}
-
-.stage-badge {
-  padding: 2px 10px;
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #fff;
-  background: var(--toque-bright);
-  border-radius: 999px;
-}
-
-.hero-motto {
+.motto {
+  margin-top: 8px;
   font-style: italic;
-  color: var(--muted);
 }
 
 .gauge {
   display: grid;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 8px;
+  margin: 20px 0 8px;
+  color: var(--muted);
 }
 
-.gauge-labels {
+.gauge strong {
+  color: var(--ink);
+}
+
+.gauge .cl-quest-progress > span {
+  background: var(--beak);
+}
+
+.profile-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px 12px;
-  font-size: 0.95rem;
+  gap: 12px;
+  margin: 20px 0 8px;
 }
 
-.hero-max {
+.cl-profile-stats > div.off :deep(.icon) {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.cl-profile-stats strong {
+  color: var(--ink);
+}
+
+.streak-line {
+  margin-top: 12px;
+  color: var(--muted);
+}
+
+.chart-grid {
+  stroke: var(--rule);
+  stroke-width: 2;
+}
+
+.chart-label {
+  fill: #9aa0b4;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--success-ink);
 }
 
-/* --- Les statistiques */
+.chart-line {
+  fill: none;
+  stroke: var(--toque-bright);
+  stroke-width: 3;
+}
 
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 12px;
+.chart-dot {
+  fill: var(--toque-bright);
+}
+
+.cl-chart > strong span {
+  color: var(--muted);
+}
+
+.cl-panel-heading h2 {
+  margin-bottom: 12px;
+}
+
+.cl-app .see-all {
   padding: 0;
-  list-style: none;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--toque-bright);
+  background: none;
+  border: 0;
 }
 
-.tile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 2px solid var(--rule);
-  border-radius: var(--radius);
+.cl-achievement-row {
+  flex-wrap: wrap;
 }
 
-.tile.is-off :deep(.icon) {
+.cl-app .cl-achievement-row button {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  flex: 1 1 72px;
+  padding: 10px 4px 8px;
+}
+
+.cl-achievement-row :deep(.icon) {
+  width: 56px;
+  height: 56px;
+}
+
+.cl-achievement-row button.locked,
+.cl-achievements-page article.locked > div {
   filter: grayscale(1);
   opacity: 0.6;
 }
 
-.tile-value {
-  font-size: 1.3rem;
-  font-weight: 900;
-  line-height: 1.1;
-}
-
-.tile-label {
-  font-size: 0.88rem;
-  color: var(--muted);
-}
-
-.streak-line {
-  font-size: 0.95rem;
-}
-
-/* --- La semaine */
-
-.bars {
+.cl-achievements-page > article > div {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 10px;
-  padding: 0;
-  list-style: none;
-}
-
-.bar {
-  display: grid;
-  grid-template-rows: auto 140px auto;
-  justify-items: center;
-  gap: 6px;
-}
-
-.bar-value {
-  min-height: 1.2em;
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: var(--toque);
-}
-
-.bar-track {
-  position: relative;
-  width: 100%;
-  max-width: 40px;
-  background: var(--wash);
-  border-radius: 10px;
-}
-
-.bar-fill {
-  position: absolute;
-  inset: auto 0 0 0;
-  min-height: 4px;
-  background: var(--toque-bright);
-  border-radius: 10px;
-  box-shadow: inset 0 -4px 0 var(--toque);
-}
-
-.bar.is-today .bar-fill {
-  background: var(--beak);
-  box-shadow: inset 0 -4px 0 var(--beak-deep);
-}
-
-.bar-day {
-  font-size: 0.8rem;
-  font-weight: 800;
-  text-transform: capitalize;
-  color: var(--muted);
-}
-
-.bar.is-today .bar-day {
-  color: var(--beak-ink);
-}
-
-/* --- Les succès */
-
-.achievements {
-  display: grid;
-  padding: 0;
-  list-style: none;
-}
-
-.achievement {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 20px;
-}
-
-.achievement + .achievement {
-  border-top: 2px solid var(--rule);
-}
-
-.achievement-badge {
-  position: relative;
-  display: grid;
-  flex-shrink: 0;
   place-items: center;
-  width: 76px;
-  height: 84px;
-  padding-bottom: 10px;
-  background: var(--beak-pale);
-  border: 2px solid #ffd0a3;
-  border-radius: var(--radius);
 }
 
-.achievement-level {
-  position: absolute;
-  bottom: 4px;
-  font-size: 0.72rem;
-  font-weight: 900;
-  color: var(--beak-ink);
+.cl-achievements-page h2 small {
+  margin-left: 8px;
+  font-size: 15px;
+  color: #9aa0b4;
 }
 
-.achievement.is-locked .achievement-badge {
-  background: var(--wash);
-  border-color: var(--rule);
+.cl-app .back {
+  padding: 0;
+  margin-top: 8px;
+  font-weight: 700;
+  color: var(--ink);
+  background: none;
+  border: 0;
 }
 
-.achievement.is-locked .achievement-badge :deep(.icon) {
-  filter: grayscale(1);
-  opacity: 0.5;
+.dialog-icon {
+  margin: 0 auto;
 }
 
-.achievement.is-locked .achievement-level {
-  color: var(--muted);
-}
-
-.achievement-body {
-  display: grid;
-  flex: 1;
-  gap: 8px;
-  min-width: 0;
-}
-
-.achievement-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.achievement-title {
-  font-size: 1.1rem;
-  font-weight: 800;
-}
-
-.achievement-count,
-.achievement-goal {
-  font-size: 0.9rem;
-}
-
-/* --- Le carnet */
-
+/* Le carnet des missions du jour. */
 .calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -546,18 +432,18 @@ function dayLabel(day) {
 }
 
 .calendar-head {
-  font-size: 0.8rem;
-  font-weight: 900;
   text-align: center;
-  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  color: #9aa0b4;
 }
 
 .calendar-day {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  font-size: 0.85rem;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 700;
   color: #9aa0b4;
   border-radius: 50%;
 }
@@ -574,19 +460,18 @@ function dayLabel(day) {
 
 .calendar-day.is-today {
   color: var(--toque-bright);
-  box-shadow: inset 0 0 0 2px var(--toque-bright);
+  border: 2px solid var(--toque-bright);
 }
 
 .legend {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 6px 18px;
-  margin-top: 14px;
+  gap: 18px;
+  margin-top: 16px;
   padding: 0;
-  font-size: 0.85rem;
-  color: var(--muted);
   list-style: none;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 .legend li {
@@ -607,161 +492,91 @@ function dayLabel(day) {
 
 .dot.is-missed {
   background: var(--alert-pale);
-  box-shadow: inset 0 0 0 1px var(--alert);
+  border: 1px solid var(--alert);
 }
 
 .dot.is-today {
-  box-shadow: inset 0 0 0 2px var(--toque-bright);
+  border: 2px solid var(--toque-bright);
 }
 
-/* --- L'échelle des stades */
-
+/* Les stades : le Tux grandit d'un stade à l'autre. */
 .ladder {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  align-items: end;
-  gap: 6px;
-  margin: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 20px 12px;
+  overflow-x: auto;
   list-style: none;
+  border: 2px solid var(--rule);
+  border-radius: 16px;
 }
 
-.rung {
+.ladder li {
   display: grid;
+  flex: 1 0 64px;
   justify-items: center;
   gap: 2px;
   padding: 6px 2px;
   text-align: center;
-  border-radius: var(--radius-small);
+  border-radius: 12px;
 }
 
-.rung-tux {
-  width: calc(50% + var(--grow) * 7%);
-  max-width: 100%;
-}
-
-.rung.is-locked .rung-tux {
-  filter: brightness(0) opacity(0.18);
-}
-
-.rung.is-current {
+.ladder li.current {
   background: var(--toque-pale);
-  box-shadow: inset 0 0 0 2px var(--toque-line);
 }
 
-.rung-name {
-  font-size: 0.78rem;
-  font-weight: 800;
-  line-height: 1.2;
+.ladder img {
+  width: calc(32px + var(--grow) * 5px);
+  height: auto;
 }
 
-.rung-points {
-  font-size: 0.7rem;
-  color: var(--muted);
+.ladder li.locked img {
+  filter: brightness(0) opacity(0.15);
 }
 
-/* --- Sans compte */
-
-.egg {
-  display: flex;
-  align-items: center;
-  gap: 24px;
+.ladder strong {
+  font-size: 13px;
 }
 
-.egg-image {
-  flex-shrink: 0;
-  width: 150px;
+.ladder small {
+  font-size: 12px;
+  color: #9aa0b4;
 }
 
-.egg-text {
-  display: grid;
-  gap: 12px;
+.cl-profile-page > .cl-mobile-preferences {
+  margin-top: 16px;
 }
 
-.egg-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-/* Le menu « Plus » n'existe pas sur téléphone : les réglages sont ici. */
-.mobile-links {
-  display: none;
-  gap: 12px;
-}
-
-.mobile-link {
-  display: none;
-  padding: 14px 18px;
-  font-size: 0.9rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border: 2px solid var(--rule);
-  border-radius: var(--radius);
-}
-
+/* Sur téléphone, tous les succès et tous les stades restent visibles, sans défilement caché. */
 @media (max-width: 699px) {
-  .mobile-links {
+  .cl-achievement-row {
     display: grid;
-  }
-
-  .mobile-link {
-    display: block;
-  }
-}
-
-@media (max-width: 600px) {
-  .hero {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    text-align: center;
-  }
-
-  .hero-art {
-    width: 170px;
-  }
-
-  .hero-stage {
-    justify-content: center;
-  }
-
-  .gauge {
-    width: 100%;
-    text-align: left;
-  }
-
-  .tiles {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .tile {
-    padding: 12px;
-  }
-
-  .bars {
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     gap: 6px;
+    padding: 12px 8px;
   }
 
-  .bar {
-    grid-template-rows: auto 110px auto;
+  .cl-app .cl-achievement-row button {
+    min-width: 0 !important;
+  }
+
+  .cl-achievement-row :deep(.icon) {
+    width: 40px;
+    height: 40px;
+  }
+
+  .cl-achievement-row strong {
+    font-size: 10px;
   }
 
   .ladder {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    row-gap: 14px;
+    flex-wrap: wrap;
+    row-gap: 12px;
   }
 
-  .egg {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .egg-actions {
-    justify-content: center;
-  }
-
-  .achievement {
-    padding: 14px;
-    gap: 12px;
+  .ladder li {
+    flex: 1 0 22%;
   }
 }
 </style>

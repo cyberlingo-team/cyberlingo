@@ -1,23 +1,26 @@
 <script setup>
-// La boutique : on y dépense ses sardines pour regonfler ses bouées ou mettre un glaçon de côté
-// (il protège la série un jour sans mission). Réservée aux joueurs qui ont un profil.
+// La boutique, à la manière de la copie de référence : on y dépense ses sardines pour regonfler
+// ses bouées ou mettre un glaçon de côté (il protège la série un jour sans mission). Réservée
+// aux joueurs qui ont un profil : un visiteur voit l'étal fermé et l'invitation à s'inscrire.
 import { computed, ref } from 'vue'
 import AppShell from '../components/app/AppShell.vue'
 import Icon from '../components/app/Icon.vue'
 import StatePanel from '../components/app/StatePanel.vue'
 import { buy, getShop } from '../api/index.js'
 import { useResource } from '../lib/resource.js'
-import { setInventory } from '../lib/inventory.js'
+import { inventory, loadInventory, setInventory } from '../lib/inventory.js'
 import { showFlash } from '../lib/flash.js'
 import { playSound } from '../lib/sound.js'
 import { formatNumber, plural, typo } from '../lib/format.js'
 
+loadInventory()
 const { data, error, reload } = useResource(getShop)
 
 // Sans profil, le serveur répond 401 : on invite à en créer un plutôt que d'afficher une erreur.
 const guest = computed(() => error.value?.code === 'not_authenticated')
 
 const ICONS = { bouees: 'bouee', glacon: 'glacon' }
+const SECTIONS = { bouees: 'Bouées', glacon: 'Pour ta série' }
 const buying = ref(null)
 
 async function purchase(item) {
@@ -40,222 +43,138 @@ async function purchase(item) {
 
 <template>
   <AppShell>
-    <div class="shop-page">
-      <header class="head">
-        <div class="head-text">
-          <h1 class="head-title">Boutique</h1>
-          <p class="muted">Tes sardines s’échangent ici contre de quoi tenir sur la banquise.</p>
-        </div>
-        <p v-if="data" class="balance">
-          <Icon name="sardine" :size="54" />
-          <span class="balance-count">{{ formatNumber(data.sardines) }}</span>
-          <span class="visually-hidden">sardines</span>
-        </p>
-      </header>
+    <div class="cl-shop-page">
+      <h1 class="visually-hidden">Boutique</h1>
 
-      <section v-if="guest" class="guest card card--pad">
-        <Icon name="etal" :size="120" />
-        <h2 class="guest-title">Crée un profil pour utiliser la boutique</h2>
-        <p class="muted">Avec un profil, tes leçons, tes coffres et tes quêtes te rapportent des sardines à dépenser ici.</p>
-        <div class="guest-actions">
-          <RouterLink class="button" :to="{ path: '/inscription', query: { redirect: '/boutique' } }">Créer un profil</RouterLink>
-          <RouterLink class="button button--ghost" :to="{ path: '/connexion', query: { redirect: '/boutique' } }">Se connecter</RouterLink>
+      <template v-if="guest">
+        <div class="cl-shop-signup">
+          <p v-if="inventory.data">Tu as gagné {{ plural(inventory.data.sardines, 'sardine') }} ! Crée un profil pour les dépenser dans la boutique !</p>
+          <p v-else>Crée un profil pour dépenser tes sardines dans la boutique !</p>
+          <RouterLink class="cl-button green" :to="{ path: '/inscription', query: { redirect: '/boutique' } }">Créer un profil</RouterLink>
+          <RouterLink class="cl-button signup-login" :to="{ path: '/connexion', query: { redirect: '/boutique' } }">Se connecter</RouterLink>
         </div>
-      </section>
+        <!-- L'étal fermé derrière l'invitation. -->
+        <div class="cl-shop-locked" aria-hidden="true">
+          <h2>Bouées</h2>
+          <article class="cl-shop-item">
+            <Icon name="bouee" :size="90" />
+            <div><span class="skeleton skeleton--title"></span><span class="skeleton"></span><span class="skeleton skeleton--short"></span></div>
+          </article>
+          <h2>Pour ta série</h2>
+          <article class="cl-shop-item">
+            <Icon name="glacon" :size="90" />
+            <div><span class="skeleton skeleton--title"></span><span class="skeleton"></span><span class="skeleton skeleton--short"></span></div>
+          </article>
+        </div>
+      </template>
+
       <StatePanel v-else-if="error && !data" state="error" :error="error" :retry="reload" />
       <StatePanel v-else-if="!data" label="On ouvre l’étal…" />
 
-      <section v-else aria-labelledby="items-title" class="block">
-        <h2 id="items-title" class="section-title">Bouées et glaçons</h2>
-        <ul class="items">
-          <li v-for="item in data.items" :key="item.id" class="item card">
-            <Icon :name="ICONS[item.id] || 'etal'" :size="72" />
-            <div class="item-text">
-              <p class="item-title">{{ typo(item.title) }}</p>
-              <p class="item-description">{{ typo(item.description) }}</p>
-              <p class="item-owned">
-                {{ item.id === 'glacon' ? 'En réserve' : 'Bouées' }} : <strong>{{ item.owned.count }} / {{ item.owned.max }}</strong>
-              </p>
+      <template v-else>
+        <template v-for="item in data.items" :key="item.id">
+          <h2>{{ SECTIONS[item.id] || typo(item.title) }}</h2>
+          <article class="cl-shop-item">
+            <Icon :name="ICONS[item.id] || 'etal'" :size="90" />
+            <div>
+              <h3>
+                {{ typo(item.title) }}
+                <small>{{ item.owned.count }}/{{ item.owned.max }} {{ item.id === 'glacon' ? 'en réserve' : '' }}</small>
+              </h3>
+              <p>{{ typo(item.description) }}</p>
               <p v-if="item.reason" class="item-reason">{{ typo(item.reason) }}</p>
             </div>
             <button
               type="button"
-              class="button item-buy"
+              class="cl-button"
               :disabled="!item.available || buying !== null"
-              :aria-label="`Acheter ${item.title} pour ${plural(item.price, 'sardine')}`"
+              :aria-label="item.available ? `Acheter ${item.title} pour ${plural(item.price, 'sardine')}` : undefined"
               @click="purchase(item)"
             >
-              <Icon name="sardine" :size="30" />
-              <span>{{ buying === item.id ? 'Achat…' : formatNumber(item.price) }}</span>
+              <template v-if="buying === item.id">Achat…</template>
+              <template v-else-if="!item.available && item.owned.count >= item.owned.max">Au max</template>
+              <template v-else>Obtenir pour <Icon name="sardine" :size="26" /> {{ formatNumber(item.price) }}</template>
             </button>
-          </li>
-        </ul>
-        <p class="block-note muted">Pour gagner des sardines : finis des leçons (sans faute, c’est mieux), ouvre les coffres du chemin et remplis tes quêtes.</p>
-      </section>
+          </article>
+        </template>
+        <p class="shop-note">Pour gagner des sardines : finis des leçons (sans faute, c’est mieux), ouvre les coffres du chemin et remplis tes quêtes.</p>
+      </template>
     </div>
   </AppShell>
 </template>
 
 <style scoped>
-.shop-page {
-  display: grid;
-  gap: 28px;
+.cl-shop-page > h2:first-of-type,
+.cl-shop-locked > h2:first-of-type {
+  border-top: 0;
+  padding-top: 8px;
 }
 
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+.cl-shop-item > :deep(.icon) {
+  width: 90px;
+  height: 90px;
 }
 
-.head-text {
-  display: grid;
-  gap: 4px;
-}
-
-.head-title {
-  font-size: 1.8rem;
-}
-
-.balance {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
-  background: var(--toque-pale);
-  border: 2px solid var(--toque-line);
-  border-radius: var(--radius);
-}
-
-.balance-count {
-  font-size: 1.6rem;
-  font-weight: 900;
-  color: var(--toque-bright);
-}
-
-.block {
-  display: grid;
-  gap: 14px;
-}
-
-.items {
-  display: grid;
-  gap: 14px;
-  padding: 0;
-  list-style: none;
-}
-
-.item {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 20px;
-}
-
-.item-text {
-  display: grid;
-  gap: 4px;
-}
-
-.item-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-}
-
-.item-description {
-  font-size: 0.95rem;
-  color: var(--muted);
-}
-
-.item-owned {
-  font-size: 0.9rem;
+.cl-shop-item > .cl-button {
+  gap: 6px;
 }
 
 .item-reason {
-  font-size: 0.88rem;
+  margin-top: 8px;
+  font-size: 15px !important;
   font-weight: 700;
-  color: var(--beak-ink);
+  color: var(--beak-ink) !important;
 }
 
-.item-buy {
-  --face: var(--paper);
-  --edge: var(--rule-strong);
-  --text: var(--toque-bright);
-  min-width: 128px;
-  border: 2px solid var(--rule-strong);
-  font-size: 1.05rem;
+.shop-note {
+  color: var(--muted);
+  border-top: 2px solid var(--rule);
+  padding-top: 24px;
 }
 
-.item-buy:hover {
-  filter: none;
-  background: var(--wash);
-}
-
-.item-buy:disabled {
-  --face: #eef0f5;
-  --edge: #d3d7e2;
-  --text: #9aa0b4;
-  border-color: #d3d7e2;
-}
-
-.item-buy:disabled :deep(.icon) {
-  filter: grayscale(1) opacity(0.6);
-}
-
-.block-note {
-  font-size: 0.92rem;
-}
-
-.guest {
+.cl-shop-signup {
   display: grid;
   justify-items: center;
-  gap: 10px;
-  text-align: center;
-}
-
-.guest-title {
-  font-size: 1.35rem;
-}
-
-.guest .muted {
-  max-width: 44ch;
-}
-
-.guest-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
   gap: 12px;
-  margin-top: 6px;
 }
 
-@media (max-width: 560px) {
-  .head {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+.cl-shop-signup p {
+  margin-bottom: 18px !important;
+}
 
-  .head-title {
-    font-size: 1.5rem;
-  }
+.cl-shop-locked {
+  padding-top: 280px;
+}
 
-  .item {
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 12px 14px;
-    padding: 16px;
-  }
+.signup-login {
+  min-width: 344px;
+}
 
-  .item :deep(.icon:first-child) {
-    width: 56px !important;
-    height: 56px !important;
-  }
+.skeleton {
+  display: block;
+  height: 14px;
+  margin-bottom: 12px;
+  background: var(--rule);
+  border-radius: 8px;
+}
 
-  .item-buy {
-    grid-column: 1 / -1;
+.skeleton--title {
+  width: 40%;
+  height: 20px;
+}
+
+.skeleton--short {
+  width: 60%;
+}
+
+@media (max-width: 699px) {
+  .signup-login {
+    min-width: 0;
     width: 100%;
+  }
+
+  .cl-shop-locked {
+    padding-top: 300px;
   }
 }
 </style>

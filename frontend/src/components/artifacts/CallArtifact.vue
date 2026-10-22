@@ -30,7 +30,8 @@ const callerName = computed(() => stripZones(props.artifact.caller))
 <style scoped>
 .call {
   max-width: 520px;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
   border-radius: 18px;
   overflow: hidden;
   background: #fff;

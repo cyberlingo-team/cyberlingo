@@ -5,8 +5,8 @@ dont les règles l'emportent sur tout le reste.
 
 ## Passation actuelle
 
-Lire [PASSATION_CLAUDE.md](PASSATION_CLAUDE.md) : la copie de référence a été remplacée par
-l'identité et le contenu de CyberLingo. La question au micro a été retirée à la demande
+Lire [PASSATION_CLAUDE.md](PASSATION_CLAUDE.md) : l'interface reprend le code de la copie de
+référence, passé à l'identité et au contenu de CyberLingo. La question au micro a été retirée à la demande
 d'Alexis ; ne pas la réintroduire.
 
 ## Le projet
@@ -78,8 +78,8 @@ N'arrête jamais un processus que tu n'as pas lancé.
 
 ## La mission
 
-Étape 1 (copie de référence, faite par Codex) et étape 2 (remplacement par l'identité et le
-contenu de CyberLingo) sont faites. La suite est dans PASSATION_CLAUDE.md.
+Étape 1 (copie de référence, faite par Codex) et étape 2 (reprise de son code avec l'identité
+et le contenu de CyberLingo) sont faites. La suite est dans PASSATION_CLAUDE.md.
 
 ## Git
 

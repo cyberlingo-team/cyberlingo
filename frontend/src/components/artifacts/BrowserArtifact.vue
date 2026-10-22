@@ -39,7 +39,8 @@ const insecure = computed(() => stripZones(props.artifact.url).startsWith('http:
 .browser {
   max-width: 560px;
   background: #fff;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
   border-radius: 10px;
   overflow: hidden;
 }

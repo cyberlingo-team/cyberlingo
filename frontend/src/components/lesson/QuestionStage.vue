@@ -1,11 +1,11 @@
 <script setup>
-// Une question de leçon : la consigne, le personnage invité qui parle, l'objet à examiner et
-// les réponses possibles. Le joueur choisit, puis valide en bas de l'écran (LessonFooter).
+// Une question de leçon, sur le gabarit de l'exercice de la copie de référence : la consigne,
+// le personnage invité qui parle dans sa bulle, l'objet à examiner et les réponses numérotées.
 //   trap       « Piège » ou « Fiable »
 //   truefalse  « Vrai » ou « Faux »
 //   choice     une proposition parmi trois ou quatre
 //   clues      toucher les indices dans l'objet
-// Après la réponse, le même écran montre la correction : la bonne tuile, et les annotations
+// Après la réponse, le même écran montre la correction : la bonne réponse, et les annotations
 // numérotées du prof sur l'objet.
 import { computed, nextTick, ref, watch } from 'vue'
 import ArtifactView from '../artifacts/ArtifactView.vue'
@@ -20,6 +20,8 @@ const props = defineProps({
   choice: { default: null },
   revealed: { type: Object, default: null },
   locked: { type: Boolean, default: false },
+  // La question revient en fin de leçon parce qu'elle avait été ratée.
+  review: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:choice'])
@@ -35,14 +37,8 @@ const BINARY = {
   ],
 }
 
-const PROMPTS = {
-  trap: 'Piège ou fiable ?',
-  truefalse: 'Vrai ou faux ?',
-  choice: 'Choisis la bonne réponse',
-  clues: 'Touche les indices',
-}
 
-const tiles = computed(() => {
+const options = computed(() => {
   const { kind, options } = props.question
   if (BINARY[kind]) return BINARY[kind]
   if (kind === 'choice') return options.map((option) => ({ value: option.id, label: typo(option.text) }))
@@ -52,17 +48,20 @@ const tiles = computed(() => {
 const zones = computed(() => (Array.isArray(props.choice) ? props.choice : []))
 const answered = computed(() => Boolean(props.revealed))
 
+// La bulle : la réplique du personnage, ou à défaut la scène.
+const speech = computed(() => typo(props.question.line ? `« ${props.question.line} »` : props.question.scene || ''))
+
 function pick(value) {
   if (props.locked || answered.value) return
   emit('update:choice', value)
 }
 
-function tileState(value) {
+function optionState(value) {
   const r = props.revealed
-  if (!r) return props.choice === value ? 'is-chosen' : ''
-  if (r.solution === value) return 'is-right'
-  if (r.answer === value) return 'is-wrong'
-  return 'is-dimmed'
+  if (!r) return props.choice === value ? 'selected' : ''
+  if (r.solution === value) return 'right'
+  if (r.answer === value) return 'wrong'
+  return 'dimmed'
 }
 
 // L'ordre de lecture des zones, tel qu'il s'affiche, pour numéroter les annotations du prof.
@@ -107,30 +106,27 @@ function onFull() {
 
 const remaining = computed(() => (props.question.pick || 0) - zones.value.length)
 
-// Les touches 1 à 4 choisissent une tuile.
+// Les touches 1 à 4 choisissent une réponse.
 function onKey(event) {
   if (answered.value || props.locked || event.target.closest?.('input, textarea')) return
   const index = Number(event.key) - 1
-  if (Number.isInteger(index) && tiles.value[index]) pick(tiles.value[index].value)
+  if (Number.isInteger(index) && options.value[index]) pick(options.value[index].value)
 }
 
 defineExpose({ onKey })
 </script>
 
 <template>
-  <div class="stage">
-    <p class="kicker stage-kicker">{{ PROMPTS[question.kind] }}</p>
-    <h1 class="stage-prompt">{{ typo(question.prompt) }}</h1>
+  <section class="cl-exercise" :class="`cl-exercise--${question.kind}`">
+    <p v-if="review" class="cl-new-word"><span aria-hidden="true">✦</span> Corrigeons tes erreurs</p>
+    <h1>{{ typo(question.prompt) }}</h1>
 
-    <div class="stage-talk">
-      <img :src="gangImage(guest.id).src" :alt="guest.look || guest.name" class="stage-guest" />
-      <div class="stage-bubble">
-        <p class="stage-scene">{{ typo(question.scene) }}</p>
-        <p v-if="question.line" class="stage-line"><span class="visually-hidden">{{ guest.name }} :</span>« {{ typo(question.line) }} »</p>
-      </div>
+    <div v-if="speech" class="cl-word-prompt">
+      <img :src="gangImage(guest.id).src" :alt="guest.look || guest.name" class="cl-guest" />
+      <p class="cl-speech"><span class="visually-hidden">{{ guest.name }} : </span>{{ speech }}</p>
     </div>
 
-    <div v-if="question.artifact" class="stage-object">
+    <div v-if="question.artifact" class="cl-object">
       <ArtifactView
         ref="artifactView"
         :selected="zones"
@@ -146,282 +142,206 @@ defineExpose({ onKey })
       />
     </div>
 
-    <p v-if="question.kind === 'clues' && !revealed" class="stage-count" aria-live="polite">
-      <template v-if="full">Tu as déjà choisi {{ question.pick }} indices : touche-en un pour le retirer.</template>
-      <template v-else-if="remaining > 0">{{ zones.length }} sur {{ question.pick }} : encore {{ remaining }} à toucher dans le document.</template>
-      <template v-else>Tes {{ question.pick }} indices sont choisis. Valide !</template>
+    <p v-if="question.kind === 'clues' && !revealed" class="cl-count" aria-live="polite">
+      <template v-if="full">Tu as déjà choisi {{ question.pick }} indices : touche-en un pour le retirer.</template>
+      <template v-else-if="remaining > 0">{{ zones.length }} sur {{ question.pick }} : encore {{ remaining }} à toucher dans le document.</template>
+      <template v-else>Tes {{ question.pick }} indices sont choisis. Valide !</template>
     </p>
 
-    <div v-if="tiles.length" class="tiles" :class="`tiles--${question.kind}`" role="radiogroup" :aria-label="typo(question.prompt)">
+    <div v-if="options.length" class="cl-word-options" :class="{ 'cl-word-options--two': options.length === 2 }" role="radiogroup" :aria-label="typo(question.prompt)">
       <button
-        v-for="(tile, index) in tiles"
-        :key="String(tile.value)"
+        v-for="(option, index) in options"
+        :key="String(option.value)"
         type="button"
         role="radio"
-        class="tile"
-        :class="tileState(tile.value)"
-        :aria-checked="(revealed ? revealed.answer : choice) === tile.value"
+        class="cl-option"
+        :class="optionState(option.value)"
+        :aria-checked="(revealed ? revealed.answer : choice) === option.value"
         :disabled="locked || answered"
-        @click="pick(tile.value)"
+        @click="pick(option.value)"
       >
-        <span class="tile-key" aria-hidden="true">{{ index + 1 }}</span>
-        <span class="tile-label">{{ tile.label }}</span>
-        <span v-if="tile.hint" class="tile-hint">{{ tile.hint }}</span>
+        <kbd>{{ index + 1 }}</kbd>
+        <span class="cl-option-text">
+          <strong v-if="option.hint">{{ option.label }}</strong>
+          <template v-else>{{ option.label }}</template>
+          <small v-if="option.hint">{{ option.hint }}</small>
+        </span>
       </button>
     </div>
 
-    <ol v-if="notes.length" class="notes" aria-label="Les annotations du prof">
-      <li v-for="note in notes" :key="note.zone" class="note" :class="{ 'note--good': note.good }">
-        <span class="note-number" aria-hidden="true">{{ note.number }}</span>
-        <span>{{ typo(note.text) }}</span>
+    <ol v-if="notes.length" class="cl-notes" aria-label="Les annotations du prof">
+      <li v-for="note in notes" :key="note.zone" :class="{ good: note.good }">
+        <span aria-hidden="true">{{ note.number }}</span>
+        {{ typo(note.text) }}
       </li>
     </ol>
-  </div>
+  </section>
 </template>
 
 <style scoped>
-.stage {
-  display: grid;
-  gap: 18px;
+.cl-exercise {
+  margin-top: 8px;
 }
 
-.stage-kicker {
+.cl-new-word {
   color: var(--beak-ink);
 }
 
-.stage-prompt {
-  margin-top: -10px;
-  font-size: clamp(1.35rem, 3.6vw, 1.75rem);
+.cl-new-word span {
+  background: var(--beak);
 }
 
-/* Le personnage et sa bulle. */
-.stage-talk {
-  display: flex;
-  align-items: flex-end;
-  gap: 14px;
+.cl-word-prompt {
+  height: auto;
+  min-height: 112px;
+  margin-top: 20px;
 }
 
-.stage-guest {
+.cl-guest {
   flex-shrink: 0;
   width: 96px;
-  height: 104px;
+  height: 112px;
   object-fit: contain;
   object-position: bottom;
 }
 
-.stage-bubble {
-  position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-  padding: 12px 16px;
-  border: 2px solid var(--rule);
-  border-radius: var(--radius);
+.cl-speech {
+  font-size: 18px;
 }
 
-.stage-bubble::before {
-  content: '';
-  position: absolute;
-  left: -9px;
-  bottom: 22px;
-  width: 14px;
-  height: 14px;
-  background: var(--paper);
-  border-left: 2px solid var(--rule);
-  border-bottom: 2px solid var(--rule);
-  transform: rotate(45deg);
-}
-
-.stage-scene {
-  font-size: 0.92rem;
-  color: var(--muted);
-}
-
-.stage-line {
-  font-weight: 700;
-}
-
-.stage-object {
+.cl-object {
   display: grid;
   justify-items: center;
+  margin-top: 24px;
 }
 
-.stage-object :deep(.artifact) {
+.cl-object :deep(.artifact) {
   width: 100%;
   max-width: 460px;
 }
 
-.stage-count {
+.cl-count {
+  margin-top: 16px;
   text-align: center;
   font-weight: 700;
-  color: var(--toque);
+  color: var(--toque-bright);
 }
 
-/* Les tuiles de réponse : blanches à bord gris, bleues une fois choisies. */
-.tiles {
-  display: grid;
-  gap: 10px;
-}
-
-.tiles--trap,
-.tiles--truefalse {
+.cl-word-options--two {
   grid-template-columns: 1fr 1fr;
 }
 
-.tile {
-  --edge: var(--rule);
-  position: relative;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 2px;
+.cl-app .cl-word-options .cl-option {
   min-height: 64px;
-  padding: 12px 16px 12px 48px;
-  font-weight: 700;
-  text-align: center;
-  background: var(--paper);
-  border: 2px solid var(--edge);
-  border-radius: var(--radius-small);
-  box-shadow: 0 3px 0 var(--edge);
-  transition:
-    transform 0.08s,
-    box-shadow 0.08s;
 }
 
-.tiles--choice .tile {
-  justify-items: start;
-  text-align: left;
-}
-
-.tiles--trap .tile,
-.tiles--truefalse .tile {
-  min-height: 88px;
-  padding-left: 16px;
-}
-
-.tile:not(:disabled):hover {
-  background: var(--wash);
-}
-
-.tile:not(:disabled):active {
-  transform: translateY(3px);
-  box-shadow: 0 0 0 var(--edge);
-}
-
-.tile-key {
-  position: absolute;
-  left: 12px;
-  top: 50%;
+.cl-option-text {
   display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  font-size: 0.8rem;
-  color: #9aa0b4;
-  border: 2px solid var(--rule);
-  border-radius: 8px;
-  transform: translateY(-50%);
 }
 
-.tiles--trap .tile-key,
-.tiles--truefalse .tile-key {
-  top: 10px;
-  transform: none;
+.cl-option-text strong {
+  font-size: 20px;
 }
 
-.tile-label {
-  font-size: 1.05rem;
+.cl-option-text small {
+  font-size: 15px;
 }
 
-.tiles--trap .tile-label,
-.tiles--truefalse .tile-label {
-  font-size: 1.35rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.cl-app .cl-option:disabled {
+  cursor: default;
 }
 
-.tile-hint {
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.tile.is-chosen {
-  --edge: var(--toque-line);
-  color: var(--toque-bright);
-  background: var(--toque-pale);
-}
-
-.tile.is-chosen .tile-key {
+.cl-app .cl-option.selected kbd {
   color: var(--toque-bright);
   border-color: var(--toque-line);
 }
 
-.tile.is-right {
-  --edge: #8fd6b2;
-  color: var(--success-ink);
+.cl-app .cl-option.right {
   background: var(--success-pale);
+  border-color: var(--success);
+  color: var(--success-deep);
 }
 
-.tile.is-wrong {
-  --edge: #f2aaa4;
-  color: var(--alert-ink);
+.cl-app .cl-option.wrong {
   background: var(--alert-pale);
+  border-color: var(--alert);
+  color: var(--alert-deep);
 }
 
-.tile.is-dimmed {
-  opacity: 0.5;
+.cl-app .cl-option.dimmed {
+  opacity: 0.45;
 }
 
-.tile:disabled {
-  cursor: default;
+.cl-app .cl-option.selected small,
+.cl-app .cl-option.right small,
+.cl-app .cl-option.wrong small {
+  color: inherit;
 }
 
 /* Les annotations du prof, numérotées comme sur l'objet. */
-.notes {
+.cl-notes {
   display: grid;
   gap: 8px;
+  margin-top: 20px;
   padding: 0;
   list-style: none;
 }
 
-.note {
+.cl-notes li {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  font-size: 0.95rem;
 }
 
-.note-number {
+.cl-notes span {
   display: grid;
   flex-shrink: 0;
   place-items: center;
   width: 24px;
   height: 24px;
-  font-size: 0.8rem;
+  font-size: 13px;
   font-weight: 900;
   color: #fff;
   background: var(--alert);
   border-radius: 50%;
 }
 
-.note--good .note-number {
+.cl-notes .good span {
   background: var(--toque-bright);
 }
 
-@media (max-width: 520px) {
-  .stage-guest {
-    width: 72px;
-    height: 80px;
+@media (max-width: 699px) {
+  .cl-exercise {
+    margin-top: 8px;
   }
 
-  .tile-key {
+  .cl-word-prompt {
+    min-height: 0;
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .cl-guest {
+    width: 64px;
+    height: 76px;
+  }
+
+  .cl-speech {
+    font-size: 16px;
+    line-height: 22px;
+    padding: 10px 14px;
+  }
+
+  .cl-object {
+    margin-top: 16px;
+  }
+
+  .cl-app .cl-word-options .cl-option {
+    min-height: 56px;
+  }
+
+  .cl-word-options kbd {
     display: none;
-  }
-
-  .tile {
-    padding-left: 16px;
   }
 }
 </style>

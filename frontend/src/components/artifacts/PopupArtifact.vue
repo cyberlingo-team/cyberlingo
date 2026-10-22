@@ -28,7 +28,8 @@ const buttons = computed(() => [].concat(props.artifact.buttons || []))
 .popup {
   max-width: 500px;
   background: #fff;
-  border: 2px solid var(--ink);
+  border: 2px solid var(--rule-strong);
+  border-bottom-width: 4px;
 }
 
 .popup-bar {

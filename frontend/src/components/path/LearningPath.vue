@@ -1,6 +1,7 @@
 <script setup>
-// Le chemin d'apprentissage : les thèmes les uns sous les autres, et dans chaque thème ses
-// étapes en zigzag (leçons, coffre, bilan). Toucher une étape ouvre une bulle qui dit quoi faire.
+// Le chemin d'apprentissage, repris de la copie de référence : en haut, l'en-tête du thème qu'on
+// regarde (avec son guide), puis chaque thème et ses étapes en zigzag (leçons, coffre, bilan),
+// séparés par le titre du thème suivant. Toucher une étape ouvre une bulle qui dit quoi faire.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '../app/Icon.vue'
@@ -20,36 +21,41 @@ const props = defineProps({
 const emit = defineEmits(['changed'])
 const router = useRouter()
 
-// Le décalage horizontal de chaque étape, en pixels : le chemin serpente.
-const OFFSETS = [0, -48, -76, -48, 0, 48, 76, 48]
+// Le décalage horizontal de chaque étape, en pixels : le chemin serpente, dans un sens pour les
+// thèmes pairs et dans l'autre pour les impairs (l'illustration prend la place libre).
+const OFFSETS = [0, -45, -70, -45, 0, 45, 70, 45]
 const offset = (unitIndex, index) => OFFSETS[index % OFFSETS.length] * (unitIndex % 2 ? -1 : 1)
 
-const open = ref(null)
+const active = ref(null)
 const opening = ref(false)
 const root = ref(null)
+
+// Le thème affiché dans l'en-tête : celui qu'on est en train de regarder.
+const seen = ref(props.path.current?.unit || props.path.units[0].id)
+const header = computed(() => props.path.units.find((unit) => unit.id === seen.value) || props.path.units[0])
 
 const lessonCount = (unit) => unit.nodes.filter((node) => node.type === 'lesson').length
 const lessonNumber = (unit, node) => unit.nodes.filter((n) => n.type === 'lesson').indexOf(node) + 1
 
 function toggle(node) {
-  open.value = open.value === node.id ? null : node.id
+  active.value = active.value === node.id ? null : node.id
 }
 
 function popover(unit, node) {
   if (node.type === 'chest') {
-    if (node.status === 'current') return { title: 'Un coffre !', text: 'Il contient des sardines pour la boutique.', action: 'Ouvrir le coffre' }
+    if (node.status === 'current') return { title: 'Un coffre de récompenses', text: 'Il contient des sardines pour la boutique.', action: 'Ouvrir le coffre' }
     if (node.status === 'done') return { title: 'Coffre ouvert', text: 'Tu as déjà récupéré ses sardines.' }
-    return { title: 'Coffre fermé', text: 'Finis les leçons d’avant pour l’ouvrir.' }
+    return { title: 'Un coffre de récompenses', text: 'Termine les étapes précédentes pour l’ouvrir.' }
   }
   const review = node.type === 'review'
   const title = typo(node.title)
-  const where = review ? `Une question de chaque leçon du thème` : `Leçon ${lessonNumber(unit, node)} sur ${lessonCount(unit)}${node.guest ? ` · avec ${node.guest.name}` : ''}`
-  if (node.status === 'current') return { title, text: where, action: review ? 'Passer le bilan' : 'Commencer', gain: `Jusqu’à +${plural(node.maxPoints, 'point')}` }
+  const where = review ? 'Le bilan du thème : une question de chaque leçon.' : `Leçon ${lessonNumber(unit, node)} sur ${lessonCount(unit)}${node.guest ? ` · avec ${node.guest.name}` : ''}`
+  if (node.status === 'current') return { title, text: where, action: `${review ? 'Passer le bilan' : 'Commencer'} +${plural(node.maxPoints, 'point')}` }
   if (node.status === 'done') {
     const score = node.score ? `${node.score.correct}/${node.score.total} bonnes réponses. ` : ''
     return { title, text: `${score}Rejouer ne rapporte pas de points.`, action: 'Rejouer' }
   }
-  return { title, text: 'Finis les étapes d’avant pour débloquer celle-ci.' }
+  return { title, text: 'Termine les étapes précédentes pour débloquer celle-ci.' }
 }
 
 async function act(node) {
@@ -63,7 +69,7 @@ async function act(node) {
     setInventory(result.inventory)
     playSound('grow')
     showFlash(`Coffre ouvert : +${plural(result.sardines, 'sardine')} !`)
-    open.value = null
+    active.value = null
     emit('changed')
   } catch (error) {
     showFlash(error.message)
@@ -73,19 +79,28 @@ async function act(node) {
 }
 
 function onDocumentClick(event) {
-  if (open.value && !event.target.closest?.('.step')) open.value = null
+  if (active.value && !event.target.closest?.('.cl-path-node-wrap')) active.value = null
 }
 
 function onKey(event) {
-  if (event.key === 'Escape') open.value = null
+  if (event.key === 'Escape') active.value = null
 }
 
+let observer
 onMounted(() => {
   document.addEventListener('click', onDocumentClick)
   document.addEventListener('keydown', onKey)
+  // L'en-tête suit le thème qui occupe le haut de l'écran.
+  observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) if (entry.isIntersecting) seen.value = entry.target.dataset.unit
+    },
+    { rootMargin: '-130px 0px -80% 0px' },
+  )
+  root.value?.querySelectorAll('.cl-path-unit').forEach((section) => observer.observe(section))
   // On arrive sur l'étape à jouer, sauf tout en haut du chemin.
   nextTick(() => {
-    const current = root.value?.querySelector('.step.is-current')
+    const current = root.value?.querySelector('.cl-path-node.current')
     if (!current || props.path.current?.id === props.path.units[0]?.nodes[0]?.id) return
     current.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'center' })
   })
@@ -94,399 +109,225 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocumentClick)
   document.removeEventListener('keydown', onKey)
+  observer?.disconnect()
 })
 
 const finished = computed(() => !props.path.current)
 </script>
 
 <template>
-  <div ref="root" class="path">
+  <div ref="root" class="cl-path">
+    <header class="cl-unit-header" :style="unitStyle(header.color)">
+      <div>
+        <p class="cl-unit-kicker">Thème {{ header.number }}</p>
+        <h2>{{ typo(header.title) }}</h2>
+      </div>
+      <RouterLink class="cl-button" :to="`/apprendre/${header.id}/guide`">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.2 5 7.6 4.5 4 4.7v13.6c3.6-.2 6.2.3 8 1.8 1.8-1.5 4.4-2 8-1.8V4.7c-3.6-.2-6.2.3-8 1.8zM12 6.5v13.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" /></svg>
+        <span>Guide</span>
+      </RouterLink>
+    </header>
+
     <section
-      v-for="(unit, unitIndex) in path.units"
+      v-for="(unit, u) in path.units"
       :key="unit.id"
-      class="unit"
-      :class="[`unit--${unit.status}`, unitIndex % 2 ? 'unit--odd' : 'unit--even']"
+      class="cl-path-unit"
+      :class="{ first: u === 0, locked: unit.status === 'locked' }"
       :style="unitStyle(unit.color)"
-      :aria-labelledby="`unit-${unit.id}`"
+      :data-unit="unit.id"
+      :aria-label="`Thème ${unit.number} : ${typo(unit.title)}`"
     >
-      <header class="unit-band">
-        <div class="unit-text">
-          <p class="kicker unit-kicker">Thème {{ unit.number }}</p>
-          <h2 :id="`unit-${unit.id}`" class="unit-title">{{ typo(unit.title) }}</h2>
-          <p class="unit-description">{{ typo(unit.description) }}</p>
-        </div>
-        <RouterLink :to="`/apprendre/${unit.id}/guide`" class="unit-guide">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.2 5 7.6 4.5 4 4.7v13.6c3.6-.2 6.2.3 8 1.8 1.8-1.5 4.4-2 8-1.8V4.7c-3.6-.2-6.2.3-8 1.8zM12 6.5v13.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" /></svg>
-          <span>Guide</span>
-        </RouterLink>
-      </header>
+      <h2 v-if="u" class="cl-path-divider"><span>{{ typo(unit.title) }}</span></h2>
+      <img :src="villainImage(unit.villain).src" alt="" class="cl-path-illustration" :class="{ left: u % 2 }" />
 
-      <ol class="steps">
-        <li
-          v-for="(node, index) in unit.nodes"
+      <div class="cl-path-nodes">
+        <div
+          v-for="(node, i) in unit.nodes"
           :key="node.id"
-          class="step"
-          :class="[`step--${node.type}`, `is-${node.status}`, { 'is-open': open === node.id }]"
-          :style="{ '--x': `${offset(unitIndex, index)}px` }"
+          class="cl-path-node-wrap"
+          :class="{ chest: node.type === 'chest', 'has-label': node.status === 'current' && i > 0 }"
+          :style="{ left: `${offset(u, i)}px` }"
         >
-          <span v-if="node.status === 'current' && open !== node.id" class="step-start" aria-hidden="true">{{ node.type === 'chest' ? 'Ouvrir' : 'Commencer' }}</span>
-
-          <button
-            type="button"
-            class="step-button"
-            :aria-expanded="open === node.id"
-            :aria-label="`${typo(node.title)} : ${node.status === 'done' ? 'fait' : node.status === 'current' ? 'à faire maintenant' : 'verrouillé'}`"
-            @click="toggle(node)"
-          >
-            <template v-if="node.type === 'chest'">
-              <Icon :name="node.status === 'done' ? 'coffre-ouvert' : 'coffre'" :size="78" />
-            </template>
-            <template v-else-if="node.type === 'review'">
-              <Icon name="trophee" :size="46" />
-            </template>
-            <svg v-else-if="node.status === 'done'" viewBox="0 0 24 24" class="step-glyph" aria-hidden="true">
-              <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <svg v-else-if="node.status === 'current'" viewBox="0 0 24 24" class="step-glyph" aria-hidden="true">
-              <path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor" />
-            </svg>
-            <svg v-else viewBox="0 0 24 24" class="step-glyph" aria-hidden="true">
-              <path d="M7 10V8a5 5 0 0 1 10 0v2h.5c.8 0 1.5.7 1.5 1.5v7c0 .8-.7 1.5-1.5 1.5h-11C5.7 20 5 19.3 5 18.5v-7C5 10.7 5.7 10 6.5 10zm2.5 0h5V8a2.5 2.5 0 0 0-5 0z" fill="currentColor" />
-            </svg>
-          </button>
-
-          <div v-if="open === node.id" class="pop" :class="`pop--${node.status}`" role="dialog" :aria-label="popover(unit, node).title">
-            <p class="pop-title">{{ popover(unit, node).title }}</p>
-            <p class="pop-text">{{ popover(unit, node).text }}</p>
-            <button v-if="popover(unit, node).action" type="button" class="button button--wide pop-action" :disabled="opening" @click="act(node)">
-              {{ opening ? 'Ouverture…' : popover(unit, node).action }}
-              <span v-if="popover(unit, node).gain" class="pop-gain">{{ popover(unit, node).gain }}</span>
+          <div v-if="node.status === 'current' && active !== node.id" class="cl-start-label" aria-hidden="true">
+            {{ node.type === 'chest' ? 'Ouvrir' : 'Commencer' }}
+          </div>
+          <div class="cl-node-ring" :class="{ visible: node.status === 'current' && node.type !== 'chest' }">
+            <button
+              type="button"
+              class="cl-path-node"
+              :class="{
+                available: node.status !== 'locked',
+                current: node.status === 'current',
+                chest: node.type === 'chest',
+                review: node.type === 'review',
+              }"
+              :aria-label="`${typo(node.title)} : ${node.status === 'done' ? 'fait' : node.status === 'current' ? 'à faire maintenant' : 'verrouillé'}`"
+              :aria-expanded="active === node.id"
+              @click="toggle(node)"
+            >
+              <Icon v-if="node.type === 'chest'" :name="node.status === 'done' ? 'coffre-ouvert' : 'coffre'" :size="78" />
+              <Icon v-else-if="node.type === 'review'" name="trophee" :size="40" />
+              <svg v-else-if="node.status === 'done'" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+              </svg>
             </button>
           </div>
-        </li>
-      </ol>
-
-      <img :src="villainImage(unit.villain).src" alt="" class="unit-villain" :class="{ 'is-dim': unit.status === 'locked' }" />
+          <section v-if="active === node.id" class="cl-path-popover" :class="{ locked: node.status === 'locked' }" role="dialog" :aria-label="popover(unit, node).title">
+            <h3>{{ popover(unit, node).title }}</h3>
+            <p>{{ popover(unit, node).text }}</p>
+            <button v-if="popover(unit, node).action" type="button" class="cl-button" :disabled="opening" @click="act(node)">
+              {{ opening ? 'Ouverture…' : popover(unit, node).action }}
+            </button>
+            <button v-else type="button" class="cl-button" @click="active = null">Compris</button>
+          </section>
+        </div>
+      </div>
     </section>
 
-    <section v-if="finished" class="finished card card--pad">
-      <Icon name="trophee" :size="72" />
-      <h2 class="section-title">Parcours terminé !</h2>
-      <p class="muted">Tu as fini les {{ path.lessons.total }} leçons. La mission du jour continue chaque matin, et tu peux rejouer n’importe quelle étape.</p>
+    <section v-if="finished" class="cl-next-chapter">
+      <small>Bravo</small>
+      <h2>Parcours terminé !</h2>
+      <p>Tu as fini les {{ path.lessons.total }} leçons. La mission du jour continue chaque matin, et tu peux rejouer n’importe quelle étape.</p>
     </section>
   </div>
 </template>
 
 <style scoped>
-.path {
-  display: grid;
-  gap: 40px;
-  padding-bottom: 40px;
-}
-
-.unit {
-  position: relative;
-  display: grid;
-  gap: 28px;
-}
-
-/* --- Le bandeau du thème, qui reste en haut pendant qu'on descend dans ses étapes */
-
-.unit-band {
+/* L'en-tête du thème reste en haut pendant qu'on descend dans ses étapes. */
+.cl-unit-header {
   position: sticky;
-  top: 16px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 16px 16px 20px;
-  color: #fff;
+  top: 24px;
   background: var(--unit);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 0 var(--unit-deep);
+  transition: background-color 0.3s;
 }
 
-.unit-text {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.unit-kicker {
-  opacity: 0.8;
-}
-
-.unit-title {
-  font-size: 1.3rem;
-}
-
-.unit-description {
-  font-size: 0.95rem;
-  opacity: 0.92;
-}
-
-.unit-guide {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  font-size: 0.85rem;
+.cl-unit-kicker {
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.cl-app .cl-unit-header h2 {
+  margin-top: 4px;
+  font-size: 22px;
+  line-height: 28px;
   color: #fff;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-radius: var(--radius-small);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15);
 }
 
-.unit-guide:hover {
-  text-decoration: none;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.unit-guide svg {
-  width: 22px;
-  height: 22px;
-}
-
-/* --- Les étapes */
-
-.steps {
-  display: grid;
-  justify-items: center;
-  gap: 22px;
-  margin: 0;
-  padding: 52px 0 0;
-  list-style: none;
-}
-
-.step {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  transform: translateX(var(--x));
-}
-
-.step.is-open {
-  z-index: 6;
-}
-
-/* La place de la bulle « Commencer » au-dessus de l'étape à jouer. */
-.step.is-current {
-  margin-top: 40px;
-}
-
-.step-button {
-  --face: var(--unit);
-  --edge: var(--unit-deep);
-  display: grid;
-  place-items: center;
-  width: 72px;
-  height: 66px;
-  padding: 0;
+.cl-app .cl-unit-header .cl-button {
   color: #fff;
-  background: var(--face);
-  border: 0;
-  border-radius: 50%;
-  box-shadow: 0 7px 0 var(--edge);
-  transition:
-    transform 0.08s,
-    box-shadow 0.08s;
+  background: transparent;
+  border-color: color-mix(in srgb, var(--unit-deep) 70%, #000);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.step-button:active {
-  transform: translateY(6px);
-  box-shadow: 0 1px 0 var(--edge);
+.cl-unit-header .cl-button svg {
+  width: 24px;
+  height: 24px;
 }
 
-.step-glyph {
-  width: 34px;
-  height: 34px;
+/* Les étapes prennent la couleur de leur thème. */
+.cl-app .cl-path-node {
+  color: #9aa0b4;
 }
 
-.step.is-locked .step-button {
-  --face: #e5e8f0;
-  --edge: #c8cdda;
-  color: #aab0c2;
+.cl-app .cl-path-node.available {
+  color: #fff;
+  background: var(--unit);
+  border-bottom-color: var(--unit-deep);
 }
 
-/* L'étape à jouer : un anneau autour, comme une cible. */
-.step.is-current .step-button {
-  outline: 7px solid var(--paper);
-  box-shadow:
-    0 7px 0 var(--edge),
-    0 0 0 14px color-mix(in srgb, var(--unit) 22%, transparent);
-}
-
-.step.is-current .step-button:active {
-  box-shadow:
-    0 1px 0 var(--edge),
-    0 0 0 14px color-mix(in srgb, var(--unit) 22%, transparent);
-}
-
-/* Le coffre et le bilan ne sont pas des boutons ronds comme les autres. */
-.step--chest .step-button {
-  width: 92px;
-  height: 84px;
+.cl-app .cl-path-node.chest {
   background: none;
-  box-shadow: none;
-  border-radius: var(--radius);
 }
 
-.step--chest.is-current .step-button {
-  outline: none;
-  box-shadow: none;
+.cl-app .cl-path-node.review:not(.available) .icon {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.cl-path-node svg {
+  width: 38px;
+  height: 38px;
+}
+
+.cl-app .cl-path-node.chest:not(.available) .icon {
+  filter: grayscale(1);
+  opacity: 0.7;
+}
+
+.cl-path-node.chest.current .icon {
   animation: wiggle 2.4s ease-in-out infinite;
 }
 
-.step--chest.is-locked .step-button :deep(img) {
-  filter: grayscale(1) opacity(0.55);
+.cl-node-ring.visible::before {
+  border-top-color: var(--unit);
 }
 
-.step--review .step-button {
-  width: 88px;
-  height: 80px;
-}
-
-.step--review.is-locked .step-button :deep(img) {
-  filter: grayscale(1) opacity(0.5);
-}
-
-.step-start {
-  position: absolute;
-  bottom: calc(100% + 16px);
-  z-index: 2;
-  padding: 8px 14px;
-  font-size: 0.88rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
+.cl-start-label {
   color: var(--unit);
-  background: var(--paper);
-  border: 2px solid var(--rule);
-  border-radius: var(--radius-small);
   animation: bob 1.6s ease-in-out infinite;
 }
 
-.step-start::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  width: 12px;
-  height: 12px;
-  background: var(--paper);
-  border-right: 2px solid var(--rule);
-  border-bottom: 2px solid var(--rule);
-  transform: translate(-50%, -6px) rotate(45deg);
-}
-
-/* --- La bulle d'une étape */
-
-.pop {
-  position: absolute;
-  top: calc(100% + 18px);
-  left: 50%;
-  z-index: 7;
-  display: grid;
-  gap: 6px;
-  width: min(320px, calc(100vw - 48px));
-  padding: 18px;
-  color: #fff;
+.cl-path-popover {
   background: var(--unit);
-  border-radius: var(--radius);
-  transform: translateX(calc(-50% - var(--x)));
-  box-shadow: 0 10px 24px rgba(29, 34, 51, 0.18);
 }
 
-.pop::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: calc(50% + var(--x));
-  width: 16px;
-  height: 16px;
-  background: inherit;
-  transform: translateX(-50%) rotate(45deg);
+.cl-app .cl-path-popover .cl-button {
+  padding: 0 12px;
+  color: var(--unit);
+  white-space: nowrap;
 }
 
-.pop--locked {
-  color: var(--muted);
+/* La bulle « Commencer » d'une étape au milieu du thème ne doit pas recouvrir la précédente. */
+.cl-path-node-wrap.has-label {
+  margin-top: 44px;
+}
+
+.cl-app .cl-path-popover.locked {
   background: var(--wash);
+  color: var(--muted);
   border: 2px solid var(--rule);
 }
 
-.pop--locked::before {
-  border-top: 2px solid var(--rule);
-  border-left: 2px solid var(--rule);
-  top: -9px;
-}
-
-.pop-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-}
-
-.pop--locked .pop-title {
+.cl-app .cl-path-popover.locked h3 {
   color: var(--ink);
 }
 
-.pop-text {
-  font-size: 0.95rem;
-  opacity: 0.92;
+.cl-app .cl-path-popover.locked .cl-button {
+  color: var(--muted);
+  background: transparent;
+  border-color: var(--rule);
 }
 
-.pop-action {
-  --face: var(--paper);
-  --edge: rgba(0, 0, 0, 0.18);
-  --text: var(--unit);
-  margin-top: 8px;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.pop-gain {
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  opacity: 0.8;
-}
-
-/* --- Léopold rôde le long du thème, déguisé. */
-
-.unit-villain {
-  position: absolute;
-  top: 190px;
+.cl-path-illustration {
   width: auto;
-  height: 210px;
-  pointer-events: none;
+  object-fit: contain;
 }
 
-.unit--even .unit-villain {
-  right: 2%;
+.cl-path-unit.first .cl-path-illustration {
+  top: 120px;
 }
 
-.unit--odd .unit-villain {
-  left: 2%;
+.cl-path-unit.locked .cl-path-illustration {
+  filter: grayscale(0.8);
+  opacity: 0.45;
 }
 
-.unit-villain.is-dim {
-  filter: grayscale(1) opacity(0.35);
-}
-
-.finished {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
+.cl-app .cl-path-divider {
+  margin-top: 8px;
   text-align: center;
 }
 
 @keyframes bob {
   50% {
-    transform: translateY(-6px);
+    transform: translate(-50%, -4px);
   }
 }
 
@@ -507,32 +348,47 @@ const finished = computed(() => !props.path.current)
   }
 }
 
-@media (max-width: 1159px) {
-  .unit-band {
-    top: calc(var(--topbar-height) + 10px);
+:global([data-motion='reduced']) .cl-start-label,
+:global([data-motion='reduced']) .cl-path-node.chest.current .icon {
+  animation: none;
+}
+
+@media (max-width: 1079px) {
+  .cl-unit-header {
+    top: 12px;
   }
 }
 
-@media (max-width: 520px) {
-  .unit-title {
-    font-size: 1.15rem;
+@media (max-width: 699px) {
+  .cl-unit-header {
+    top: 72px;
   }
 
-  .unit-description {
+  .cl-app .cl-unit-header h2 {
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .cl-unit-kicker {
+    font-size: 12px;
+  }
+
+  .cl-app .cl-unit-header .cl-button {
+    padding: 0 12px;
+  }
+
+  .cl-unit-header .cl-button span {
     display: none;
   }
 
-  .unit-villain {
-    height: 150px;
-    top: 150px;
+  .cl-path-illustration {
+    height: 200px;
+    width: auto;
+    right: 0;
   }
 
-  .unit--even .unit-villain {
-    right: -4px;
-  }
-
-  .unit--odd .unit-villain {
-    left: -4px;
+  .cl-path-illustration.left {
+    left: 0;
   }
 }
 </style>

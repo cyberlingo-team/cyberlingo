@@ -1,13 +1,16 @@
 <script setup>
-// L'arrivée d'un nouveau joueur : deux questions pour faire connaissance, puis Tux le prof
-// présente la mission du jour et le chemin. Les réponses restent dans la page : aucune route ne
-// les enregistre, elles ne servent qu'à adapter la présentation.
+// L'arrivée d'un nouveau joueur, sur le modèle de la copie de référence : Tux le prof se
+// présente, pose deux questions pour faire connaissance, montre comment ça marche, puis lance
+// la première leçon du chemin. L'étape est dans l'adresse (?etape=), pour que le bouton retour
+// du navigateur fonctionne. Les réponses restent dans la page : aucune route ne les enregistre,
+// elles ne servent qu'à adapter la présentation.
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Icon from '../components/app/Icon.vue'
 import { getPath } from '../api/index.js'
 import { sceneImage } from '../lib/images.js'
 
+const route = useRoute()
 const router = useRouter()
 
 const REASONS = [
@@ -23,30 +26,44 @@ const PACES = [
   { minutes: 15, label: 'Motivé', detail: 'La mission et deux leçons' },
 ]
 
-const step = ref(0)
+// 0 et 1 : Tux se présente, seul à l'écran. 2 et 3 : les questions. 4 : comment ça marche.
+// 5 : en route pour la première leçon.
+const LAST = 5
+const step = computed(() => Math.max(0, Math.min(LAST, Number(route.query.etape) || 0)))
+const solo = computed(() => step.value < 2 || step.value === LAST)
+
 const reason = ref(null)
 const pace = ref(null)
 const starting = ref(false)
 const problem = ref('')
 
-const STEPS = 3
-const ready = computed(() => (step.value === 0 ? Boolean(reason.value) : step.value === 1 ? Boolean(pace.value) : true))
-const prof = sceneImage('prof-reading')
-const mission = sceneImage('mission')
+const IMAGES = ['prof-magnifier', 'heros', 'prof-reading', 'prof-reading', 'mission', 'quetes']
+const character = computed(() => sceneImage(IMAGES[step.value]))
 
-const speech = computed(() => {
-  if (step.value === 0) return 'Bienvenue ! Qu’est-ce qui t’amène ?'
-  if (step.value === 1) return 'Combien de temps veux-tu y passer chaque jour ?'
-  return null
+const message = computed(() => {
+  if (step.value === 0) return 'Salut, moi c’est Tux le prof !'
+  if (step.value === 1) return 'Je vais t’apprendre à déjouer les arnaques en ligne. On y va ?'
+  if (step.value === 2) return 'Qu’est-ce qui t’amène ?'
+  if (step.value === 3) return 'Combien de temps veux-tu y passer chaque jour ?'
+  if (step.value === 4) return 'Voilà comment ça marche !'
+  return 'Prêt pour ta première leçon ? Elle dure deux minutes.'
 })
+
+const ready = computed(() => (step.value === 2 ? Boolean(reason.value) : step.value === 3 ? Boolean(pace.value) : true))
+
+function go(target) {
+  router.push({ query: target ? { etape: target } : {} })
+}
 
 function back() {
   if (step.value === 0) router.push('/')
-  else step.value--
+  else go(step.value - 1)
 }
 
 function next() {
-  if (ready.value && step.value < STEPS - 1) step.value++
+  if (!ready.value) return
+  if (step.value === LAST) start()
+  else go(step.value + 1)
 }
 
 // La première leçon à jouer, demandée au serveur : c'est l'étape en cours du chemin.
@@ -64,302 +81,189 @@ async function start() {
 </script>
 
 <template>
-  <div class="welcome">
-    <header class="welcome-top">
-      <button type="button" class="welcome-back" :aria-label="step === 0 ? 'Revenir à l’accueil' : 'Question précédente'" @click="back">
+  <div class="cl-app cl-welcome">
+    <header v-if="!solo" class="cl-progress-header">
+      <button type="button" class="cl-back" :aria-label="'Revenir à l’étape précédente'" @click="back">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /></svg>
       </button>
-      <div class="meter welcome-meter" role="progressbar" :aria-valuenow="step + 1" aria-valuemin="1" :aria-valuemax="STEPS" aria-label="Étapes de l’arrivée">
-        <div class="meter-fill" :style="{ width: `${((step + 1) / STEPS) * 100}%` }"></div>
+      <div class="cl-progress" role="progressbar" :aria-valuenow="step - 1" aria-valuemin="0" aria-valuemax="4" aria-label="Étapes de l’arrivée">
+        <div :style="{ width: `${((step - 1) / 4) * 100}%` }"></div>
       </div>
     </header>
+    <button v-else type="button" class="cl-back welcome-back" :aria-label="step === 0 ? 'Revenir à l’accueil' : 'Revenir à l’étape précédente'" @click="back">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /></svg>
+    </button>
 
-    <main id="contenu" class="welcome-main" tabindex="-1">
-      <template v-if="speech">
-        <div class="welcome-talk">
-          <img :src="prof.src" alt="" class="welcome-prof" />
-          <h1 class="welcome-bubble">{{ speech }}</h1>
+    <main id="contenu" class="cl-welcome-body" :class="{ solo, wide: step === 2 }" tabindex="-1">
+      <div class="cl-tux-message">
+        <div class="cl-onboarding-duo" :class="{ 'intro-duo': solo }">
+          <img :key="step" :src="character.src" alt="" />
         </div>
-
-        <div v-if="step === 0" class="options options--grid" role="radiogroup" aria-label="Ce qui t’amène">
-          <button
-            v-for="item in REASONS"
-            :key="item.id"
-            type="button"
-            role="radio"
-            class="option"
-            :class="{ 'is-chosen': reason === item.id }"
-            :aria-checked="reason === item.id"
-            @click="reason = item.id"
-          >
-            <Icon :name="item.icon" :size="44" />
-            <span class="option-label">{{ item.label }}</span>
-          </button>
-        </div>
-
-        <div v-else class="options" role="radiogroup" aria-label="Temps par jour">
-          <button
-            v-for="item in PACES"
-            :key="item.minutes"
-            type="button"
-            role="radio"
-            class="option option--row"
-            :class="{ 'is-chosen': pace === item.minutes }"
-            :aria-checked="pace === item.minutes"
-            @click="pace = item.minutes"
-          >
-            <span class="option-label">{{ item.minutes }} min par jour</span>
-            <span class="option-detail">{{ item.label }} · {{ item.detail }}</span>
-          </button>
-        </div>
-      </template>
-
-      <div v-else class="intro">
-        <img :src="mission.src" alt="Tux le prof tient un calendrier coché." class="intro-image" />
-        <h1 class="intro-title">Voilà comment ça marche</h1>
-        <ul class="intro-list">
-          <li><Icon name="flamme" :size="36" /><span><strong>La mission du jour</strong>, la même pour tout le monde, fait avancer ta série.</span></li>
-          <li><Icon name="igloo" :size="36" /><span><strong>Le chemin</strong> te fait passer de thème en thème, à ton rythme{{ pace ? `, ${pace} minutes par jour` : '' }}.</span></li>
-          <li><Icon name="haltere" :size="36" /><span><strong>Tes points</strong> font prendre du muscle à ton Tux.</span></li>
-        </ul>
-        <p v-if="problem" class="form-problem" role="alert">{{ problem }}</p>
+        <h1 class="cl-speech" aria-live="polite">{{ message }}</h1>
       </div>
+
+      <div v-if="step === 2" class="cl-options two-columns" role="radiogroup" :aria-label="message">
+        <button
+          v-for="item in REASONS"
+          :key="item.id"
+          type="button"
+          role="radio"
+          class="cl-option"
+          :class="{ selected: reason === item.id }"
+          :aria-checked="reason === item.id"
+          @click="reason = item.id"
+        >
+          <Icon :name="item.icon" :size="40" />
+          <span><strong>{{ item.label }}</strong></span>
+        </button>
+      </div>
+
+      <div v-else-if="step === 3" class="cl-options" role="radiogroup" :aria-label="message">
+        <button
+          v-for="item in PACES"
+          :key="item.minutes"
+          type="button"
+          role="radio"
+          class="cl-option goal"
+          :class="{ selected: pace === item.minutes }"
+          :aria-checked="pace === item.minutes"
+          @click="pace = item.minutes"
+        >
+          <strong>{{ item.minutes }} min/jour</strong>
+          <small>{{ item.label }} · {{ item.detail }}</small>
+        </button>
+      </div>
+
+      <div v-else-if="step === 4" class="cl-overview">
+        <div>
+          <Icon name="flamme" :size="64" />
+          <section>
+            <h3>La mission du jour</h3>
+            <p>La même pour tout le monde, cinq minutes : elle fait avancer ta série.</p>
+          </section>
+        </div>
+        <div>
+          <Icon name="igloo" :size="64" />
+          <section>
+            <h3>Le chemin</h3>
+            <p>Des leçons courtes, de thème en thème, à ton rythme{{ pace ? ` : ${pace} minutes par jour` : '' }}.</p>
+          </section>
+        </div>
+        <div>
+          <Icon name="haltere" :size="64" />
+          <section>
+            <h3>Ton Tux</h3>
+            <p>Chaque bonne réponse rapporte des points, et tes points lui font prendre du muscle.</p>
+          </section>
+        </div>
+      </div>
+
+      <p v-if="problem" class="cl-form-error welcome-problem" role="alert">{{ problem }}</p>
     </main>
 
-    <footer class="welcome-foot">
-      <div class="welcome-foot-inner">
-        <template v-if="step < STEPS - 1">
-          <button type="button" class="button welcome-next" :disabled="!ready" @click="next">Continuer</button>
-        </template>
-        <template v-else>
-          <RouterLink to="/inscription" class="button button--ghost welcome-next">Créer un profil d’abord</RouterLink>
-          <button type="button" class="button welcome-next" :disabled="starting" @click="start">
-            {{ starting ? 'Un instant…' : 'Commencer ma première leçon' }}
-          </button>
-        </template>
+    <footer class="cl-action-footer">
+      <div>
+        <RouterLink v-if="step === LAST" to="/inscription" class="cl-button welcome-profile">Créer un profil d’abord</RouterLink>
+        <button type="button" class="cl-button green" :disabled="!ready || starting" @click="next">
+          {{ step === LAST ? (starting ? 'Un instant…' : 'Commencer') : 'Continuer' }}
+        </button>
       </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
-.welcome {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
-}
-
-.welcome-top {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  width: min(1000px, 100%);
-  margin: 0 auto;
-  padding: 24px var(--gutter) 8px;
-}
-
-.welcome-back {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
+.cl-back {
   color: #9aa0b4;
-  background: none;
-  border: 0;
-  border-radius: 50%;
+  cursor: pointer;
 }
 
-.welcome-back:hover {
-  color: var(--ink);
-  background: var(--wash);
-}
-
-.welcome-back svg {
+.cl-back svg {
   width: 26px;
   height: 26px;
 }
 
-.welcome-meter {
-  --meter: var(--success);
-  flex: 1;
-}
-
-.welcome-main {
-  flex: 1;
-  display: grid;
-  align-content: start;
-  gap: 28px;
-  width: min(640px, 100%);
-  margin: 0 auto;
-  padding: 32px var(--gutter);
-}
-
-.welcome-talk {
-  display: flex;
-  align-items: flex-end;
-  gap: 14px;
-}
-
-.welcome-prof {
-  flex-shrink: 0;
-  width: auto;
-  height: 130px;
-}
-
-.welcome-bubble {
-  position: relative;
-  margin-bottom: 30px;
-  padding: 14px 18px;
-  font-size: 1.3rem;
-  border: 2px solid var(--rule);
-  border-radius: var(--radius);
-}
-
-.welcome-bubble::before {
-  content: '';
+.welcome-back {
   position: absolute;
-  left: -9px;
-  bottom: 20px;
-  width: 14px;
-  height: 14px;
-  background: var(--paper);
-  border-left: 2px solid var(--rule);
-  border-bottom: 2px solid var(--rule);
-  transform: rotate(45deg);
+  top: 30px;
+  left: 30px;
 }
 
-.options {
+.cl-welcome {
+  position: relative;
+}
+
+.cl-welcome-body:focus {
+  outline: none;
+}
+
+.cl-onboarding-duo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom;
+}
+
+.cl-speech {
+  margin: 0;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cl-option.goal small {
+  text-align: right;
+}
+
+/* Une bulle un peu plus large que celle de la copie de référence : nos phrases sont plus longues. */
+.solo .cl-speech {
+  max-width: 320px;
+}
+
+.cl-overview section {
   display: grid;
-  gap: 12px;
+  gap: 4px;
 }
 
-.options--grid {
-  grid-template-columns: 1fr 1fr;
+.cl-overview :deep(.icon) {
+  flex-shrink: 0;
 }
 
-.option {
-  --edge: var(--rule);
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  padding: 18px 14px;
-  font-weight: 800;
-  background: var(--paper);
-  border: 2px solid var(--edge);
-  border-radius: var(--radius);
-  box-shadow: 0 3px 0 var(--edge);
-}
-
-.option:hover {
-  background: var(--wash);
-}
-
-.option:active {
-  transform: translateY(3px);
-  box-shadow: 0 0 0 var(--edge);
-}
-
-.option--row {
-  justify-items: start;
-  gap: 2px;
-  text-align: left;
-}
-
-.option-label {
-  font-size: 1.05rem;
-}
-
-.option-detail {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.option.is-chosen {
-  --edge: var(--toque-line);
-  color: var(--toque-bright);
-  background: var(--toque-pale);
-}
-
-.intro {
-  display: grid;
-  justify-items: center;
-  gap: 18px;
-}
-
-.intro-image {
-  width: auto;
-  height: 200px;
-}
-
-.intro-title {
-  font-size: 1.7rem;
-  color: var(--toque);
+.welcome-problem {
+  margin-top: 24px;
   text-align: center;
 }
 
-.intro-list {
-  display: grid;
-  gap: 14px;
-  padding: 0;
-  list-style: none;
+.cl-action-footer > div {
+  gap: 16px;
 }
 
-.intro-list li {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
+@media (max-width: 699px) {
+  .welcome-back {
+    top: 20px;
+    left: 16px;
+  }
 
-.welcome-foot {
-  position: sticky;
-  bottom: 0;
-  background: var(--paper);
-  border-top: 2px solid var(--rule);
-}
-
-.welcome-foot-inner {
-  display: flex;
-  justify-content: flex-end;
-  gap: 14px;
-  width: min(1000px, 100%);
-  margin: 0 auto;
-  padding: 20px var(--gutter);
-}
-
-.welcome-next {
-  min-width: 200px;
-}
-
-@media (max-width: 640px) {
-  .welcome-foot-inner {
+  .cl-action-footer > div {
     flex-direction: column-reverse;
-    padding-block: 14px;
+    gap: 8px;
   }
 
-  .welcome-next {
-    width: 100%;
+  .welcome-profile {
+    display: none;
   }
 
-  .welcome-prof {
-    height: 96px;
+  .cl-option.goal {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
   }
 
-  .welcome-bubble {
-    font-size: 1.1rem;
-  }
-
-  .options--grid {
-    grid-template-columns: 1fr;
-  }
-
-  .option {
-    grid-template-columns: auto 1fr;
-    justify-items: start;
-    align-items: center;
+  .cl-option.goal small {
+    text-align: left;
+    font-size: 15px;
   }
 }
 </style>
