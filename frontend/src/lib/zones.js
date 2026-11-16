@@ -47,3 +47,35 @@ export function zoneText(artifact, zone) {
   visit(artifact)
   return found
 }
+
+// Ce que la correction dit d'une zone, et donc sa couleur. Le vert et le rouge ne parlent que de
+// la réponse du joueur : un passage rouge, c'est toujours une erreur de sa part.
+//   Question à indices (`solution` et `picked` donnés) :
+//     hit    un indice qu'il a touché                        vert
+//     miss   touché, mais ce n'était pas un indice            rouge
+//     other  un indice qu'il n'a pas touché                  vert en pointillés (pas forcément
+//            une erreur : il y a parfois plus d'indices que de passages à toucher)
+//     aside  relevé par le prof sans être un indice           gris
+//   Autres questions, les annotations du prof sur le document :
+//     alert  ce qui trahit l'arnaque                          orange
+//     good   ce qui rassure                                  bleu
+export function zoneStatus(zone, { solution = null, picked = null, noted = false, reassuring = false } = {}) {
+  if (solution && picked) {
+    const clue = solution.includes(zone)
+    const touched = picked.includes(zone)
+    if (clue && touched) return 'hit'
+    if (touched) return 'miss'
+    if (clue) return 'other'
+    return noted ? 'aside' : null
+  }
+  if (!noted) return null
+  return reassuring ? 'good' : 'alert'
+}
+
+// Ce qu'annonce chaque état dans la liste des annotations, et aux lecteurs d'écran.
+export const ZONE_STATUS_LABELS = {
+  hit: 'Bien vu',
+  miss: 'Pas un indice',
+  other: 'Aussi un indice',
+  aside: 'À savoir',
+}

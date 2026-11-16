@@ -2,6 +2,7 @@
 // L'objet que le joueur examine dans une case : SMS, mail, page web, appel… collé dans la BD
 // comme une coupure de journal. Il fournit aux textes (ZoneText) l'état de leurs zones.
 import { computed, provide, toRef } from 'vue'
+import { zoneStatus, ZONE_STATUS_LABELS } from '../../lib/zones.js'
 import SmsArtifact from './SmsArtifact.vue'
 import EmailArtifact from './EmailArtifact.vue'
 import BrowserArtifact from './BrowserArtifact.vue'
@@ -47,7 +48,7 @@ const props = defineProps({
   mode: { type: String, default: 'read' },
   selected: { type: Array, default: () => [] },
   pick: { type: Number, default: 0 },
-  // Les annotations du prof, par zone : { numéro, good }. « good » : un détail rassurant, au stylo bleu.
+  // Les annotations du prof, par zone : { number, good }. « good » : un détail rassurant.
   marks: { type: Object, default: () => ({}) },
   // Pour la correction d'une question à indices : les bonnes zones et celles touchées.
   solution: { type: Array, default: null },
@@ -66,33 +67,27 @@ provide('zones', {
     else emit('full')
   },
   noteNumber: (zone) => props.marks[zone]?.number || null,
-  // La correction, comme sur une copie : le choix du joueur reste surligné, le prof entoure les
-  // vrais indices en rouge, les détails rassurants en bleu, et barre les choix qui n'en étaient pas.
+  // La correction : le vert et le rouge disent si le joueur a vu juste (voir zoneStatus).
   classFor(zone) {
-    const classes = []
-    const mark = props.marks[zone]
-    if (mark) classes.push('zone--noted', mark.good ? 'zone--good' : 'zone--bad')
-    if (props.solution && props.picked) {
-      const clue = props.solution.includes(zone)
-      if (clue) classes.push('zone--bad')
-      if (props.picked.includes(zone)) classes.push(clue ? 'zone--picked' : 'zone--picked zone--wrong')
-    }
-    return classes
+    const status = statusOf(zone)
+    if (!status) return []
+    return [`zone--${status}`, ...(props.marks[zone] ? ['zone--noted'] : [])]
   },
   // Ce que la correction montre d'une zone, dit en toutes lettres pour les lecteurs d'écran.
   describe(zone) {
     const parts = []
     const mark = props.marks[zone]
     if (mark) parts.push(`annotation ${mark.number}`)
-    if (props.solution && props.picked) {
-      const clue = props.solution.includes(zone)
-      const touched = props.picked.includes(zone)
-      if (clue) parts.push(touched ? 'vrai indice, trouvé' : 'vrai indice')
-      else if (touched) parts.push('pas un indice')
-    }
+    const label = ZONE_STATUS_LABELS[statusOf(zone)]
+    if (label) parts.push(label.toLowerCase())
     return parts.join(', ')
   },
 })
+
+function statusOf(zone) {
+  const mark = props.marks[zone]
+  return zoneStatus(zone, { solution: props.solution, picked: props.picked, noted: Boolean(mark), reassuring: mark?.good })
+}
 
 const component = computed(() => KINDS[props.artifact.kind])
 const label = computed(() => LABELS[props.artifact.kind] || 'Document')
@@ -144,18 +139,53 @@ const label = computed(() => LABELS[props.artifact.kind] || 'Document')
   box-shadow: 0 0 0 2px var(--ink);
 }
 
-/* La correction au stylo : rouge pour ce qui trahit l'arnaque, bleu pour ce qui rassure. */
-.artifact .zone--bad,
+/* La correction. Le vert et le rouge ne parlent que de la réponse du joueur ; les annotations
+   du prof sur les autres questions sont en orange (ce qui trahit l'arnaque) ou en bleu (ce qui
+   rassure). Voir zoneStatus dans lib/zones.js. */
+.artifact .zone--hit,
+.artifact .zone--miss,
+.artifact .zone--other,
+.artifact .zone--alert,
 .artifact .zone--good {
-  padding: 0.05em 0.25em;
-  border-radius: 0.9em 0.7em 1em 0.6em;
-  box-shadow: 0 0 0 2px var(--pen, var(--alert));
+  padding: 0 0.25em;
+  border: 2px solid var(--pen);
+  border-radius: 0.5em;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
 
+/* Un indice que le joueur a touché : surligné en vert. */
+.artifact .zone--hit {
+  --pen: var(--success);
+  background: var(--success-pale);
+}
+
+/* Touché, mais ce n'était pas un indice : en rouge, barré. */
+.artifact .zone--miss {
+  --pen: var(--alert);
+  background: var(--alert-pale);
+  text-decoration: line-through;
+  text-decoration-color: var(--alert);
+  text-decoration-thickness: 2px;
+}
+
+/* Un indice qu'il n'a pas touché : entouré de pointillés verts, sans fond. */
+.artifact .zone--other {
+  --pen: var(--success);
+  border-style: dashed;
+}
+
+/* Relevé par le prof sans être un indice : juste le numéro, en gris. */
+.artifact .zone--aside {
+  --pen: #8a90a6;
+}
+
+.artifact .zone--alert {
+  --pen: var(--beak);
+}
+
 .artifact .zone--good {
-  --pen: var(--toque);
+  --pen: var(--toque-bright);
 }
 
 /* Le numéro de l'annotation, écrit devant le passage, comme dans la marge d'une copie. */
@@ -174,19 +204,7 @@ const label = computed(() => LABELS[props.artifact.kind] || 'Document')
   line-height: 1;
   text-decoration: none;
   color: var(--paper);
-  background: var(--pen, var(--alert));
+  background: var(--pen);
   border-radius: 50%;
-}
-
-/* Le choix du joueur garde son surligneur jaune. */
-.artifact .zone--picked {
-  color: var(--ink);
-  background: var(--caption);
-}
-
-.artifact .zone--wrong {
-  text-decoration: line-through;
-  text-decoration-color: var(--alert);
-  text-decoration-thickness: 2px;
 }
 </style>

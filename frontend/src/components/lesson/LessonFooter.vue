@@ -24,8 +24,10 @@ const truth = computed(() => {
   if (question.kind === 'truefalse') return revealed.solution ? 'C’était vrai.' : 'C’était faux.'
   if (question.kind === 'choice') return typo(question.options.find((o) => o.id === revealed.solution)?.text || '')
   if (question.kind === 'clues') {
+    // Sur le nombre d'indices à toucher : il y en a parfois plus dans le document.
     const found = (revealed.answer || []).filter((zone) => revealed.solution.includes(zone)).length
-    return found ? `${found} indice${found > 1 ? 's' : ''} sur ${revealed.solution.length} trouvé${found > 1 ? 's' : ''}.` : 'Aucun indice trouvé.'
+    const wanted = Math.min(question.pick || revealed.solution.length, revealed.solution.length)
+    return found ? `${found} indice${found > 1 ? 's' : ''} sur ${wanted} trouvé${found > 1 ? 's' : ''}.` : 'Aucun indice trouvé.'
   }
   return null
 })

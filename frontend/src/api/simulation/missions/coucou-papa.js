@@ -45,7 +45,7 @@ export default {
           { from: 'them', text: '{{appel|Ne m’appelle pas, le micro est cassé.}} {{bisous|Merci papa, bisous !}}', time: '08:04' },
         ],
       },
-      prompt: 'Touche les 3 indices qui doivent l’arrêter.',
+      prompt: 'Touche 3 signes que ce n’est peut-être pas sa fille.',
       pick: 3,
       answer: ['facture', 'banque', 'virement', 'appel'],
       explanation:

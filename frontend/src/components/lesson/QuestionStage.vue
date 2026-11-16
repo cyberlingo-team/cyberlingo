@@ -10,7 +10,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import ArtifactView from '../artifacts/ArtifactView.vue'
 import { gangImage } from '../../lib/images.js'
-import { zonesOf } from '../../lib/zones.js'
+import { zonesOf, zoneStatus, ZONE_STATUS_LABELS } from '../../lib/zones.js'
 import { typo } from '../../lib/format.js'
 
 const props = defineProps({
@@ -32,8 +32,8 @@ const BINARY = {
     { value: 'safe', label: 'Fiable', hint: 'On peut y aller' },
   ],
   truefalse: [
-    { value: true, label: 'Vrai' },
-    { value: false, label: 'Faux' },
+    { value: true, label: 'Vrai', hint: 'L’affirmation est juste' },
+    { value: false, label: 'Faux', hint: 'L’affirmation est fausse' },
   ],
 }
 
@@ -44,6 +44,9 @@ const options = computed(() => {
   if (kind === 'choice') return options.map((option) => ({ value: option.id, label: typo(option.text) }))
   return []
 })
+
+// L'affirmation d'une question vrai ou faux.
+const statement = computed(() => (props.question.kind === 'truefalse' ? typo(props.question.prompt).replace(/\.$/, '') : null))
 
 const zones = computed(() => (Array.isArray(props.choice) ? props.choice : []))
 const answered = computed(() => Boolean(props.revealed))
@@ -79,16 +82,28 @@ watch(
   { immediate: true },
 )
 
-// Au stylo bleu (« good ») : ce qui rassure, un détail qui n'était pas un indice, ou ce que le
-// prof relève sur un message fiable.
+// Les annotations du prof, numérotées dans l'ordre de lecture. Chacune prend l'état de sa zone
+// (voir zoneStatus) : sur une question à indices, il dit si le joueur l'a touchée et si c'était
+// un indice ; ailleurs, si le détail trahit l'arnaque ou rassure (« good »).
 const notes = computed(() => {
   if (!props.revealed?.notes) return []
   const { kind } = props.question
   const order = readingOrder.value.length ? readingOrder.value : zonesOf(props.question.artifact)
   const rank = (zone) => (order.includes(zone) ? order.indexOf(zone) : order.length)
-  const solution = Array.isArray(props.revealed.solution) ? props.revealed.solution : []
-  const isGood = (zone) => (kind === 'clues' && !solution.includes(zone)) || (kind === 'trap' && props.revealed.solution === 'safe')
-  return [...props.revealed.notes].sort((a, b) => rank(a.zone) - rank(b.zone)).map((note, i) => ({ ...note, number: i + 1, good: isGood(note.zone) }))
+  const clues = kind === 'clues' && Array.isArray(props.revealed.solution)
+  const isGood = (zone) => (clues && !props.revealed.solution.includes(zone)) || (kind === 'trap' && props.revealed.solution === 'safe')
+  return [...props.revealed.notes]
+    .sort((a, b) => rank(a.zone) - rank(b.zone))
+    .map((note, i) => {
+      const good = isGood(note.zone)
+      const status = zoneStatus(note.zone, {
+        solution: clues ? props.revealed.solution : null,
+        picked: clues ? props.revealed.answer || [] : null,
+        noted: true,
+        reassuring: good,
+      })
+      return { ...note, number: i + 1, good, status, label: ZONE_STATUS_LABELS[status] || null }
+    })
 })
 
 const marks = computed(() => Object.fromEntries(notes.value.map((note) => [note.zone, { number: note.number, good: note.good }])))
@@ -119,7 +134,9 @@ defineExpose({ onKey })
 <template>
   <section class="cl-exercise" :class="`cl-exercise--${question.kind}`">
     <p v-if="review" class="cl-new-word"><span aria-hidden="true">✦</span> Corrigeons tes erreurs</p>
-    <h1>{{ typo(question.prompt) }}</h1>
+    <!-- En vrai ou faux, la consigne est l'affirmation elle-même : on dit ce qu'on attend. -->
+    <p v-if="statement" class="cl-kicker">Vrai ou faux ?</p>
+    <h1>{{ statement ? `« ${statement} »` : typo(question.prompt) }}</h1>
 
     <div v-if="speech" class="cl-word-prompt">
       <img :src="gangImage(guest.id).src" :alt="guest.look || guest.name" class="cl-guest" />
@@ -135,7 +152,7 @@ defineExpose({ onKey })
         :pick="question.pick || 0"
         :marks="marks"
         :solution="question.kind === 'clues' && revealed ? revealed.solution : null"
-        :picked="question.kind === 'clues' && revealed ? revealed.answer : null"
+        :picked="question.kind === 'clues' && revealed ? revealed.answer || [] : null"
         :guest-name="guest.name"
         @update:selected="pick"
         @full="onFull"
@@ -170,9 +187,12 @@ defineExpose({ onKey })
     </div>
 
     <ol v-if="notes.length" class="cl-notes" aria-label="Les annotations du prof">
-      <li v-for="note in notes" :key="note.zone" :class="{ good: note.good }">
-        <span aria-hidden="true">{{ note.number }}</span>
-        {{ typo(note.text) }}
+      <li v-for="note in notes" :key="note.zone" :class="note.status">
+        <span class="cl-note-number" aria-hidden="true">{{ note.number }}</span>
+        <p>
+          <strong v-if="note.label" class="cl-note-label">{{ note.label }}</strong>
+          {{ typo(note.text) }}
+        </p>
       </li>
     </ol>
   </section>
@@ -224,6 +244,16 @@ defineExpose({ onKey })
   margin-top: 16px;
   text-align: center;
   font-weight: 700;
+  color: var(--toque-bright);
+}
+
+/* Au-dessus d'une affirmation : ce qu'on attend du joueur. */
+.cl-kicker {
+  margin-bottom: 6px;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--toque-bright);
 }
 
@@ -293,7 +323,12 @@ defineExpose({ onKey })
   gap: 10px;
 }
 
-.cl-notes span {
+.cl-notes p {
+  margin: 0;
+}
+
+/* Le numéro reprend la couleur du passage sur le document (voir ArtifactView). */
+.cl-note-number {
   display: grid;
   flex-shrink: 0;
   place-items: center;
@@ -302,12 +337,53 @@ defineExpose({ onKey })
   font-size: 13px;
   font-weight: 900;
   color: #fff;
-  background: var(--alert);
+  background: var(--pen, var(--beak));
+  border: 2px solid var(--pen, var(--beak));
   border-radius: 50%;
 }
 
-.cl-notes .good span {
-  background: var(--toque-bright);
+.cl-note-label {
+  margin-right: 4px;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pen-ink, var(--pen));
+}
+
+.cl-notes .hit {
+  --pen: var(--success);
+  --pen-ink: var(--success-ink);
+}
+
+.cl-notes .miss {
+  --pen: var(--alert);
+  --pen-ink: var(--alert-ink);
+}
+
+/* Un indice non touché : numéro cerclé de vert, comme les pointillés sur le document. */
+.cl-notes .other {
+  --pen: var(--success);
+  --pen-ink: var(--success-ink);
+}
+
+.cl-notes .other .cl-note-number {
+  color: var(--success-ink);
+  background: #fff;
+  border-style: dashed;
+}
+
+.cl-notes .aside {
+  --pen: #8a90a6;
+  --pen-ink: #5d6378;
+}
+
+.cl-notes .alert {
+  --pen: var(--beak);
+}
+
+.cl-notes .good {
+  --pen: var(--toque-bright);
 }
 
 @media (max-width: 699px) {
