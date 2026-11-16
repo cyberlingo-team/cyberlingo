@@ -81,6 +81,10 @@ frontend/     Vue 3 + Vite (port 5173). Le proxy Vite redirige /api vers le back
 backend/      Express + Prisma (port 4000 par défaut, variable PORT).
   prisma/       schema.prisma
   prisma.js     le client Prisma partagé
+  app.js        l'application Express : middlewares, routes, erreurs
+  routes/       un fichier par groupe de routes du contrat (frontend/src/api/CONTRAT.md)
+  lib/          session et cookies, règles des comptes, points et séries, dates de Paris
+  test/         tests de l'API (`npm test`, avec node:test)
   seed.js       remplit la base avec des données de démonstration réalistes
 ```
 

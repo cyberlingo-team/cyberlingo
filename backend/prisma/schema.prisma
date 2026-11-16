@@ -1,0 +1,152 @@
+// Le schéma de la base de CyberLingo. Après une modification : `npx prisma db push`, qui met la
+// base à jour et régénère le client dans generated/prisma/.
+//
+// Les dates de jeu (`@db.Date`) sont des jours du calendrier de Paris, sans heure : le serveur les
+// échange en chaînes « AAAA-MM-JJ » (voir lib/dates.js). Les instants (`DateTime` sans @db.Date)
+// sont des horodatages ordinaires.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Un joueur : un compte (pseudo et mot de passe), ou un visiteur sans compte, que désigne le
+// cookie `visiteur`. Quand le visiteur s'inscrit, cette même ligne devient son compte : ses
+// réponses, ses leçons et ses sardines le suivent sans rien recopier.
+model Player {
+  id           Int     @id @default(autoincrement())
+  username     String? @unique // null pour un visiteur
+  usernameKey  String? @unique // le pseudo en minuscules : « Sacha » et « sacha » sont le même
+  passwordHash String? // bcryptjs ; jamais renvoyé, jamais écrit dans un journal
+  guestToken   String? @unique // l'identifiant aléatoire du cookie `visiteur`
+
+  createdOn DateTime @db.Date // jour d'arrivée (heure de Paris)
+  createdAt DateTime @default(now())
+
+  // La réserve de la banquise (voir les règles dans CONTRAT.md).
+  sardines        Int        @default(100)
+  buoys           Int        @default(5)
+  buoysRefilledOn DateTime?  @db.Date // dernier jour où les bouées ont été regonflées
+  freezes         Int        @default(0)
+  frozenDays      DateTime[] @db.Date // jours sans mission que des glaçons ont gelés
+
+  attempts   Attempt[]
+  lessonRuns LessonRun[]
+  chests     ChestOpening[]
+  quests     QuestReward[]
+}
+
+// Le contenu d'un épisode, écrit dans frontend/src/api/simulation/missions/ et versé ici par
+// seed.js. Les questions gardent leurs réponses : seul le serveur les lit.
+model Mission {
+  id        String  @id // « colis-fantome »
+  title     String
+  theme     String
+  hook      String
+  guest     String // l'invité, un membre de la bande (cast.js)
+  villain   String? // le déguisement de Léopold, ou null quand personne n'arnaque personne
+  moral     String
+  sources   Json // [{ label, url }]
+  questions Json // [Question], réponses comprises
+
+  episodes Episode[]
+}
+
+// Quelle mission paraît quel jour. La même pour tout le monde.
+model Episode {
+  date      DateTime @id @db.Date
+  number    Int      @unique // 1 le jour du lancement
+  missionId String
+
+  mission  Mission   @relation(fields: [missionId], references: [id])
+  attempts Attempt[]
+}
+
+// La partie d'un joueur sur un épisode.
+//   mode  counted   joué le jour même par un compte : rapporte des points et fait la série
+//         guest     l'épisode du jour joué par un visiteur : rien ne compte avant l'inscription
+//         practice  un épisode passé rattrapé : la correction, sans points
+model Attempt {
+  id          Int       @id @default(autoincrement())
+  playerId    Int
+  date        DateTime  @db.Date
+  mode        String
+  points      Int? // rempli à la fin d'une partie counted
+  completedAt DateTime?
+
+  player  Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  episode Episode  @relation(fields: [date], references: [date], onDelete: Cascade)
+  answers Answer[]
+
+  @@unique([playerId, date])
+  @@index([date])
+}
+
+// Une réponse à une question d'épisode. Une seule par question : on ne se corrige pas.
+model Answer {
+  id         Int     @id @default(autoincrement())
+  attemptId  Int
+  questionId String
+  value      Json? // ce qu'a envoyé le joueur ; absent quand il a passé la question
+  correct    Boolean
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+}
+
+// Une partie d'une leçon (« adresse-piegee ») ou d'un bilan (« bilan-hameconnage ») du chemin.
+model LessonRun {
+  id          Int       @id @default(autoincrement())
+  playerId    Int
+  lessonId    String
+  firstTime   Boolean // false quand la leçon était déjà faite : rejouer ne rapporte rien
+  answers     Json      @default("{}") // { [questionId]: { answer, correct } }
+  correct     Int? // rempli à la fin
+  points      Int? // points gagnés, null quand rejouée
+  sardines    Int? // sardines gagnées
+  startedAt   DateTime  @default(now())
+  completedOn DateTime? @db.Date // jour où elle a été finie (heure de Paris)
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, lessonId])
+}
+
+// Un coffre du chemin ouvert (« coffre-hameconnage »).
+model ChestOpening {
+  playerId Int
+  chestId  String
+  openedOn DateTime @db.Date
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([playerId, chestId])
+}
+
+// Une quête remplie, dont les sardines ont été versées : une seule fois par période
+// (le jour « 2026-10-22 » pour les quêtes du jour, le mois « 2026-10 » pour le défi).
+model QuestReward {
+  playerId Int
+  questId  String
+  period   String
+  reward   Int
+  doneOn   DateTime @db.Date
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([playerId, questId, period])
+}
+
+// Les connexions ratées, pour freiner qui devine les mots de passe (voir POST /api/auth/login).
+model LoginFailure {
+  id          Int      @id @default(autoincrement())
+  usernameKey String
+  at          DateTime @default(now())
+
+  @@index([usernameKey, at])
+}

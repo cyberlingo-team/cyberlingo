@@ -3,10 +3,14 @@
 Ce fichier décrit chaque route que l'interface appelle : méthode, chemin, ce qu'elle envoie, ce
 qu'elle reçoit, et les erreurs possibles. Le back-end Express devra le respecter à la lettre.
 
-Pour l'instant, ces routes sont servies par un **serveur simulé** qui tourne dans le navigateur
-(`simulation/`). Il répond comme le fera le vrai serveur, avec une petite latence, et vérifie les
-réponses lui-même. Le jour où le back-end existe, il suffit de passer `USE_SIMULATION` à `false`
-dans `http.js` : les écrans ne changent pas.
+Elles sont servies de deux façons, au choix au lancement de l'interface :
+
+- `npm run dev` : par un **serveur simulé** qui tourne dans le navigateur (`simulation/`). Il
+  répond comme le vrai serveur, avec une petite latence, et vérifie les réponses lui-même ;
+- `npm run dev:express` : par le **vrai back-end** (`backend/`), à travers le proxy de Vite.
+
+Les écrans ne voient pas la différence (`USE_SIMULATION` dans `http.js`). Côté Express, sont
+faites pour l'instant : `GET /api/session`, `/api/auth/*`, `GET /api/game` et `GET /api/cast`.
 
 Les écrans n'appellent jamais `fetch` eux-mêmes. Ils passent par les fonctions de ce dossier,
 une par route :
