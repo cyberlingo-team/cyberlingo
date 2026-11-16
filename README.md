@@ -16,7 +16,7 @@ Projet du cours *Développement d'applications web* — N7, 2A FISA.
 
 ## Lancer le site
 
-Il faut **Node.js 20.19 ou plus récent** (`node -v` pour vérifier) et git.
+Il faut **Node.js 22.18 ou plus récent** (`node -v` pour vérifier) et git.
 
 ```bash
 git clone https://github.com/cyberlingo-team/cyberlingo.git
@@ -27,12 +27,58 @@ npm run dev
 
 Puis ouvrir http://localhost:5173.
 
-Le back-end n'existe pas encore : l'interface tourne contre un **serveur simulé**
-(`frontend/src/api/simulation/`) qui garde ses données dans le navigateur. Les comptes créés,
-les leçons et les missions jouées restent donc dans ce navigateur. Les routes que le vrai serveur Express devra
-implémenter sont décrites dans [frontend/src/api/CONTRAT.md](frontend/src/api/CONTRAT.md).
+Ainsi lancée, l'interface tourne contre un **serveur simulé** (`frontend/src/api/simulation/`)
+qui garde ses données dans le navigateur : pas besoin de base de données pour voir le site. Les
+comptes créés, les leçons et les missions jouées restent dans ce navigateur. Toutes les routes
+de l'API sont décrites dans [frontend/src/api/CONTRAT.md](frontend/src/api/CONTRAT.md).
 
-**Comptes de démonstration**, tous avec le mot de passe `banquise-sardine-parapluie` :
+## Lancer le back-end
+
+Le vrai serveur est dans `backend/` : Express 5, Prisma 7 et PostgreSQL. Il est en construction :
+les comptes et la session (`/api/session`, `/api/auth/…`), les règles du jeu et les personnages
+(`/api/game`, `/api/cast`) sont faits ; les autres routes du contrat arrivent par les issues.
+
+**1. Une base PostgreSQL.** Au choix :
+
+- PostgreSQL installé sur la machine (https://www.postgresql.org/download/). Créer un
+  utilisateur et une base, par exemple sous Linux ou macOS :
+
+  ```bash
+  sudo -u postgres psql -c "CREATE USER cyberlingo WITH PASSWORD 'choisis-un-mot-de-passe' CREATEDB;"
+  sudo -u postgres createdb -O cyberlingo cyberlingo
+  ```
+
+  L'adresse de la base est alors `postgresql://cyberlingo:choisis-un-mot-de-passe@localhost:5432/cyberlingo`.
+
+- Ou, sans rien installer, la base locale de Prisma : `cd backend && npx prisma dev`, dans un
+  terminal qu'on laisse ouvert. Elle affiche son adresse « TCP » (`postgres://postgres:postgres@localhost:51214/…`).
+
+**2. Le serveur.**
+
+```bash
+cd backend
+cp .env.example .env     # puis y mettre l'adresse de la base et un JWT_SECRET (la commande est dans le fichier)
+npm install              # installe aussi le client Prisma (prisma generate)
+npx prisma db push       # crée les tables (à relancer après chaque modification de prisma/schema.prisma)
+npm run seed             # remplit la base : épisodes, 230 joueurs, comptes de démonstration
+npm run dev              # l'API écoute sur http://localhost:4000/api
+```
+
+`npm test` lance les tests de l'API (il faut que la base soit remplie). `npx prisma studio`
+ouvre une interface pour parcourir la base.
+
+**3. L'interface branchée sur le back-end**, dans un autre terminal :
+
+```bash
+cd frontend
+npm run dev:express
+```
+
+Le proxy de Vite envoie les appels `/api` au serveur du port 4000. Les écrans dont les routes
+n'existent pas encore côté Express affichent « Cette route n'existe pas ».
+
+**Comptes de démonstration**, dans le serveur simulé comme dans la base remplie par `npm run seed`, tous
+avec le mot de passe `banquise-sardine-parapluie` :
 
 | Pseudo | Situation |
 |---|---|
@@ -40,7 +86,7 @@ implémenter sont décrites dans [frontend/src/api/CONTRAT.md](frontend/src/api/
 | `malo.dlt` | une série perdue hier, un coffre à ouvrir au thème 2 |
 | `Capitaine_des_mots_de_passe_42` | la mission du jour déjà faite, tout le chemin terminé |
 
-**États à montrer**, en ajoutant à l'adresse :
+**États à montrer** avec le serveur simulé, en ajoutant à l'adresse :
 
 - `?simulation=lent` : les chargements ;
 - `?simulation=panne` : le serveur qui ne répond pas ;

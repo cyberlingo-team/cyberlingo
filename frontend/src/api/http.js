@@ -1,14 +1,15 @@
-// Toutes les requêtes de l'interface passent par ici. Tant que le back-end Express n'existe
-// pas, elles partent vers le serveur simulé (dossier simulation/). Le jour où il existe,
-// passer USE_SIMULATION à false suffit : chemins, réponses et erreurs sont les mêmes
-// (voir CONTRAT.md).
+// Toutes les requêtes de l'interface passent par ici. Par défaut, elles partent vers le serveur
+// simulé (dossier simulation/), qui garde ses données dans le navigateur. Avec
+// `npm run dev:express`, elles partent vers le vrai back-end (dossier backend/), à travers le
+// proxy de Vite : chemins, réponses et erreurs sont les mêmes (voir CONTRAT.md). Quand toutes
+// les routes du contrat existent côté Express, ce mode deviendra celui par défaut.
 //
 // La session est un cookie httpOnly posé par le serveur : l'interface ne voit jamais de jeton.
 // Pour savoir qui est connecté, elle le demande (GET /api/session).
 
 import { typo } from '../lib/format.js'
 
-export const USE_SIMULATION = true
+export const USE_SIMULATION = import.meta.env.VITE_API !== 'express'
 
 export class ApiError extends Error {
   constructor(status, code, message, fields = {}) {

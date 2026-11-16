@@ -30,10 +30,12 @@ CyberLingo, « le Duolingo de la cybersécurité », est le projet noté de quat
   référence : on ne la modifie pas dans ce chantier.
 - **`version-duo`** : ce chantier, une appli d'apprentissage à la manière de Duolingo : un chemin
   de leçons par thème, la mission du jour en tête, sardines, bouées, glaçons, quêtes, boutique.
-- **Pas encore de back-end.** Toutes les données passent par `frontend/src/api/`, branché sur un
-  serveur simulé (`frontend/src/api/simulation/`) qui garde ses données dans le navigateur. Les
-  routes que le vrai serveur implémentera sont décrites dans `frontend/src/api/CONTRAT.md`. Ne
-  jamais mettre de données en dur dans un écran.
+- **Le back-end commence** (`backend/`, voir le README) : comptes et session, règles du jeu et
+  personnages. Les autres routes viendront des issues de l'équipe. En attendant, l'interface
+  tourne par défaut contre un serveur simulé (`frontend/src/api/simulation/`) qui garde ses
+  données dans le navigateur ; `npm run dev:express` la branche sur le vrai serveur. Toutes les
+  données passent par `frontend/src/api/`, et les routes sont décrites dans
+  `frontend/src/api/CONTRAT.md`. Ne jamais mettre de données en dur dans un écran.
 - **Comptes de démonstration**, mot de passe `banquise-sardine-parapluie` : `sacha_31`,
   `malo.dlt`, `Capitaine_des_mots_de_passe_42`.
 - `design/site/NOTE.md` liste tous les écrans et leurs adresses.

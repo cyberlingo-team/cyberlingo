@@ -1,6 +1,6 @@
 # Passation : CyberLingo version appli (branche `version-duo`)
 
-État au 22 octobre 2026. L'interface **repart du code de la copie de Codex** (gabarits, CSS,
+État au 16 novembre 2026. L'interface **repart du code de la copie de Codex** (gabarits, CSS,
 déroulé des écrans), passée aux couleurs, aux images et au contenu de CyberLingo. Les données
 viennent toutes du serveur simulé, par `frontend/src/api/`. Plus aucune ressource, aucun texte ni
 aucune police de Duolingo dans l'arbre de travail.
@@ -9,10 +9,10 @@ Une première version réécrivait les écrans de zéro ; Alexis l'a jugée moin
 (l'écran de question surtout), d'où la reprise. La copie d'origine reste consultable sur la
 branche locale `copie-codex` (commit 74c044a).
 
-**Attention avant toute publication** : l'historique de `version-duo` contient encore les
-commits de la copie (ressources de `frontend/public/duolingo-local/`, propriété de Duolingo).
-Avant de pousser cette branche, il faut réécrire ou écraser cet historique (par exemple un seul
-commit depuis `main`). Alexis décide ; rien n'est poussé.
+**Historique** : le 16 novembre, `version-duo` a été reconstruite sur `main` sans les commits de
+la copie (qui contenaient des ressources de Duolingo). L'ancien historique reste sur la branche
+locale `version-duo-avant-reecriture`, et la copie sur `copie-codex` : ces deux-là ne doivent
+jamais être poussées. Rien n'est poussé sans l'accord d'Alexis.
 
 ## Ce qui existe
 
@@ -61,10 +61,27 @@ node design/site/parcours/lecon.mjs http://100.71.58.119:3635/lecon/adresse-pieg
 Pour capturer connecté, se connecter dans la page avant d'y aller :
 `await page.evaluate(async () => (await import('/src/lib/session.js')).login('sacha_31', 'banquise-sardine-parapluie'))`.
 
+## Le back-end (`backend/`)
+
+Commencé le 16 novembre : Express 5, Prisma 7 (comme la page `/minimal/prisma` du cours) et
+PostgreSQL. Installation dans le README.
+
+- `prisma/schema.prisma` couvre déjà tout le contrat : joueurs (comptes et visiteurs sans
+  compte), missions et épisodes, parties et réponses, leçons du chemin, coffres, quêtes,
+  échecs de connexion. Les routes à venir n'ont pas à toucher au schéma.
+- Faites : `GET /api/session`, `GET /api/auth/rules`, `POST /api/auth/signup|login|logout`
+  (bcryptjs, JWT dans un cookie httpOnly, frein après 5 échecs, réponses du visiteur reprises
+  à l'inscription), `GET /api/game`, `GET /api/cast`. Tests dans `test/` (`npm test`).
+- Le contenu et les règles ne sont pas recopiés : `lib/content.js` importe les modules de
+  `frontend/src/api/simulation/`, et `seed.js` y prend les épisodes et les joueurs simulés.
+- `npm run dev:express` dans `frontend/` branche l'interface sur ce serveur.
+- La logique de chaque route à écrire existe déjà dans `frontend/src/api/simulation/server.js` :
+  il s'agit de la porter sur Prisma.
+
 ## Reste à faire
 
-- Réécrire l'historique de la branche avant tout push (voir plus haut).
-- Le vrai back-end Express 5 + Prisma 7 + PostgreSQL, en suivant `CONTRAT.md`.
+- Les autres routes du back-end, en suivant `CONTRAT.md` (issues de l'équipe), puis faire du
+  mode express le mode par défaut.
 - La relecture des faits du contenu, interrompue dans la version BD.
 - Écarts restants avec la copie : sur téléphone, la barre des compteurs reste affichée sur Quêtes
   et Mon Tux ; pas de page `/succes` (« Afficher tout » déplie la liste dans Mon Tux) ; le défi du
