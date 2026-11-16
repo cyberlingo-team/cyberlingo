@@ -24,12 +24,12 @@ CyberLingo, « le Duolingo de la cybersécurité », est le projet noté de quat
 
 ## L'état du dépôt
 
-- **`main`** : la version actuelle, « la BD du jour ». Tux le prof et sa bande déjouent les
-  arnaques de Léopold, un léopard de mer escroc qui change de déguisement. Le Tux du joueur prend
-  du muscle avec ses points (huit stades, du poussin au colosse). Elle reste la version de
-  référence : on ne la modifie pas dans ce chantier.
-- **`version-duo`** : ce chantier, une appli d'apprentissage à la manière de Duolingo : un chemin
-  de leçons par thème, la mission du jour en tête, sardines, bouées, glaçons, quêtes, boutique.
+- **`main`** (depuis le 16 novembre) : l'appli d'apprentissage à la manière de Duolingo, un
+  chemin de leçons par thème, la mission du jour en tête, sardines, bouées, glaçons, quêtes,
+  boutique. Tux le prof et sa bande déjouent les arnaques de Léopold, un léopard de mer escroc
+  qui change de déguisement ; le Tux du joueur prend du muscle avec ses points (huit stades).
+  L'équipe part de `main` et y ouvre ses pull requests (voir `AGENTS.md`).
+- La version précédente, « la BD du jour », reste dans l'historique (commit `ba9ccaa`).
 - **Le back-end commence** (`backend/`, voir le README) : comptes et session, règles du jeu et
   personnages. Les autres routes viendront des issues de l'équipe. En attendant, l'interface
   tourne par défaut contre un serveur simulé (`frontend/src/api/simulation/`) qui garde ses
@@ -85,9 +85,11 @@ et le contenu de CyberLingo) sont faites. La suite est dans PASSATION_CLAUDE.md.
 
 ## Git
 
-- Travaille sur `version-duo`. Commite à chaque étape qui fonctionne ; chaque commit se
-  construit (`cd frontend && npm run build`).
-- Ne pousse pas, ne fusionne pas dans `main`, ne crée pas d'issue : Alexis décide.
+- Travaille sur une branche partie de `main`. Commite à chaque étape qui fonctionne ; chaque
+  commit se construit (`cd frontend && npm run build`).
+- Ne pousse pas, ne fusionne pas dans `main`, ne crée pas d'issue sans l'accord d'Alexis.
+- Ne jamais pousser `copie-codex` ni `version-duo-avant-reecriture` (branches locales qui
+  contiennent des ressources de Duolingo).
 
 ## Ce qui veut dire « fini »
 

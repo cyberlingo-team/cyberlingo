@@ -1,4 +1,4 @@
-# Passation : CyberLingo version appli (branche `version-duo`)
+# Passation : CyberLingo version appli (branche `main`)
 
 État au 16 novembre 2026. L'interface **repart du code de la copie de Codex** (gabarits, CSS,
 déroulé des écrans), passée aux couleurs, aux images et au contenu de CyberLingo. Les données
@@ -12,7 +12,8 @@ branche locale `copie-codex` (commit 74c044a).
 **Historique** : le 16 novembre, `version-duo` a été reconstruite sur `main` sans les commits de
 la copie (qui contenaient des ressources de Duolingo). L'ancien historique reste sur la branche
 locale `version-duo-avant-reecriture`, et la copie sur `copie-codex` : ces deux-là ne doivent
-jamais être poussées. Rien n'est poussé sans l'accord d'Alexis.
+jamais être poussées. Le même jour, avec l'accord d'Alexis, `version-duo` a été poussée et
+`main` avancée jusqu'à elle.
 
 ## Ce qui existe
 
