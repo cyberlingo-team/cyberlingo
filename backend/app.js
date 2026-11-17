@@ -11,6 +11,7 @@ import { readSession } from './lib/session.js'
 import { errorHandler, routeNotFound } from './lib/errors.js'
 import authRoutes from './routes/auth.js'
 import gameRoutes from './routes/game.js'
+import missionRoutes from './routes/missions.js'
 
 const app = express()
 
@@ -31,6 +32,7 @@ api.use((req, res, next) => {
 
 api.use(authRoutes)
 api.use(gameRoutes)
+api.use(missionRoutes)
 
 api.use(routeNotFound)
 app.use('/api', api)
