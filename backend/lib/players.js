@@ -143,3 +143,15 @@ export async function claimGuest(guest, account, today) {
   if (guest.id !== account.id) await prisma.player.delete({ where: { id: guest.id } })
   return claimed
 }
+
+// Le prochain épisode qui peut rapporter des points au joueur (celui du jour s'il ne l'a pas
+// encore joué, sinon celui de demain) et ce qu'il rapporte au plus, série comprise.
+// Renvoie null si cet épisode n'est pas encore programmé.
+export async function nextChance(player, today) {
+  const streak = streakOf(await resultsOf(player.id), today, frozenOf(player))
+  const date = streak.playedToday ? addDays(today, 1) : today
+  const episode = await prisma.episode.findUnique({ where: { date: toDbDate(date) }, include: { mission: true } })
+  if (!episode) return null
+  const count = episode.mission.questions.length
+  return { date, maxPoints: missionPoints(count, count, streak.current + 1).total }
+}
