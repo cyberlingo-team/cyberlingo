@@ -73,7 +73,7 @@ const tab = ref('daily')
     </div>
 
     <template #aside>
-      <section v-if="monthly" class="cl-panel cl-monthly" aria-labelledby="monthly-title">
+      <section v-if="monthly" class="cl-panel cl-monthly monthly-aside" aria-labelledby="monthly-title">
         <Icon name="trophee" :size="96" />
         <strong id="monthly-title">{{ typo(monthly.title) }}</strong>
         <p>{{ typo(monthly.description) }} {{ monthly.done ? 'Défi réussi !' : `Encore ${plural(monthly.daysLeft, 'jour')}.` }}</p>
@@ -154,6 +154,12 @@ const tab = ref('daily')
 @media (max-width: 1079px) {
   .monthly-main {
     display: block;
+  }
+}
+
+@media (min-width: 700px) and (max-width: 1079px) {
+  .monthly-aside {
+    display: none;
   }
 }
 

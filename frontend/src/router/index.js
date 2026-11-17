@@ -70,6 +70,12 @@ const routes = [
     meta: { title: 'Mon Tux' },
   },
   {
+    path: '/succes',
+    name: 'achievements',
+    component: () => import('../views/ProfileView.vue'),
+    meta: { title: 'Succès' },
+  },
+  {
     path: '/preferences',
     name: 'preferences',
     component: () => import('../views/PreferencesView.vue'),
