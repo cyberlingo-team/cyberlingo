@@ -2,7 +2,9 @@
 
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
+import prisma from '../prisma.js'
 import { startServer, browser, cleanUp } from './helpers.js'
+import { fromDbDate } from '../lib/dates.js'
 
 let server
 
@@ -39,7 +41,9 @@ test('classement de toujours : depuis le lancement', async () => {
   const { status, body } = await browser(server.base).call('GET', '/leaderboard?period=all')
   assert.equal(status, 200)
   assert.equal(body.period, 'all')
-  assert.equal(body.from, '2026-10-21')
+  // Le lancement, c'est le premier épisode : le seed le recalcule chaque jour, pas de date en dur.
+  const first = await prisma.episode.findFirst({ orderBy: { date: 'asc' } })
+  assert.equal(body.from, fromDbDate(first.date))
 })
 
 test('une période inconnue : 400 invalid_period', async () => {
