@@ -3,6 +3,7 @@
 // stade, ce qui lui manque pour le suivant, ses statistiques, sa semaine, ses succès et le
 // carnet des missions du jour. Sans compte, l'œuf attend d'éclore.
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import AppShell from '../components/app/AppShell.vue'
 import Icon from '../components/app/Icon.vue'
 import StatePanel from '../components/app/StatePanel.vue'
@@ -27,6 +28,8 @@ const { data, error, reload } = useResource(async () => {
   return { game, me }
 })
 
+const route = useRoute()
+const showingAchievements = computed(() => route.name === 'achievements')
 const me = computed(() => data.value?.me || null)
 const stages = computed(() => data.value?.game.stages || [])
 const lastLevel = computed(() => stages.value.length - 1)
@@ -74,7 +77,6 @@ const pointY = (points) => 207 - (points / weekMax.value) * 192
 // Les succès : une tuile colorée par succès, comme dans la copie.
 const COLORS = ['var(--alert)', 'var(--success)', 'var(--unit-glace)', 'var(--beak)', 'var(--toque-bright)', 'var(--unit-mer)']
 const achievements = computed(() => (me.value?.achievements || []).map((item, i) => ({ ...item, color: COLORS[i % COLORS.length] })))
-const allAchievements = ref(false)
 const detail = ref(null)
 
 function achievementText(item) {
@@ -140,8 +142,8 @@ function dayLabel(day) {
     </div>
 
     <!-- Tous les succès, comme la page « Succès » de la copie. -->
-    <div v-else-if="allAchievements" class="cl-achievements-page">
-      <button type="button" class="back" @click="allAchievements = false">← Mon Tux</button>
+    <div v-else-if="showingAchievements && me" class="cl-achievements-page">
+      <RouterLink class="back" to="/mon-tux">← Mon Tux</RouterLink>
       <h1>Succès</h1>
       <article v-for="item in achievements" :key="item.id" :class="{ locked: item.level === 0 }">
         <div :style="{ background: item.color }"><Icon :name="item.icon" :size="72" /></div>
@@ -153,6 +155,13 @@ function dayLabel(day) {
           </div>
         </section>
       </article>
+    </div>
+
+    <div v-else-if="showingAchievements" class="cl-achievements-page">
+      <RouterLink class="back" to="/mon-tux">← Mon Tux</RouterLink>
+      <h1>Succès</h1>
+      <p>Connecte-toi pour consulter tes succès et leur progression.</p>
+      <RouterLink class="cl-button" :to="{ path: '/connexion', query: { redirect: '/succes' } }">Se connecter</RouterLink>
     </div>
 
     <!-- Avec compte : la fiche du personnage. -->
@@ -208,7 +217,7 @@ function dayLabel(day) {
       <section aria-labelledby="achievements-title">
         <div class="cl-panel-heading">
           <h2 id="achievements-title">Succès</h2>
-          <button type="button" class="see-all" @click="allAchievements = true">Afficher tout</button>
+          <RouterLink class="see-all" to="/succes">Afficher tout</RouterLink>
         </div>
         <div class="cl-achievement-row">
           <button v-for="item in achievements" :key="item.id" type="button" :class="{ locked: item.level === 0 }" :style="{ background: item.color }" @click="detail = item">
@@ -365,6 +374,7 @@ function dayLabel(day) {
 }
 
 .cl-app .see-all {
+  text-decoration: none;
   padding: 0;
   font-size: 15px;
   font-weight: 700;
@@ -410,10 +420,12 @@ function dayLabel(day) {
 }
 
 .cl-app .back {
+  display: inline-block;
   padding: 0;
   margin-top: 8px;
   font-weight: 700;
   color: var(--ink);
+  text-decoration: none;
   background: none;
   border: 0;
 }

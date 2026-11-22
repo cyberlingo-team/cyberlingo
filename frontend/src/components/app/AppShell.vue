@@ -89,7 +89,7 @@ async function signOut() {
     </nav>
 
     <div class="cl-dashboard-grid">
-      <aside class="cl-right-column">
+      <aside class="cl-right-column" :class="{ 'cl-hide-mobile-stats': ['quests', 'profile'].includes(route.name) }">
         <StatsBar />
         <div class="cl-aside-panels">
           <slot v-if="slots.aside" name="aside" />
@@ -195,6 +195,11 @@ async function signOut() {
 }
 
 @media (max-width: 699px) {
+  /* Quêtes et Mon Tux n'ont pas besoin des compteurs dans leur en-tête mobile. */
+  .cl-hide-mobile-stats {
+    display: none;
+  }
+
   .cl-right-column {
     position: sticky;
     top: 0;
