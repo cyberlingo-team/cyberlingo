@@ -889,8 +889,17 @@ route('GET', '/me', (ctx) => {
   }
 })
 
+// Les comptes de démonstration ont un mot de passe public : on ne les renomme pas, on ne change
+// pas leur mot de passe et on ne les supprime pas.
+function refuseDemo(account) {
+  if (DEMO_ACCOUNTS.some((demo) => demo.username.toLowerCase() === account.username.toLowerCase())) {
+    throw new HttpError(403, 'demo_account', 'Les comptes de démonstration ne se modifient pas : crée ton propre profil pour essayer.')
+  }
+}
+
 route('PATCH', '/me', (ctx) => {
   const account = requireAccount(ctx)
+  refuseDemo(account)
   const username = typeof ctx.body.username === 'string' ? ctx.body.username.trim() : ''
   const issue = usernameProblem(username)
   if (issue) throw new HttpError(400, 'invalid', 'Le formulaire contient des erreurs.', { username: issue })
@@ -906,6 +915,7 @@ route('PATCH', '/me', (ctx) => {
 
 route('PUT', '/me/password', (ctx) => {
   const account = requireAccount(ctx)
+  refuseDemo(account)
   const { currentPassword, newPassword } = ctx.body
   if (!passwordMatches(account, currentPassword)) {
     throw new HttpError(403, 'wrong_password', 'Le formulaire contient des erreurs.', { currentPassword: 'Ce n’est pas ton mot de passe actuel.' })
@@ -921,6 +931,7 @@ route('PUT', '/me/password', (ctx) => {
 
 route('DELETE', '/me', (ctx) => {
   const account = requireAccount(ctx)
+  refuseDemo(account)
   if (!passwordMatches(account, ctx.body.password)) {
     throw new HttpError(403, 'wrong_password', 'Le formulaire contient des erreurs.', { password: 'Ce n’est pas ton mot de passe.' })
   }

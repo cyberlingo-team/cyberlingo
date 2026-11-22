@@ -14,10 +14,21 @@ import { frozenOf, resultsOf, sessionUser, streakOf, pointsOf } from '../lib/pla
 import { PERIODS, ranking } from '../lib/ranking.js'
 import { STAGES, UNITS, lessonContent, stageFor } from '../lib/content.js'
 import { hashPassword, passwordMatches, passwordProblem, usernameKey, usernameProblem } from '../lib/accounts.js'
+import { DEMO_ACCOUNTS } from '../../frontend/src/api/simulation/players.js'
 
 const router = Router()
 
 const DAYS_SHOWN = 28
+
+// Les comptes de démonstration ont un mot de passe public (README) : personne ne doit pouvoir
+// les renommer, changer leur mot de passe ou les supprimer, sinon ils cassent pour tout le monde.
+const DEMO_KEYS = new Set(DEMO_ACCOUNTS.map((demo) => usernameKey(demo.username)))
+
+function refuseDemo(account) {
+  if (DEMO_KEYS.has(account.usernameKey)) {
+    throw new HttpError(403, 'demo_account', 'Les comptes de démonstration ne se modifient pas : crée ton propre profil pour essayer.')
+  }
+}
 
 // Les succès, chacun en paliers : `tiers` sont les valeurs à atteindre.
 const ACHIEVEMENTS = [
@@ -134,6 +145,7 @@ router
   })
   .patch(async (req, res) => {
     const account = requireAccount(req)
+    refuseDemo(account)
     const username = typeof req.body?.username === 'string' ? req.body.username.trim() : ''
     const issue = usernameProblem(username)
     if (issue) throw new HttpError(400, 'invalid', 'Le formulaire contient des erreurs.', { username: issue })
@@ -152,6 +164,7 @@ router
   })
   .delete(async (req, res) => {
     const account = requireAccount(req)
+    refuseDemo(account)
     if (!(await passwordMatches(req.body?.password, account.passwordHash))) {
       throw new HttpError(403, 'wrong_password', 'Le formulaire contient des erreurs.', { password: 'Ce n’est pas ton mot de passe.' })
     }
@@ -166,6 +179,7 @@ router
   .route('/me/password')
   .put(async (req, res) => {
     const account = requireAccount(req)
+    refuseDemo(account)
     const { currentPassword, newPassword } = req.body ?? {}
     if (!(await passwordMatches(currentPassword, account.passwordHash))) {
       throw new HttpError(403, 'wrong_password', 'Le formulaire contient des erreurs.', { currentPassword: 'Ce n’est pas ton mot de passe actuel.' })

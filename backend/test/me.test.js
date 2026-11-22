@@ -57,6 +57,24 @@ test('GET /me : Mon Tux d’un compte de démonstration', async () => {
   assert.ok(weekPoints > 0)
 })
 
+test('un compte de démonstration ne se renomme pas, ne change pas de mot de passe, ne se supprime pas', async () => {
+  const b = browser(server.base)
+  assert.equal((await b.call('POST', '/auth/login', { username: 'sacha_31', password: DEMO_PASSWORD })).status, 200)
+  const attempts = [
+    ['PATCH', '/me', { username: testName('vole') }],
+    ['PUT', '/me/password', { currentPassword: DEMO_PASSWORD, newPassword: STRONG_PASSWORD }],
+    ['DELETE', '/me', { password: DEMO_PASSWORD }],
+  ]
+  for (const [method, path, body] of attempts) {
+    const { status, body: answer } = await b.call(method, path, body)
+    assert.equal(status, 403, `${method} ${path}`)
+    assert.equal(answer.error.code, 'demo_account')
+  }
+  // Le compte est intact : toujours là, sous le même pseudo, avec le même mot de passe.
+  assert.equal((await b.call('GET', '/session')).body.user.username, 'sacha_31')
+  assert.equal((await browser(server.base).call('POST', '/auth/login', { username: 'sacha_31', password: DEMO_PASSWORD })).status, 200)
+})
+
 test('GET /me : un compte neuf a des zéros, pas de classement', async () => {
   const { b } = await newPlayer()
   const { status, body } = await b.call('GET', '/me')

@@ -310,6 +310,9 @@ Tout ce que montre la page « Mon Tux ».
 - `days[].status` : `played` (avec `correct`, `total`, `points`), `missed`, `today` (pas encore
   joué) ou `before` (avant la création du compte).
 
+Les comptes de démonstration (mot de passe public) ne se renomment pas, ne changent pas de mot
+de passe et ne se suppriment pas : ces trois routes leur répondent `403 demo_account`.
+
 ### `PATCH /api/me` (connecté)
 
 Change de pseudo. Les points, la série et le classement suivent.
@@ -320,6 +323,7 @@ Change de pseudo. Les points, la série et le classement suivent.
 | Statut | `code` | Quand |
 |---|---|---|
 | 400 | `invalid` | pseudo refusé (`fields.username`) |
+| 403 | `demo_account` | compte de démonstration |
 | 409 | `username_taken` | pseudo déjà pris (`fields.username`) |
 
 ### `PUT /api/me/password` (connecté)
@@ -330,6 +334,7 @@ Change de pseudo. Les points, la série et le classement suivent.
 | Statut | `code` | Quand |
 |---|---|---|
 | 403 | `wrong_password` | mot de passe actuel faux (`fields.currentPassword`) |
+| 403 | `demo_account` | compte de démonstration |
 | 400 | `invalid` | nouveau mot de passe refusé, ou identique à l'actuel (`fields.newPassword`) |
 
 ### `DELETE /api/me` (connecté)
@@ -342,6 +347,7 @@ Supprime le compte, ses réponses et ses points, et ferme la session.
 | Statut | `code` | Quand |
 |---|---|---|
 | 403 | `wrong_password` | mot de passe faux (`fields.password`) |
+| 403 | `demo_account` | compte de démonstration |
 
 ## Les règles du jeu et les personnages
 
