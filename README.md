@@ -7,6 +7,9 @@ Léopold, un léopard de mer escroc ; les points font prendre du muscle au Tux d
 
 Projet du cours *Développement d'applications web* — N7, 2A FISA.
 
+**En ligne : https://cyberlingo.alexis-briend375.workers.dev**, branché sur le vrai back-end
+(comptes de démonstration plus bas).
+
 ## Équipe
 
 - [@Alexry375](https://github.com/Alexry375)
@@ -34,9 +37,9 @@ de l'API sont décrites dans [frontend/src/api/CONTRAT.md](frontend/src/api/CONT
 
 ## Lancer le back-end
 
-Le vrai serveur est dans `backend/` : Express 5, Prisma 7 et PostgreSQL. Il est en construction :
-les comptes et la session (`/api/session`, `/api/auth/…`), les règles du jeu et les personnages
-(`/api/game`, `/api/cast`) sont faits ; les autres routes du contrat arrivent par les issues.
+Le vrai serveur est dans `backend/` : Express 5, Prisma 7 et PostgreSQL. Il implémente toutes les
+routes du contrat : comptes et session, épisodes et réponses, chemin de leçons, coffres, réserve,
+boutique, quêtes, classement et profil. Un fichier par groupe de routes dans `backend/routes/`.
 
 **1. Une base PostgreSQL.** Au choix :
 
@@ -74,8 +77,7 @@ cd frontend
 npm run dev:express
 ```
 
-Le proxy de Vite envoie les appels `/api` au serveur du port 4000. Les écrans dont les routes
-n'existent pas encore côté Express affichent « Cette route n'existe pas ».
+Le proxy de Vite envoie les appels `/api` au serveur du port 4000.
 
 **Comptes de démonstration**, dans le serveur simulé comme dans la base remplie par `npm run seed`, tous
 avec le mot de passe `banquise-sardine-parapluie` :
@@ -96,7 +98,27 @@ avec le mot de passe `banquise-sardine-parapluie` :
 Pour voir le site depuis un téléphone du même réseau : `npm run dev -- --host`, puis ouvrir
 l'adresse « Network » affichée.
 
-La liste des écrans et leurs adresses est dans [design/site/NOTE.md](design/site/NOTE.md).
+## Les écrans
+
+| Adresse | Écran |
+|---|---|
+| `/` | L'accueil, pour qui n'a pas de profil (un joueur connecté va droit à `/apprendre`). |
+| `/bienvenue` | Le petit questionnaire d'arrivée, puis la première leçon. |
+| `/apprendre` | La mission du jour, puis le chemin : six thèmes, leurs leçons, un coffre et un bilan par thème. |
+| `/apprendre/<thème>/guide` | Le guide d'un thème : ses réflexes et ses sources (ex. `/apprendre/hameconnage/guide`). |
+| `/lecon/<id>` | Une leçon, une question à la fois ; les questions ratées reviennent à la fin, puis le bilan (ex. `/lecon/adresse-piegee`). |
+| `/mission-du-jour` | La mission du jour ; au bilan, Léopold se démasque et la place au classement s'affiche. |
+| `/classement` | Le classement de la semaine ; `?periode=tout` depuis le lancement. |
+| `/quetes` | Les trois quêtes du jour et le défi du mois. |
+| `/boutique` | Bouées regonflées et glaçons, payés en sardines (profil nécessaire). |
+| `/mon-tux` | Le Tux du joueur à son stade, ses chiffres, sa semaine, ses succès, le carnet des missions. |
+| `/succes` | Tous les succès et leurs paliers. |
+| `/preferences` | Bruitages et animations. |
+| `/mon-compte` | Pseudo, mot de passe, suppression du compte (profil nécessaire). |
+| `/aide` | Que faire après un clic piégé, et les règles du jeu. |
+| `/connexion`, `/inscription` | Se connecter, créer un profil ; la progression jouée sans compte suit. |
+| `/credits` | Images, polices, sources. |
+| toute autre adresse | La page introuvable. |
 
 ## Technologies
 
