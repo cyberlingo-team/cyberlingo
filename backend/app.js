@@ -13,6 +13,7 @@ import authRoutes from './routes/auth.js'
 import gameRoutes from './routes/game.js'
 import inventoryRoutes from './routes/inventory.js'
 import questRoutes from './routes/quests.js'
+import pathRoutes from './routes/path.js'
 
 const app = express()
 
@@ -35,6 +36,7 @@ api.use(authRoutes)
 api.use(gameRoutes)
 api.use(inventoryRoutes)
 api.use(questRoutes)
+api.use(pathRoutes)
 
 api.use(routeNotFound)
 app.use('/api', api)
