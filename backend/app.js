@@ -16,6 +16,7 @@ import questRoutes from './routes/quests.js'
 import pathRoutes from './routes/path.js'
 import missionRoutes from './routes/missions.js'
 import leaderboardRoutes from './routes/leaderboard.js'
+import meRoutes from './routes/me.js'
 
 const app = express()
 
@@ -41,6 +42,7 @@ api.use(questRoutes)
 api.use(pathRoutes)
 api.use(missionRoutes)
 api.use(leaderboardRoutes)
+api.use(meRoutes)
 
 api.use(routeNotFound)
 app.use('/api', api)
