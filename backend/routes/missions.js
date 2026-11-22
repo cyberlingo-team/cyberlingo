@@ -3,10 +3,13 @@
 import { Router } from 'express'
 import prisma from '../prisma.js'
 import { methodNotAllowed, HttpError } from '../lib/errors.js'
-import { addDays, fromDbDate, isIsoDate, today, toDbDate } from '../lib/dates.js'
+import { addDays, dayNumber, fromDbDate, isIsoDate, today, toDbDate } from '../lib/dates.js'
 import { playerOf } from '../lib/session.js'
-import { resultsOf } from '../lib/players.js'
-import { DISGUISES, GANG, VILLAIN } from '../lib/content.js'
+import { finishAttemptIfComplete, frozenOf, nextChance, pointsOf, resultsOf, streakAt, streakOf } from '../lib/players.js'
+import { checkAnswer, revealed } from '../lib/answers.js'
+import { ranking } from '../lib/ranking.js'
+import { DISGUISES, GANG, VILLAIN, missionPoints, stageFor } from '../lib/content.js'
+import { settleQuests } from './quests.js'
 
 const router = Router()
 
@@ -205,6 +208,136 @@ router.route('/missions/:date')
       mission: publicMission(episode),
       progress: await progressOf(episode, attempt, modeOf(req, date, attempt)),
     })
+  })
+  .all(methodNotAllowed)
+
+// La partie du joueur pour cet épisode, créée à la première réponse. Une partie du jour commencée
+// avec un compte et pas finie avant minuit devient un rattrapage, comme dans le serveur simulé.
+async function attemptToAnswer(req, player, date) {
+  const attempt = await findAttempt(player, date)
+  if (attempt) {
+    if (attempt.mode === 'counted' && !attempt.completedAt && date !== today()) {
+      return prisma.attempt.update({ where: { id: attempt.id }, data: { mode: 'practice' } })
+    }
+    return attempt
+  }
+  try {
+    return await prisma.attempt.create({ data: { playerId: player.id, date: toDbDate(date), mode: modeOf(req, date, null) } })
+  } catch (error) {
+    // Deux réponses envoyées en même temps : l'autre requête vient de créer la partie.
+    if (error?.code === 'P2002') return findAttempt(player, date)
+    throw error
+  }
+}
+
+router.route('/missions/:date/answers')
+  .post(async (req, res) => {
+    const date = req.params.date
+    const episode = await publishedEpisode(date)
+    const question = episode.mission.questions.find((q) => q.id === req.body?.questionId)
+    if (!question) throw new HttpError(404, 'question_not_found', 'Cette question ne fait pas partie de l’épisode.')
+
+    const player = await playerOf(req, res, { create: true })
+    const existing = await findAttempt(player, date)
+    if (existing?.completedAt) throw new HttpError(409, 'already_completed', 'Tu as déjà joué cet épisode.')
+    // Vérifiée avant de créer la partie : une réponse mal formée ne laisse rien en base.
+    const answer = req.body.answer
+    const correct = checkAnswer(question, answer)
+
+    const attempt = await attemptToAnswer(req, player, date)
+    try {
+      await prisma.answer.create({ data: { attemptId: attempt.id, questionId: question.id, value: answer ?? undefined, correct } })
+    } catch (error) {
+      if (error?.code === 'P2002') throw new HttpError(409, 'already_answered', 'Tu as déjà répondu à cette question.')
+      throw error
+    }
+    // À la dernière réponse, la partie est close ; si elle compte : ses points et la série.
+    const finished = await finishAttemptIfComplete(attempt.id)
+    const progress = await progressOf(episode, finished, finished.mode)
+    if (progress.completed && date === today()) await settleQuests(player)
+
+    const { answers, ...rest } = progress
+    res.json({ ...answers[question.id], progress: rest })
+  })
+  .all(methodNotAllowed)
+
+// La place du joueur au classement de la semaine, avant et après l'épisode du jour.
+async function rankAround(account, day, earned) {
+  const after = await ranking('week', day)
+  const mine = after.find((row) => row.id === account.id)
+  if (!mine) return null
+  const before = after
+    .map((row) => (row.id === account.id ? { ...row, points: row.points - earned } : row))
+    .filter((row) => row.points > 0)
+    .sort((a, b) => b.points - a.points || a.username.localeCompare(b.username, 'fr'))
+  before.forEach((row, i) => {
+    row.rank = i > 0 && before[i - 1].points === row.points ? before[i - 1].rank : i + 1
+  })
+  const target = after.filter((row) => row.points > mine.points).at(-1)
+  return {
+    period: 'week',
+    position: mine.rank,
+    previous: before.find((row) => row.id === account.id)?.rank ?? null,
+    players: after.length,
+    ahead: target ? { username: target.username, rank: target.rank, level: target.level, gap: target.points - mine.points } : null,
+    next: await nextChance(account, day),
+  }
+}
+
+router.route('/missions/:date/result')
+  .get(async (req, res) => {
+    const date = req.params.date
+    const day = today()
+    const episode = await publishedEpisode(date)
+    const player = await playerOf(req, res)
+    const attempt = player
+      ? await prisma.attempt.findUnique({
+        where: { playerId_date: { playerId: player.id, date: toDbDate(date) } },
+        include: { answers: true },
+      })
+      : null
+    const total = episode.mission.questions.length
+    if (!attempt || attempt.answers.length < total) {
+      throw new HttpError(409, 'not_finished', 'Réponds à toutes les cases pour voir la fin de l’épisode.')
+    }
+
+    const correct = attempt.answers.filter((answer) => answer.correct).length
+    const villain = villainOf(episode.mission)
+    const result = {
+      date,
+      number: episode.number,
+      title: episode.mission.title,
+      mode: attempt.mode,
+      correct,
+      total,
+      moral: episode.mission.moral,
+      sources: episode.mission.sources,
+      villain: villain && { ...villain, quip: VILLAIN.quips[dayNumber(date) % VILLAIN.quips.length] },
+      points: null,
+      player: null,
+      rank: null,
+      next: await teaser(),
+    }
+
+    // Ce que le visiteur gagnerait avec un compte (premier jour de série).
+    if (attempt.mode === 'guest') result.points = missionPoints(correct, total, 1)
+
+    if (attempt.mode === 'counted') {
+      const results = await resultsOf(player.id)
+      result.points = missionPoints(correct, total, streakAt(results, date, frozenOf(player)))
+      if (date === day) {
+        const after = await pointsOf(player.id)
+        const before = after - (attempt.points ?? 0)
+        const streak = streakOf(results, day, frozenOf(player))
+        result.player = {
+          before: { points: before, stage: stageFor(before) },
+          after: { points: after, stage: stageFor(after) },
+          streak: { current: streak.current, best: streak.best },
+        }
+        result.rank = await rankAround(player, day, attempt.points ?? 0)
+      }
+    }
+    res.json(result)
   })
   .all(methodNotAllowed)
 
